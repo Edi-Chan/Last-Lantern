@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://ob75mkpmeebo"]
+
+[ext_resource type="PackedScene" uid="uid://q5ww1f6xccao" path="res://scenes/world/world.tscn" id="1_k2fmo"]
+[ext_resource type="PackedScene" uid="uid://bvhr8a3hur358" path="res://scenes/player/player.tscn" id="2_l3cfh"]
+[ext_resource type="PackedScene" uid="uid://gfw5bd3vpha4" path="res://scenes/ui/hud.tscn" id="3_6q06x"]
+[ext_resource type="Script" path="res://scripts/main/main.gd" id="4_main"]
+
+[node name="Main" type="Node" unique_id=562751607]
+script = ExtResource("4_main")
+
+[node name="World" parent="." unique_id=762429514 instance=ExtResource("1_k2fmo")]
+
+[node name="Player" parent="." unique_id=1843147423 instance=ExtResource("2_l3cfh")]
+
+[node name="UI" parent="." unique_id=31826393 instance=ExtResource("3_6q06x")]

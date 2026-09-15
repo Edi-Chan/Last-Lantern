@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://bnbthd7adhe53"]
+
+[ext_resource type="Script" uid="uid://d2ayfco0e2am7" path="res://scripts/items/item_drop.gd" id="1_5umwt"]
+[ext_resource type="Texture2D" uid="uid://8tbltdrfto2y" path="res://assets/world/tiles/dirt_placeholder.png" id="2_pjagr"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_fi858"]
+size = Vector2(8, 8)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_5umwt"]
+radius = 26.0
+
+[node name="ItemDrop" type="CharacterBody2D" unique_id=952332514]
+collision_layer = 8
+floor_snap_length = 4.0
+script = ExtResource("1_5umwt")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=2034537128]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_pjagr")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1612851999]
+shape = SubResource("RectangleShape2D_fi858")
+
+[node name="PickupArea" type="Area2D" parent="." unique_id=1375486410]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PickupArea" unique_id=1558404121]
+shape = SubResource("CircleShape2D_5umwt")

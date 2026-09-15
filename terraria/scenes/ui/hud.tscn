@@ -1,0 +1,359 @@
+[gd_scene format=3 uid="uid://gfw5bd3vpha4"]
+
+[ext_resource type="PackedScene" uid="uid://b8qxvstatshud" path="res://scenes/ui/player_stats_hud.tscn" id="1_8qguk"]
+[ext_resource type="Script" uid="uid://dhiryxulgvpgp" path="res://scripts/ui/hotbar.gd" id="1_hqnrr"]
+[ext_resource type="Resource" path="res://resources/items/item_catalog.tres" id="2_bo48s"]
+[ext_resource type="PackedScene" uid="uid://8pbrawbiis87" path="res://scenes/ui/inventory_screen.tscn" id="3_bo48s"]
+[ext_resource type="PackedScene" path="res://scenes/ui/world_map.tscn" id="4_worldmap"]
+[ext_resource type="Script" uid="uid://bo1vfma55iitt" path="res://scripts/ui/world_map_data.gd" id="6_gss2c"]
+[ext_resource type="PackedScene" path="res://scenes/ui/minimap.tscn" id="7_h022r"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="8_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="9_pause"]
+[ext_resource type="PackedScene" path="res://scenes/ui/options_menu.tscn" id="10_options"]
+[ext_resource type="Script" path="res://scripts/ui/fps_overlay.gd" id="11_fps"]
+[ext_resource type="Script" path="res://scripts/ui/zoom_overlay.gd" id="12_zoom"]
+
+[node name="HUD" type="CanvasLayer" unique_id=31826393]
+script = ExtResource("8_hud")
+
+[node name="PlayerStatsPanel" parent="." unique_id=20132823 instance=ExtResource("1_8qguk")]
+
+[node name="FpsOverlay" type="Label" parent="."]
+process_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -318.0
+offset_top = 8.0
+offset_right = -220.0
+offset_bottom = 26.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.92, 0.94, 0.96, 0.92)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.78)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "0 FPS"
+horizontal_alignment = 2
+script = ExtResource("11_fps")
+
+[node name="Hotbar" type="HBoxContainer" parent="." unique_id=1807289294]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -72.0
+offset_right = -16.0
+offset_bottom = -16.0
+theme_override_constants/separation = 8
+alignment = 1
+script = ExtResource("1_hqnrr")
+item_catalog = ExtResource("2_bo48s")
+
+[node name="Slot0" type="Panel" parent="Hotbar" unique_id=1734373095]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot0" unique_id=539627289]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot0" unique_id=158533403]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+theme_override_font_sizes/font_size = 14
+
+[node name="Slot1" type="Panel" parent="Hotbar" unique_id=1270921706]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot1" unique_id=743744988]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot1" unique_id=15542646]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot2" type="Panel" parent="Hotbar" unique_id=755611266]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot2" unique_id=403174523]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot2" unique_id=397471713]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot3" type="Panel" parent="Hotbar" unique_id=1007486411]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot3" unique_id=1038686516]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot3" unique_id=1810877067]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot4" type="Panel" parent="Hotbar" unique_id=211885466]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot4" unique_id=746983432]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot4" unique_id=1370315855]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot5" type="Panel" parent="Hotbar" unique_id=1437222469]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot5" unique_id=1304860985]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot5" unique_id=1549465492]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot6" type="Panel" parent="Hotbar" unique_id=1636981433]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot6" unique_id=711293643]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot6" unique_id=1366516723]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot7" type="Panel" parent="Hotbar" unique_id=112127930]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot7" unique_id=1576653130]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot7" unique_id=927243181]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot8" type="Panel" parent="Hotbar" unique_id=1253100923]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot8" unique_id=371267113]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot8" unique_id=965823792]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="Slot9" type="Panel" parent="Hotbar" unique_id=167218636]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="Hotbar/Slot9" unique_id=1771970143]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Hotbar/Slot9" unique_id=1669287813]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -18.0
+offset_right = -1.0
+offset_bottom = 0.0
+
+[node name="ZoomOverlay" type="Label" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -100.0
+offset_right = 180.0
+offset_bottom = -76.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.92, 0.94, 0.96, 0.95)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.82)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 14
+text = "Zoom 1.00"
+vertical_alignment = 2
+script = ExtResource("12_zoom")
+
+[node name="DebugLabel" type="Label" parent="." unique_id=1431330675 groups=["mining_debug"]]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = -58.0
+offset_right = 226.0
+offset_bottom = -4.0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.788235, 0.815686, 0.858824, 0.784314)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.705882)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 8
+vertical_alignment = 2
+
+[node name="InventoryScreen" parent="." unique_id=1820138704 instance=ExtResource("3_bo48s")]
+
+[node name="WorldMapData" type="Node" parent="." unique_id=837190399]
+script = ExtResource("6_gss2c")
+
+[node name="WorldMap" parent="." unique_id=1012792551 instance=ExtResource("4_worldmap")]
+
+[node name="MiniMap" parent="." unique_id=2039592394 instance=ExtResource("7_h022r")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("9_pause")]
+
+[node name="OptionsMenu" parent="." instance=ExtResource("10_options")]

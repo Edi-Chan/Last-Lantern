@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/items/equipment/test_chestplate.png" id="2_icon"]
+[ext_resource type="SpriteFrames" path="res://resources/player/armor_chest_frames.tres" id="3_frames"]
+
+[resource]
+script = ExtResource("1_script")
+id = 5
+display_name = "Test Chestplate"
+icon = ExtResource("2_icon")
+max_stack = 1
+item_type = 3
+category = 2
+equipment_slot = 2
+tool_kind = 0
+placeable_block_id = -1
+held_scale = 1.0
+held_rotation_degrees = 0.0
+damage = 0
+mining_speed = 1.0
+attack_cooldown = 0.35
+knockback = 100.0
+defense = 2
+armor_sprite_frames = ExtResource("3_frames")

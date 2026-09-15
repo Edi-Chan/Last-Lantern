@@ -1,0 +1,83 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/pause_menu.gd" id="1_script"]
+[ext_resource type="StyleBox" path="res://resources/ui/menu_panel_style.tres" id="2_panel"]
+[ext_resource type="StyleBox" path="res://resources/ui/menu_button_style.tres" id="3_button"]
+
+[node name="PauseMenu" type="Control"]
+process_mode = 3
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_script")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.03, 0.03, 0.04, 0.62)
+
+[node name="CenterWrap" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Panel" type="PanelContainer" parent="CenterWrap"]
+custom_minimum_size = Vector2(168, 132)
+layout_mode = 2
+theme_override_styles/panel = ExtResource("2_panel")
+
+[node name="Margin" type="MarginContainer" parent="CenterWrap/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Layout" type="VBoxContainer" parent="CenterWrap/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="CenterWrap/Panel/Margin/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.86, 0.74, 1)
+theme_override_font_sizes/font_size = 12
+text = "PAUSE"
+horizontal_alignment = 1
+
+[node name="ContinueButton" type="Button" parent="CenterWrap/Panel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = ExtResource("3_button")
+text = "Fortsetzen"
+
+[node name="OptionsButton" type="Button" parent="CenterWrap/Panel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = ExtResource("3_button")
+text = "Optionen"
+
+[node name="QuitButton" type="Button" parent="CenterWrap/Panel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = ExtResource("3_button")
+text = "Beenden"

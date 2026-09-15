@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/tool_data.gd" id="2_tool"]
+[ext_resource type="Texture2D" path="res://assets/items/tools/exploration/scanner.png" id="3_icon"]
+
+[sub_resource type="Resource" id="ToolData_1"]
+script = ExtResource("2_tool")
+tool_category = 7
+base_damage = 0
+base_tool_power = 3
+base_use_speed = 1.0
+base_max_durability = 100
+base_range = 6.0
+special = "Erkundung"
+
+[resource]
+script = ExtResource("1_script")
+id = 32
+display_name = "Scanner"
+description = "Vorbereitetes Erkundungs-Testitem. Keine Scanner-Funktion."
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 1
+category = 10
+equipment_slot = 0
+tool_kind = 0
+tool_data = SubResource("ToolData_1")
+placeable_block_id = -1
+held_scale = 1.0
+held_rotation_degrees = 0.0
+held_flip_h = false
+held_flip_v = false
+damage = 0
+mining_speed = 1.0
+attack_cooldown = 0.35
+knockback = 100.0

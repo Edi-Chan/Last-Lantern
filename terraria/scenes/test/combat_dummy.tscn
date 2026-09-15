@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://b6elyf6jgq50"]
+
+[ext_resource type="Script" uid="uid://bisaaqycmkyn8" path="res://scripts/combat/combat_dummy.gd" id="1_wiubf"]
+[ext_resource type="Texture2D" uid="uid://c0bhqas4gyq23" path="res://assets/test/combat_dummy.png" id="2_rm2r2"]
+[ext_resource type="Script" uid="uid://yqmj6rr5rh2y" path="res://scripts/combat/hurtbox.gd" id="3_17ret"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_tvd28"]
+size = Vector2(14, 22)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0yorc"]
+size = Vector2(16, 24)
+
+[node name="CombatDummy" type="CharacterBody2D" unique_id=1473583841]
+collision_layer = 4
+script = ExtResource("1_wiubf")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1497666361]
+position = Vector2(0, -12)
+texture = ExtResource("2_rm2r2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1448898385]
+position = Vector2(0, -11)
+shape = SubResource("RectangleShape2D_tvd28")
+
+[node name="Hurtbox" type="Area2D" parent="." unique_id=2088587139]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("3_17ret")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox" unique_id=1832818186]
+position = Vector2(0, -12)
+shape = SubResource("RectangleShape2D_0yorc")
+
+[node name="HealthLabel" type="Label" parent="." unique_id=1078653508]
+offset_left = -12.0
+offset_top = -34.0
+offset_right = 12.0
+offset_bottom = -18.0
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
+text = "20"

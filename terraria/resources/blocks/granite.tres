@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 5
+display_name = "Granite"
+atlas_coords = Vector2i(4, 0)
+hardness = 2.0
+drop_item_id = 7
+solid = true
+required_tool = 1
+required_tool_power = 5

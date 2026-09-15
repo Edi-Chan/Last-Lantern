@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/ores/voidium_ore.tres" id="2_ore"]
+
+[resource]
+script = ExtResource("1_script")
+id = 27
+display_name = "Voidiumerz"
+atlas_coords = Vector2i(2, 3)
+hardness = 6.5
+drop_item_id = 37
+solid = true
+ore_data = ExtResource("2_ore")
+map_color = Color(0.22745098039215686, 0.09411764705882353, 0.3058823529411765, 1)

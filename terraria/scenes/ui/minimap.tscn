@@ -1,0 +1,142 @@
+[gd_scene format=3 uid="uid://cmyco84g64adx"]
+
+[ext_resource type="Script" uid="uid://ifcwdpotp0qc" path="res://scripts/ui/minimap.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cip0scrxqkntc" path="res://assets/ui/map_player_marker.png" id="2_marker"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 3.0
+content_margin_top = 3.0
+content_margin_right = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0.05, 0.06, 0.08, 0.82)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.16, 0.17, 0.22, 0.95)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_info"]
+content_margin_left = 4.0
+content_margin_top = 1.0
+content_margin_right = 4.0
+content_margin_bottom = 1.0
+bg_color = Color(0.04, 0.045, 0.06, 0.72)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+content_margin_left = 2.0
+content_margin_top = 0.0
+content_margin_right = 2.0
+content_margin_bottom = 0.0
+bg_color = Color(0.12, 0.13, 0.16, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.34, 0.38, 1)
+
+[node name="MiniMap" type="PanelContainer" unique_id=1851199370]
+visible = false
+z_index = 40
+custom_minimum_size = Vector2(200, 120)
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -212.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 132.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("1_script")
+
+[node name="Layout" type="VBoxContainer" parent="." unique_id=256163263]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="TopBar" type="HBoxContainer" parent="Layout" unique_id=2007984980]
+layout_mode = 2
+mouse_filter = 0
+theme_override_constants/separation = 2
+
+[node name="CoordinatesLabel" type="Label" parent="Layout/TopBar" unique_id=1996292255]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.88, 0.9, 0.92)
+theme_override_font_sizes/font_size = 8
+text = "X:0 Y:0"
+
+[node name="SizeDownButton" type="Button" parent="Layout/TopBar" unique_id=1099686452]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+tooltip_text = "Kleinere Minimap"
+theme_override_font_sizes/font_size = 8
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+text = "<"
+
+[node name="SizeUpButton" type="Button" parent="Layout/TopBar" unique_id=126025850]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+tooltip_text = "Groessere Minimap"
+theme_override_font_sizes/font_size = 8
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+text = ">"
+
+[node name="ZoomOutButton" type="Button" parent="Layout/TopBar" unique_id=286168607]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+tooltip_text = "Zoom Out"
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+text = "-"
+
+[node name="ZoomInButton" type="Button" parent="Layout/TopBar" unique_id=1990370084]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+tooltip_text = "Zoom In"
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+text = "+"
+
+[node name="MapClip" type="Control" parent="Layout" unique_id=2121883767]
+custom_minimum_size = Vector2(154, 52)
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 0
+
+[node name="MapContent" type="Control" parent="Layout/MapClip" unique_id=600695750]
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="WorldTexture" type="TextureRect" parent="Layout/MapClip/MapContent" unique_id=510525099]
+layout_mode = 0
+mouse_filter = 2
+stretch_mode = 2
+
+[node name="PlayerMarker" type="TextureRect" parent="Layout/MapClip" unique_id=2090937084]
+z_index = 2
+custom_minimum_size = Vector2(8, 8)
+layout_mode = 0
+mouse_filter = 2
+texture = ExtResource("2_marker")
+stretch_mode = 5
+
+[node name="InfoPanel" type="PanelContainer" parent="Layout" unique_id=983810435]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_info")
+
+[node name="BiomeLabel" type="Label" parent="Layout/InfoPanel" unique_id=1064137102]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.8, 0.85)
+theme_override_font_sizes/font_size = 8
+text = "Grassland  Surface"

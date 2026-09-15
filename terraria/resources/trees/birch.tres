@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TreeData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/tree_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+tree_id = &"birch"
+display_name = "Birke"
+trunk_block_id = 15
+leaf_block_id = 18
+sapling_block_id = 21
+wood_item_id = 16
+seed_item_id = 19
+min_height = 6
+max_height = 10
+growth_stage_count = 5
+regrow_time = 10.0
+trunk_hardness = 0.9
+top_hardness_multiplier = 0.45
+crown_style = &"narrow"
+required_felling_tool = 2

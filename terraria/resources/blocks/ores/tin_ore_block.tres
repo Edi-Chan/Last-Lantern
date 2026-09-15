@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/ores/tin_ore.tres" id="2_ore"]
+
+[resource]
+script = ExtResource("1_script")
+id = 10
+display_name = "Zinnerz"
+atlas_coords = Vector2i(1, 1)
+hardness = 2.1
+drop_item_id = 12
+solid = true
+ore_data = ExtResource("2_ore")
+map_color = Color(0.7686274509803922, 0.8, 0.8235294117647058, 1)

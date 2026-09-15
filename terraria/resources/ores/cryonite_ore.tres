@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="OreData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ore_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+ore_id = &"cryonite"
+display_name = "Cryonit"
+tier = 7
+block_id = 25
+drop_item_id = 35
+required_tool = 1
+required_tool_power = 65
+spec_min_depth = 650
+spec_max_depth = 900
+min_depth_ratio = 0.542
+max_depth_ratio = 0.75
+vein_min_size = 2
+vein_max_size = 5
+drop_min = 1
+drop_max = 2
+xp_reward = 25
+rarity_weight = 0.12
+metal_category = 1
+hardness = 4.8
+map_color = Color(0.2823529411764706, 0.8235294117647058, 0.8627450980392157, 1)
+special_spawn = false

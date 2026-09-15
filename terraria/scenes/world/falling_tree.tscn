@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/falling_tree.gd" id="1_script"]
+
+[node name="FallingTree" type="Node2D"]
+z_index = 20
+script = ExtResource("1_script")
+
+[node name="VisualRoot" type="Node2D" parent="."]

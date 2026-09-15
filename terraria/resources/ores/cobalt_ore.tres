@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="OreData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ore_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+ore_id = &"cobalt"
+display_name = "Kobalt"
+tier = 5
+block_id = 23
+drop_item_id = 33
+required_tool = 1
+required_tool_power = 40
+spec_min_depth = 400
+spec_max_depth = 650
+min_depth_ratio = 0.333
+max_depth_ratio = 0.542
+vein_min_size = 3
+vein_max_size = 6
+drop_min = 1
+drop_max = 3
+xp_reward = 12
+rarity_weight = 0.28
+metal_category = 1
+hardness = 3.5
+map_color = Color(0.18823529411764706, 0.3764705882352941, 0.8235294117647058, 1)
+special_spawn = false

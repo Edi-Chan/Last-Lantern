@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/ores/aurel_ore.tres" id="2_ore"]
+
+[resource]
+script = ExtResource("1_script")
+id = 12
+display_name = "Aurelerz"
+atlas_coords = Vector2i(3, 1)
+hardness = 3.0
+drop_item_id = 14
+solid = true
+ore_data = ExtResource("2_ore")
+map_color = Color(0.9098039215686274, 0.7294117647058823, 0.18823529411764706, 1)

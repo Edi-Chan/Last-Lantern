@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 15
+display_name = "Birkenholz"
+atlas_coords = Vector2i(1, 2)
+hardness = 0.8
+drop_item_id = 16
+solid = true
+required_tool = 2
+required_tool_power = 1

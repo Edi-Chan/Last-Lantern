@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="OreData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ore_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+ore_id = &"ignitium"
+display_name = "Ignitium"
+tier = 8
+block_id = 26
+drop_item_id = 36
+required_tool = 1
+required_tool_power = 80
+spec_min_depth = 800
+spec_max_depth = 1100
+min_depth_ratio = 0.667
+max_depth_ratio = 0.917
+vein_min_size = 2
+vein_max_size = 4
+drop_min = 1
+drop_max = 2
+xp_reward = 35
+rarity_weight = 0.08
+metal_category = 1
+hardness = 5.6
+map_color = Color(0.9098039215686274, 0.33725490196078434, 0.10980392156862745, 1)
+special_spawn = false

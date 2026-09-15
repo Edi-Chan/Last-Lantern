@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TreeData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/tree_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+tree_id = &"oak"
+display_name = "Eiche"
+trunk_block_id = 14
+leaf_block_id = 17
+sapling_block_id = 20
+wood_item_id = 15
+seed_item_id = 18
+min_height = 5
+max_height = 8
+growth_stage_count = 5
+regrow_time = 10.0
+trunk_hardness = 1.2
+top_hardness_multiplier = 0.45
+crown_style = &"round"
+required_felling_tool = 2

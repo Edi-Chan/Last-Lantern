@@ -1,0 +1,669 @@
+[gd_scene format=3 uid="uid://8pbrawbiis87"]
+
+[ext_resource type="Script" uid="uid://cbiy3ox22og04" path="res://scripts/ui/inventory_screen.gd" id="1_xqb13"]
+[ext_resource type="PackedScene" uid="uid://dvn3tfhtuviob" path="res://scenes/ui/inventory_slot.tscn" id="2_4uvq7"]
+[ext_resource type="Theme" path="res://resources/ui/inventory_theme.tres" id="3_theme"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_panel_outer.tres" id="4_outer"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_panel_inner.tres" id="5_inner"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_close.tres" id="6_close"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_search.tres" id="7_search"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_tab.tres" id="8_tab"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_tab_active.tres" id="9_tab_on"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_esc_key.tres" id="10_esc"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_slot.tres" id="11_slot"]
+[ext_resource type="Texture2D" uid="uid://dwvgi7s4vm7lq" path="res://assets/player/player_idle.png" id="12_player"]
+[ext_resource type="Texture2D" path="res://assets/ui/bag_icon.png" id="13_bag"]
+[ext_resource type="Texture2D" path="res://assets/ui/search_icon.png" id="14_search"]
+[ext_resource type="Texture2D" path="res://assets/ui/trash_icon.png" id="15_trash"]
+[ext_resource type="Texture2D" path="res://assets/ui/slot_helm.png" id="16_helm"]
+[ext_resource type="Texture2D" path="res://assets/ui/slot_chest.png" id="17_chest"]
+[ext_resource type="Texture2D" path="res://assets/ui/slot_legs.png" id="18_legs"]
+[ext_resource type="Texture2D" path="res://assets/ui/slot_boots.png" id="19_boots"]
+[ext_resource type="Texture2D" path="res://assets/ui/slot_acc.png" id="20_acc"]
+[ext_resource type="Script" path="res://scripts/ui/inspect_card.gd" id="21_inspect"]
+
+[node name="InventoryScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_theme")
+script = ExtResource("1_xqb13")
+slot_scene = ExtResource("2_4uvq7")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.02, 0.03, 0.05, 0.72)
+
+[node name="CenterWrap" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MainPanel" type="PanelContainer" parent="CenterWrap"]
+custom_minimum_size = Vector2(1040, 624)
+layout_mode = 2
+clip_contents = true
+theme_override_styles/panel = ExtResource("4_outer")
+
+[node name="MainLayout" type="MarginContainer" parent="CenterWrap/MainPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Body" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BagIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("13_bag")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="TitleLabel" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.97, 0.99, 1)
+theme_override_font_sizes/font_size = 22
+text = "INVENTAR"
+vertical_alignment = 1
+
+[node name="HeaderSpacer" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="CloseButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+custom_minimum_size = Vector2(22, 20)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(1, 0.92, 0.92, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = ExtResource("6_close")
+theme_override_styles/hover = ExtResource("6_close")
+theme_override_styles/pressed = ExtResource("6_close")
+text = "X"
+
+[node name="Content" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="LeftColumn" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="CharacterEquipRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CharacterSection" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow"]
+custom_minimum_size = Vector2(118, 0)
+layout_mode = 2
+
+[node name="PreviewFrame" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection"]
+custom_minimum_size = Vector2(118, 168)
+layout_mode = 2
+theme_override_styles/panel = ExtResource("5_inner")
+
+[node name="CharacterPreview" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("12_player")
+stretch_mode = 5
+texture_filter = 1
+
+[node name="HeldPreview" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -22.0
+offset_top = -26.0
+offset_right = -4.0
+offset_bottom = -8.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+stretch_mode = 5
+texture_filter = 1
+
+[node name="EquipmentSlots" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="RowHead" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelHead" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = "Helm"
+vertical_alignment = 1
+
+[node name="EquipHead" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead" instance=ExtResource("2_4uvq7")]
+layout_mode = 2
+equipment_key = "head"
+
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead/EquipHead"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -9.0
+offset_top = -9.0
+offset_right = 9.0
+offset_bottom = 9.0
+mouse_filter = 2
+texture = ExtResource("16_helm")
+stretch_mode = 5
+texture_filter = 1
+modulate = Color(1, 1, 1, 0.35)
+
+[node name="RowChest" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelChest" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = "Brust"
+vertical_alignment = 1
+
+[node name="EquipChest" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest" instance=ExtResource("2_4uvq7")]
+layout_mode = 2
+equipment_key = "chest"
+
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest/EquipChest"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -9.0
+offset_top = -9.0
+offset_right = 9.0
+offset_bottom = 9.0
+mouse_filter = 2
+texture = ExtResource("17_chest")
+stretch_mode = 5
+texture_filter = 1
+modulate = Color(1, 1, 1, 0.35)
+
+[node name="RowLegs" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelLegs" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = "Beine"
+vertical_alignment = 1
+
+[node name="EquipLegs" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs" instance=ExtResource("2_4uvq7")]
+layout_mode = 2
+equipment_key = "legs"
+
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs/EquipLegs"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -9.0
+offset_top = -9.0
+offset_right = 9.0
+offset_bottom = 9.0
+mouse_filter = 2
+texture = ExtResource("18_legs")
+stretch_mode = 5
+texture_filter = 1
+modulate = Color(1, 1, 1, 0.35)
+
+[node name="RowBoots" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+layout_mode = 2
+theme_override_constants/separation = 6
+modulate = Color(1, 1, 1, 0.45)
+tooltip_text = "Stiefel sind noch nicht ausrüstbar."
+
+[node name="LabelBoots" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = "Stiefel"
+vertical_alignment = 1
+
+[node name="BootsPlaceholder" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = ExtResource("11_slot")
+
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots/BootsPlaceholder"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -9.0
+offset_top = -9.0
+offset_right = 9.0
+offset_bottom = 9.0
+mouse_filter = 2
+texture = ExtResource("19_boots")
+stretch_mode = 5
+texture_filter = 1
+modulate = Color(1, 1, 1, 0.45)
+
+[node name="RowAcc1" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelAcc1" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = "Acc. 1"
+vertical_alignment = 1
+
+[node name="EquipAcc1" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1" instance=ExtResource("2_4uvq7")]
+layout_mode = 2
+equipment_key = "accessory_1"
+
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1/EquipAcc1"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -9.0
+offset_top = -9.0
+offset_right = 9.0
+offset_bottom = 9.0
+mouse_filter = 2
+texture = ExtResource("20_acc")
+stretch_mode = 5
+texture_filter = 1
+modulate = Color(1, 1, 1, 0.35)
+
+[node name="RowAcc2" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LabelAcc2" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
+theme_override_font_sizes/font_size = 11
+text = "Acc. 2"
+vertical_alignment = 1
+
+[node name="EquipAcc2" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2" instance=ExtResource("2_4uvq7")]
+layout_mode = 2
+equipment_key = "accessory_2"
+
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2/EquipAcc2"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -9.0
+offset_top = -9.0
+offset_right = 9.0
+offset_bottom = 9.0
+mouse_filter = 2
+texture = ExtResource("20_acc")
+stretch_mode = 5
+texture_filter = 1
+modulate = Color(1, 1, 1, 0.35)
+
+[node name="InspectPanel" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn"]
+custom_minimum_size = Vector2(300, 240)
+layout_mode = 2
+size_flags_vertical = 3
+clip_contents = true
+theme_override_styles/panel = ExtResource("5_inner")
+script = ExtResource("21_inspect")
+
+[node name="InspectMargin" type="MarginContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="InspectOuter" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="InspectName" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.97, 0.99, 1)
+theme_override_font_sizes/font_size = 14
+text = "Kein Gegenstand ausgewählt"
+autowrap_mode = 3
+
+[node name="InspectSubtitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.68, 0.74, 1)
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
+
+[node name="InspectCategory" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 3
+
+[node name="InspectScroll" type="ScrollContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+[node name="InspectScrollPad" type="MarginContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_right = 10
+
+[node name="InspectLayout" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="InspectIconFrame" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = ExtResource("11_slot")
+
+[node name="InspectIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectIconFrame"]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="InspectDescription" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.8, 1)
+theme_override_font_sizes/font_size = 11
+text = "Kein Gegenstand ausgewählt"
+autowrap_mode = 3
+
+[node name="InspectDescSep" type="HSeparator" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+modulate = Color(0.35, 0.42, 0.5, 0.85)
+layout_mode = 2
+
+[node name="InspectStatsBox" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="InspectValueSep" type="HSeparator" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+visible = false
+modulate = Color(0.35, 0.42, 0.5, 0.85)
+layout_mode = 2
+
+[node name="InspectValueRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="InspectValueIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow"]
+custom_minimum_size = Vector2(8, 8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+stretch_mode = 5
+texture_filter = 1
+
+[node name="InspectValueTitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.76, 0.32, 1)
+theme_override_font_sizes/font_size = 11
+text = "Wert"
+
+[node name="InspectValueAmount" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.82, 0.28, 1)
+theme_override_font_sizes/font_size = 11
+text = "0"
+horizontal_alignment = 2
+
+[node name="InventorySection" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="InventoryToolbar" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SearchLineEdit" type="LineEdit" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(168, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("7_search")
+theme_override_styles/focus = ExtResource("7_search")
+placeholder_text = "Suchen ..."
+tooltip_text = "Suche"
+right_icon = ExtResource("14_search")
+caret_blink = true
+
+[node name="TabAlle" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(48, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "Alle"
+
+[node name="TabEquip" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(84, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "Ausrüstung"
+
+[node name="TabConsume" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(96, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "Verbrauchbar"
+
+[node name="TabMats" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(84, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "Materialien"
+
+[node name="TabOther" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(72, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "Sonstiges"
+
+[node name="FilterButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(56, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "Filter"
+tooltip_text = "Detailfilter"
+flat = false
+
+[node name="SortButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
+custom_minimum_size = Vector2(48, 22)
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "Std"
+tooltip_text = "Sortierung"
+flat = false
+
+[node name="InventoryGrid" type="GridContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 5
+theme_override_constants/v_separation = 5
+columns = 10
+
+[node name="HotbarTitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+text = "Hotbar"
+
+[node name="HotbarGrid" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FooterRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EscCloseButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+custom_minimum_size = Vector2(40, 20)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("10_esc")
+theme_override_styles/hover = ExtResource("10_esc")
+theme_override_styles/pressed = ExtResource("10_esc")
+text = "ESC"
+
+[node name="EscCloseLabel" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.82, 0.86, 1)
+theme_override_font_sizes/font_size = 11
+text = "Schließen"
+vertical_alignment = 1
+
+[node name="FooterSpacer" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="DropButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+custom_minimum_size = Vector2(210, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/hover = ExtResource("9_tab_on")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+text = "  Gegenstand fallen lassen"
+icon = ExtResource("15_trash")
+
+[node name="HoverTooltip" type="PanelContainer" parent="."]
+visible = false
+z_index = 40
+z_as_relative = false
+layout_mode = 0
+mouse_filter = 2
+theme_override_styles/panel = ExtResource("5_inner")
+
+[node name="HoverMargin" type="MarginContainer" parent="HoverTooltip"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 4
+
+[node name="HoverLayout" type="HBoxContainer" parent="HoverTooltip/HoverMargin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="HoverIcon" type="TextureRect" parent="HoverTooltip/HoverMargin/HoverLayout"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+mouse_filter = 2
+stretch_mode = 5
+texture_filter = 1
+
+[node name="HoverLabel" type="Label" parent="HoverTooltip/HoverMargin/HoverLayout"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2

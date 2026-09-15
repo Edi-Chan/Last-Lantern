@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="OreData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ore_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+ore_id = &"copper"
+display_name = "Kupfer"
+tier = 1
+block_id = 9
+drop_item_id = 11
+required_tool = 1
+required_tool_power = 10
+spec_min_depth = 0
+spec_max_depth = 150
+min_depth_ratio = 0.0
+max_depth_ratio = 0.125
+vein_min_size = 5
+vein_max_size = 12
+drop_min = 2
+drop_max = 4
+xp_reward = 2
+rarity_weight = 1.4
+metal_category = 1
+hardness = 1.8
+map_color = Color(0.7764705882352941, 0.4235294117647059, 0.16470588235294117, 1)
+special_spawn = false

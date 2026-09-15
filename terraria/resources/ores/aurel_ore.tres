@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="OreData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ore_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+ore_id = &"aurel"
+display_name = "Aurel"
+tier = 4
+block_id = 12
+drop_item_id = 14
+required_tool = 1
+required_tool_power = 30
+spec_min_depth = 250
+spec_max_depth = 500
+min_depth_ratio = 0.208
+max_depth_ratio = 0.417
+vein_min_size = 3
+vein_max_size = 7
+drop_min = 1
+drop_max = 3
+xp_reward = 8
+rarity_weight = 0.4
+metal_category = 1
+hardness = 3.0
+map_color = Color(0.9098039215686274, 0.7294117647058823, 0.18823529411764706, 1)
+special_spawn = false

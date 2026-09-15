@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/tool_data.gd" id="2_tool"]
+[ext_resource type="Texture2D" path="res://assets/items/tools/dismantling/simple_wrench.png" id="3_icon"]
+
+[sub_resource type="Resource" id="ToolData_1"]
+script = ExtResource("2_tool")
+tool_category = 4
+base_damage = 6
+base_tool_power = 8
+base_use_speed = 0.8
+base_max_durability = 100
+base_range = 2.0
+special = "Demontieren"
+
+[resource]
+script = ExtResource("1_script")
+id = 25
+display_name = "Einfacher Schraubenschlüssel"
+description = "Vorbereitet zum Demontieren von Maschinen."
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 1
+category = 10
+equipment_slot = 0
+tool_kind = 4
+tool_data = SubResource("ToolData_1")
+placeable_block_id = -1
+held_scale = 1.0
+held_rotation_degrees = 20.0
+held_flip_h = false
+held_flip_v = false
+damage = 6
+mining_speed = 0.8
+attack_cooldown = 0.35
+knockback = 100.0

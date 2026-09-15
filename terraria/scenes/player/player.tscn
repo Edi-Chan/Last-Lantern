@@ -1,0 +1,220 @@
+[gd_scene format=3 uid="uid://bvhr8a3hur358"]
+
+[ext_resource type="Script" uid="uid://c76abs143guhl" path="res://scripts/player/player.gd" id="1_player"]
+[ext_resource type="SpriteFrames" path="res://resources/player/player_frames.tres" id="2_gmlin"]
+[ext_resource type="Script" uid="uid://b041sqws5px2m" path="res://scripts/player/held_item.gd" id="3_5gtgg"]
+[ext_resource type="Script" uid="uid://bql5ht2tcgy23" path="res://scripts/player/player_camera.gd" id="3_lgqa7"]
+[ext_resource type="Script" uid="uid://cuivigo5ubk06" path="res://scripts/inventory/inventory.gd" id="4_qek5x"]
+[ext_resource type="Resource" path="res://resources/items/item_catalog.tres" id="5_5gtgg"]
+[ext_resource type="Script" uid="uid://bv26yjlexs1or" path="res://scripts/player/tool_hitbox.gd" id="5_h17s1"]
+[ext_resource type="Script" uid="uid://bnscv6l0kbti7" path="res://scripts/player/player_interaction.gd" id="6_h17s1"]
+[ext_resource type="Resource" path="res://resources/blocks/block_catalog.tres" id="7_je7p5"]
+[ext_resource type="PackedScene" uid="uid://bnbthd7adhe53" path="res://scenes/items/item_drop.tscn" id="8_fm80t"]
+[ext_resource type="Script" uid="uid://k44jfgsh54og" path="res://scripts/player/player_stats.gd" id="9_8ydkj"]
+[ext_resource type="Script" uid="uid://cmtv30rely8kb" path="res://scripts/audio/player_audio.gd" id="12_8ydkj"]
+[ext_resource type="AudioStream" uid="uid://dwkfygnrucn1w" path="res://audio/sfx/footstep.wav" id="13_lgqa7"]
+[ext_resource type="AudioStream" uid="uid://cc18k5wscajno" path="res://audio/sfx/jump.wav" id="14_8ydkj"]
+[ext_resource type="AudioStream" uid="uid://dtrw7lsvmsdqp" path="res://audio/sfx/swing.wav" id="15_3j4b4"]
+[ext_resource type="AudioStream" uid="uid://capy8ko52dfw7" path="res://audio/sfx/mine_hit.wav" id="16_yj68g"]
+[ext_resource type="AudioStream" uid="uid://c8mw5audr20s4" path="res://audio/sfx/block_break.wav" id="17_ioxgp"]
+[ext_resource type="AudioStream" uid="uid://nbg8k4s0l5iv" path="res://audio/sfx/block_place.wav" id="18_cnsyf"]
+[ext_resource type="AudioStream" uid="uid://b4fovfxcl0h1o" path="res://audio/sfx/pickup.wav" id="19_007i1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_h17s1"]
+size = Vector2(20, 42)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_je7p5"]
+size = Vector2(24, 26)
+
+[sub_resource type="Animation" id="Animation_gx1jg"]
+length = 0.18
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm/HeldItemSprite:modulate:a")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.18),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [1.0, 1.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm:position")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.07, 0.18),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(4, 3), Vector2(0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_ugbui"]
+length = 0.3
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot:modulate:a")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.3),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [1.0, 1.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.18, 0.3),
+"transitions": PackedFloat32Array(0.5, 1.8, 1, 0.7),
+"update": 0,
+"values": [-0.95, 1.05, 0.75, -0.12]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_fm80t"]
+_data = {
+&"block_place": SubResource("Animation_gx1jg"),
+&"tool_swing": SubResource("Animation_ugbui")
+}
+
+[node name="Player" type="CharacterBody2D" unique_id=1843147423]
+z_index = 20
+collision_layer = 2
+floor_snap_length = 8.0
+script = ExtResource("1_player")
+
+[node name="Visuals" type="Node2D" parent="." unique_id=1701954950]
+
+[node name="BaseSprite" type="AnimatedSprite2D" parent="Visuals" unique_id=171951721]
+position = Vector2(0, -28)
+scale = Vector2(1, 1)
+sprite_frames = ExtResource("2_gmlin")
+animation = &"idle"
+centered = true
+offset = Vector2(0, 0)
+
+[node name="LegArmorSprite" type="AnimatedSprite2D" parent="Visuals" unique_id=164796938]
+visible = false
+z_index = 1
+position = Vector2(0, -28)
+scale = Vector2(1, 1)
+centered = true
+offset = Vector2(0, 0)
+
+[node name="ChestArmorSprite" type="AnimatedSprite2D" parent="Visuals" unique_id=540615530]
+visible = false
+z_index = 2
+position = Vector2(0, -28)
+scale = Vector2(1, 1)
+centered = true
+offset = Vector2(0, 0)
+
+[node name="HelmetSprite" type="AnimatedSprite2D" parent="Visuals" unique_id=56266034]
+visible = false
+z_index = 3
+position = Vector2(0, -28)
+scale = Vector2(1, 1)
+centered = true
+offset = Vector2(0, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=686738631]
+position = Vector2(0, -21)
+shape = SubResource("RectangleShape2D_h17s1")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1782316340]
+position = Vector2(0, -28)
+zoom = Vector2(1, 1)
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
+script = ExtResource("3_lgqa7")
+
+[node name="ToolPivot" type="Node2D" parent="." unique_id=726363172]
+z_index = 4
+position = Vector2(10, -24)
+script = ExtResource("3_5gtgg")
+
+[node name="ToolArm" type="Node2D" parent="ToolPivot" unique_id=1178324501]
+
+[node name="HeldItemSprite" type="Sprite2D" parent="ToolPivot/ToolArm" unique_id=1923084845]
+visible = false
+z_index = 2
+position = Vector2(1, 0)
+centered = true
+texture_filter = 0
+
+[node name="ToolHitbox" type="Area2D" parent="ToolPivot/ToolArm" unique_id=1842726140]
+position = Vector2(14, 0)
+collision_layer = 16
+collision_mask = 4
+monitoring = false
+monitorable = false
+script = ExtResource("5_h17s1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ToolPivot/ToolArm/ToolHitbox" unique_id=156744803]
+shape = SubResource("RectangleShape2D_je7p5")
+
+[node name="InteractionPoint" type="Marker2D" parent="." unique_id=1671906842]
+position = Vector2(9, -32)
+
+[node name="Inventory" type="Node" parent="." unique_id=824844108]
+script = ExtResource("4_qek5x")
+item_catalog = ExtResource("5_5gtgg")
+
+[node name="Stats" type="Node" parent="." unique_id=939677051]
+script = ExtResource("9_8ydkj")
+
+[node name="Interaction" type="Node" parent="." unique_id=2129851771]
+script = ExtResource("6_h17s1")
+block_catalog = ExtResource("7_je7p5")
+item_catalog = ExtResource("5_5gtgg")
+item_drop_scene = ExtResource("8_fm80t")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=323382196]
+libraries/ = SubResource("AnimationLibrary_fm80t")
+
+[node name="Audio" type="Node" parent="." unique_id=972854825]
+script = ExtResource("12_8ydkj")
+
+[node name="Footstep" type="AudioStreamPlayer" parent="Audio" unique_id=986747583]
+stream = ExtResource("13_lgqa7")
+volume_db = -12.0
+bus = &"SFX"
+
+[node name="Jump" type="AudioStreamPlayer" parent="Audio" unique_id=1054768309]
+stream = ExtResource("14_8ydkj")
+volume_db = -10.0
+bus = &"SFX"
+
+[node name="Swing" type="AudioStreamPlayer" parent="Audio" unique_id=1147924165]
+stream = ExtResource("15_3j4b4")
+volume_db = -11.0
+bus = &"SFX"
+
+[node name="MineHit" type="AudioStreamPlayer" parent="Audio" unique_id=50290274]
+stream = ExtResource("16_yj68g")
+volume_db = -9.0
+bus = &"SFX"
+
+[node name="BlockBreak" type="AudioStreamPlayer" parent="Audio" unique_id=509562027]
+stream = ExtResource("17_ioxgp")
+volume_db = -7.0
+bus = &"SFX"
+
+[node name="BlockPlace" type="AudioStreamPlayer" parent="Audio" unique_id=782711780]
+stream = ExtResource("18_cnsyf")
+volume_db = -8.0
+bus = &"SFX"
+
+[node name="Pickup" type="AudioStreamPlayer" parent="Audio" unique_id=2091867663]
+stream = ExtResource("19_007i1")
+volume_db = -12.0
+bus = &"SFX"

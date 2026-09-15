@@ -1,0 +1,174 @@
+[gd_scene format=3 uid="uid://q5ww1f6xccao"]
+
+[ext_resource type="TileSet" uid="uid://urdybwqip4wp" path="res://resources/blocks/terrain_tileset.tres" id="1_dphjl"]
+[ext_resource type="Script" uid="uid://c1lgjlnwtp2i" path="res://scripts/world/world_generator.gd" id="1_worldgen"]
+[ext_resource type="Resource" path="res://resources/blocks/block_catalog.tres" id="2_catalog"]
+[ext_resource type="Resource" path="res://resources/ores/ore_catalog.tres" id="2_orecat"]
+[ext_resource type="PackedScene" uid="uid://b6elyf6jgq50" path="res://scenes/test/combat_dummy.tscn" id="2_sl2e5"]
+[ext_resource type="Texture2D" uid="uid://3maxqyvcolv2" path="res://assets/world/background/small_cloud.png" id="3_cloud_s"]
+[ext_resource type="Texture2D" uid="uid://qdqkcucx1qsa" path="res://assets/world/background/medium_cloud.png" id="4_cloud_m"]
+[ext_resource type="Texture2D" uid="uid://bkbh5y2dmr5cx" path="res://assets/world/background/large_cloud.png" id="5_cloud_l"]
+[ext_resource type="Script" uid="uid://yuf8l765kufr" path="res://scripts/world/underground_backdrop.gd" id="6_backdrop"]
+[ext_resource type="Script" uid="uid://bmcwgsbdxq6cl" path="res://scripts/world/tree_system.gd" id="7_trees"]
+[ext_resource type="Resource" path="res://resources/trees/oak.tres" id="8_oak"]
+[ext_resource type="Resource" path="res://resources/trees/birch.tres" id="9_birch"]
+[ext_resource type="Resource" path="res://resources/trees/pine.tres" id="10_pine"]
+[ext_resource type="Resource" path="res://resources/items/item_catalog.tres" id="11_items"]
+[ext_resource type="PackedScene" uid="uid://bnbthd7adhe53" path="res://scenes/items/item_drop.tscn" id="12_drop"]
+[ext_resource type="PackedScene" path="res://scenes/world/falling_tree.tscn" id="13_falling"]
+[ext_resource type="AudioStream" uid="uid://debdvp1gutda4" path="res://audio/sfx/wood_hit.wav" id="14_woodhit"]
+[ext_resource type="AudioStream" uid="uid://bfcc5clej3n73" path="res://audio/sfx/tree_fall.wav" id="15_treefall"]
+[ext_resource type="Script" uid="uid://quvxfdu4m3ng" path="res://scripts/world/cave_atmosphere.gd" id="16_cave"]
+[ext_resource type="Script" uid="uid://d21w5meq8b3n7" path="res://scripts/world/visibility_overlay.gd" id="20_vis"]
+[node name="World" type="Node2D" unique_id=762429514]
+script = ExtResource("1_worldgen")
+block_catalog = ExtResource("2_catalog")
+ore_catalog = ExtResource("2_orecat")
+
+[node name="Background" type="Node2D" parent="." unique_id=1573718673]
+script = ExtResource("16_cave")
+
+[node name="Sky" type="ColorRect" parent="Background" unique_id=1336321024]
+z_index = -12
+offset_left = -4000.0
+offset_top = -4000.0
+offset_right = 18000.0
+offset_bottom = 6000.0
+mouse_filter = 2
+color = Color(0.49, 0.78, 0.91, 1)
+
+[node name="FarClouds" type="Parallax2D" parent="Background" unique_id=1103001001]
+modulate = Color(1, 1, 1, 0.65)
+z_index = -11
+scroll_scale = Vector2(0.12, 1)
+repeat_size = Vector2(1600, 0)
+autoscroll = Vector2(5, 0)
+repeat_times = 12
+
+[node name="Cloud1" type="Sprite2D" parent="Background/FarClouds" unique_id=1103001002]
+position = Vector2(120, 620)
+scale = Vector2(2, 2)
+texture = ExtResource("4_cloud_m")
+
+[node name="Cloud2" type="Sprite2D" parent="Background/FarClouds" unique_id=1103001003]
+position = Vector2(520, 740)
+scale = Vector2(2, 2)
+texture = ExtResource("3_cloud_s")
+
+[node name="Cloud3" type="Sprite2D" parent="Background/FarClouds" unique_id=1103001004]
+position = Vector2(880, 560)
+scale = Vector2(2, 2)
+texture = ExtResource("5_cloud_l")
+
+[node name="Cloud4" type="Sprite2D" parent="Background/FarClouds" unique_id=1103001005]
+position = Vector2(1240, 700)
+scale = Vector2(2, 2)
+texture = ExtResource("4_cloud_m")
+
+[node name="Cloud5" type="Sprite2D" parent="Background/FarClouds" unique_id=1103001006]
+position = Vector2(1460, 640)
+scale = Vector2(2, 2)
+texture = ExtResource("3_cloud_s")
+
+[node name="NearClouds" type="Parallax2D" parent="Background" unique_id=1103002001]
+z_index = -10
+scroll_scale = Vector2(0.3, 1)
+repeat_size = Vector2(1900, 0)
+autoscroll = Vector2(12, 0)
+repeat_times = 12
+
+[node name="Cloud1" type="Sprite2D" parent="Background/NearClouds" unique_id=1103002002]
+position = Vector2(260, 860)
+scale = Vector2(3, 3)
+texture = ExtResource("5_cloud_l")
+
+[node name="Cloud2" type="Sprite2D" parent="Background/NearClouds" unique_id=1103002003]
+position = Vector2(760, 780)
+scale = Vector2(3, 3)
+texture = ExtResource("3_cloud_s")
+
+[node name="Cloud3" type="Sprite2D" parent="Background/NearClouds" unique_id=1103002004]
+position = Vector2(1180, 920)
+scale = Vector2(3, 3)
+texture = ExtResource("4_cloud_m")
+
+[node name="Cloud4" type="Sprite2D" parent="Background/NearClouds" unique_id=1103002005]
+position = Vector2(1620, 800)
+scale = Vector2(3, 3)
+texture = ExtResource("5_cloud_l")
+
+[node name="UndergroundBackdrop" type="Node2D" parent="Background" unique_id=1336321025]
+z_index = -9
+script = ExtResource("6_backdrop")
+
+[node name="DeepCaveBackground" type="Node2D" parent="Background" unique_id=1944571935]
+z_index = -9
+
+[node name="CaveBackground" type="Node2D" parent="Background" unique_id=967972666]
+z_index = -9
+
+[node name="Terrain" type="Node2D" parent="." unique_id=1595946301]
+
+[node name="TileMapLayer" type="TileMapLayer" parent="Terrain" unique_id=374040131 groups=["terrain"]]
+tile_set = ExtResource("1_dphjl")
+
+[node name="TreeSystem" type="Node2D" parent="." unique_id=2132218927]
+script = ExtResource("7_trees")
+oak = ExtResource("8_oak")
+birch = ExtResource("9_birch")
+pine = ExtResource("10_pine")
+block_catalog = ExtResource("2_catalog")
+item_catalog = ExtResource("11_items")
+item_drop_scene = ExtResource("12_drop")
+falling_tree_scene = ExtResource("13_falling")
+
+[node name="WoodHit" type="AudioStreamPlayer2D" parent="TreeSystem" unique_id=1515055656]
+stream = ExtResource("14_woodhit")
+volume_db = -4.0
+
+[node name="TreeFall" type="AudioStreamPlayer2D" parent="TreeSystem" unique_id=1273068639]
+stream = ExtResource("15_treefall")
+volume_db = -6.0
+
+[node name="Entities" type="Node2D" parent="." unique_id=921514440]
+
+[node name="ItemDrops" type="Node2D" parent="." unique_id=874844409 groups=["item_drops"]]
+
+[node name="Enemies" type="Node2D" parent="." unique_id=368881272]
+
+[node name="CombatDummy" parent="Enemies" unique_id=1473583841 instance=ExtResource("2_sl2e5")]
+position = Vector2(176, 128)
+
+[node name="BlockHighlight" type="Node2D" parent="." unique_id=799758890 groups=["block_highlight"]]
+visible = false
+z_index = 10
+
+[node name="Frame" type="ColorRect" parent="BlockHighlight" unique_id=199309260]
+offset_right = 16.0
+offset_bottom = 16.0
+mouse_filter = 2
+color = Color(0.95, 0.95, 0.4, 0.45)
+
+[node name="Progress" type="ColorRect" parent="BlockHighlight" unique_id=2056309865]
+visible = false
+offset_top = 13.0
+offset_bottom = 16.0
+mouse_filter = 2
+color = Color(1, 0.75, 0.2, 0.95)
+
+[node name="WeakHint" type="Label" parent="BlockHighlight"]
+visible = false
+offset_left = -28.0
+offset_top = -14.0
+offset_right = 44.0
+offset_bottom = -2.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.4, 1)
+theme_override_font_sizes/font_size = 8
+text = "Spitzhacke zu schwach"
+horizontal_alignment = 1
+
+[node name="VisibilityOverlay" type="Sprite2D" parent="." unique_id=882381816]
+z_index = 6
+centered = false
+script = ExtResource("20_vis")

@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/tool_data.gd" id="2_tool"]
+[ext_resource type="Texture2D" path="res://assets/items/tools/mining/pickaxes/aurel_pickaxe.png" id="3_icon"]
+
+[sub_resource type="Resource" id="ToolData_1"]
+script = ExtResource("2_tool")
+tool_category = 1
+base_damage = 12
+base_tool_power = 40
+base_use_speed = 1.15
+base_max_durability = 180
+base_range = 2.5
+special = "Aurel/Kobalt"
+pickaxe_tier = 5
+
+[resource]
+script = ExtResource("1_script")
+id = 43
+display_name = "Aurelspitzhacke"
+description = "Bergbau-Spitzhacke. Spitzhacken-Power 40. Baut bis Kobalt."
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 1
+category = 10
+tool_kind = 1
+tool_data = SubResource("ToolData_1")
+placeable_block_id = -1
+held_scale = 1.0
+held_rotation_degrees = 45.0
+held_flip_h = false
+held_flip_v = false
+damage = 12
+mining_speed = 1.15
+attack_cooldown = 0.35
+knockback = 100.0

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="OreCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ore_catalog.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/ores/copper_ore.tres" id="2_copper"]
+[ext_resource type="Resource" path="res://resources/ores/tin_ore.tres" id="3_tin"]
+[ext_resource type="Resource" path="res://resources/ores/ferrite_ore.tres" id="4_ferrite"]
+[ext_resource type="Resource" path="res://resources/ores/aurel_ore.tres" id="5_aurel"]
+[ext_resource type="Resource" path="res://resources/ores/cobalt_ore.tres" id="6_cobalt"]
+[ext_resource type="Resource" path="res://resources/ores/veyrite_ore.tres" id="7_veyrite"]
+[ext_resource type="Resource" path="res://resources/ores/cryonite_ore.tres" id="8_cryonite"]
+[ext_resource type="Resource" path="res://resources/ores/ignitium_ore.tres" id="9_ignitium"]
+[ext_resource type="Resource" path="res://resources/ores/voidium_ore.tres" id="10_voidium"]
+[ext_resource type="Resource" path="res://resources/ores/astralith_ore.tres" id="11_astralith"]
+
+[resource]
+script = ExtResource("1_script")
+ores = [ExtResource("2_copper"), ExtResource("3_tin"), ExtResource("4_ferrite"), ExtResource("5_aurel"), ExtResource("6_cobalt"), ExtResource("7_veyrite"), ExtResource("8_cryonite"), ExtResource("9_ignitium"), ExtResource("10_voidium"), ExtResource("11_astralith")]
