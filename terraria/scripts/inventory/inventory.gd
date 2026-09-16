@@ -15,6 +15,10 @@ const TEST_HELMET_ID := 4
 const TEST_CHEST_ID := 5
 const TEST_LEGS_ID := 21
 const START_STONE_ID := 2
+const DEV_WOOD_ID := 9
+const DEV_WOOD_AMOUNT := 100
+const DEV_SUPPORT_BEAM_ID := 60
+const DEV_SUPPORT_BEAM_AMOUNT := 20
 const START_TOOL_IDS := [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
 ## Default-Hotbar nur fuer neues Spiel / Testcharakter. Reihenfolge entspricht der Toolbar 1-0.
 ## Sichel vor Angel, wie im bestehenden Werkzeugset vorgesehen. Scanner bleibt im Beutel.
@@ -51,6 +55,7 @@ func _ready() -> void:
 	_give_demo_tools_once()
 	_give_demo_stone_once()
 	_give_lantern_upgrade_materials_once()
+	_give_dev_structural_loadout_once()
 
 
 func _empty_slot() -> Dictionary:
@@ -408,6 +413,42 @@ func get_instance(ref: Variant) -> ItemInstanceData:
 	return ItemInstanceData.from_slot(stack)
 
 
+func find_best_hotbar_tool_for(block: BlockData, preferred_kind: int = 0) -> int:
+	if block == null:
+		return -1
+	var best_slot := -1
+	var best_kind_match := -1
+	var best_power := -1
+	var best_durability := -1
+	for i in HOTBAR_COUNT:
+		var item := get_item_in_slot(i)
+		if item == null:
+			continue
+		if int(item.tool_kind) == int(ItemData.ToolKind.NONE):
+			continue
+		var inst := get_instance(i)
+		if inst != null and inst.durability == 0:
+			continue
+		if block.evaluate_break(item, inst) != BlockData.BreakCheck.CAN_BREAK:
+			continue
+		var kind_match := 1 if preferred_kind != 0 and int(item.tool_kind) == preferred_kind else 0
+		var power := inst.effective_tool_power(item) if inst != null else item.get_base_tool_power()
+		var durability := inst.durability if inst != null else -1
+		var better := false
+		if kind_match > best_kind_match:
+			better = true
+		elif kind_match == best_kind_match and power > best_power:
+			better = true
+		elif kind_match == best_kind_match and power == best_power and durability > best_durability:
+			better = true
+		if better:
+			best_slot = i
+			best_kind_match = kind_match
+			best_power = power
+			best_durability = durability
+	return best_slot
+
+
 func find_first_empty_hotbar_slot() -> int:
 	for i in HOTBAR_COUNT:
 		if int(slots[i]["item_id"]) < 0 or int(slots[i]["amount"]) <= 0:
@@ -548,6 +589,19 @@ func _give_demo_stone_once() -> void:
 	if get_total_amount(START_STONE_ID) > 0:
 		return
 	_add_item_to_bag(START_STONE_ID, 20)
+
+
+## Kein Crafting-System vorhanden: 100 Wood + 20 Holzstuetzen, nur wenn der Bestand darunter liegt.
+func _give_dev_structural_loadout_once() -> void:
+	_ensure_total_at_least(DEV_WOOD_ID, DEV_WOOD_AMOUNT)
+	_ensure_total_at_least(DEV_SUPPORT_BEAM_ID, DEV_SUPPORT_BEAM_AMOUNT)
+
+
+func _ensure_total_at_least(item_id: int, amount: int) -> void:
+	var have := get_total_amount(item_id)
+	if have >= amount:
+		return
+	_add_item_to_bag(item_id, amount - have)
 
 
 func _give_lantern_upgrade_materials_once() -> void:

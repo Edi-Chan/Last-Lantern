@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cjto0cnv8rkjn"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/items/tool_data.gd" id="2_tool"]
-[ext_resource type="Texture2D" path="res://assets/items/tools/mining/pickaxes/cryonite_pickaxe.png" id="3_icon"]
+[ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://ch56cf1pvxsqh" path="res://scripts/items/tool_data.gd" id="2_tool"]
+[ext_resource type="Texture2D" uid="uid://b6yrj8tnxi4b8" path="res://assets/items/tools/mining/pickaxes/cryonite_pickaxe.png" id="3_icon"]
 
 [sub_resource type="Resource" id="ToolData_1"]
 script = ExtResource("2_tool")
@@ -11,7 +11,6 @@ base_damage = 15
 base_tool_power = 80
 base_use_speed = 1.22
 base_max_durability = 240
-base_range = 2.5
 special = "Cryonit/Ignitium"
 pickaxe_tier = 8
 
@@ -26,12 +25,7 @@ item_type = 1
 category = 10
 tool_kind = 1
 tool_data = SubResource("ToolData_1")
-placeable_block_id = -1
-held_scale = 1.0
+plant_id = null
 held_rotation_degrees = 45.0
-held_flip_h = false
-held_flip_v = false
 damage = 15
 mining_speed = 1.22
-attack_cooldown = 0.35
-knockback = 100.0

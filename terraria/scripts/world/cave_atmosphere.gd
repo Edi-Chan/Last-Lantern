@@ -12,6 +12,7 @@ const FADE_TIME := 0.55
 @onready var _sky: CanvasItem = $"Sky"
 @onready var _far_clouds: CanvasItem = $"FarClouds"
 @onready var _near_clouds: CanvasItem = $"NearClouds"
+@onready var _surface_sky: CanvasItem = get_node_or_null("SurfaceSky")
 @onready var _cave_layer: CanvasItem = get_node_or_null("CaveBackground")
 @onready var _deep_layer: CanvasItem = get_node_or_null("DeepCaveBackground")
 
@@ -64,6 +65,9 @@ func _apply(blend: Vector3) -> void:
 	var deep := clampf(blend.z, 0.0, 1.0)
 	if _sky != null:
 		_sky.modulate.a = lerpf(0.0, 1.0, surface)
+	if _surface_sky != null:
+		_surface_sky.modulate.a = surface
+		_surface_sky.visible = surface > 0.01
 	if _far_clouds != null:
 		_far_clouds.modulate.a = 0.65 * surface
 	if _near_clouds != null:

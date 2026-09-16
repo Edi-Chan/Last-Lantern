@@ -12,6 +12,7 @@ enum ItemType {
 	ACCESSORY,
 	MATERIAL,
 	SEED,
+	PLANT,
 }
 
 enum EquipmentSlot {
@@ -82,6 +83,8 @@ enum Rarity {
 @export var placeable_block_id: int = -1
 ## Nur fuer Samen: welche Baumart spaeter / jetzt gepflanzt wird.
 @export var tree_type: StringName = &""
+## Nur fuer Pflanzen: Verweis auf PlantData.plant_id.
+@export var plant_id: StringName = &""
 ## 1.0 heisst: das 16x16-Icon wird in der Hand 1:1 gezeichnet, ohne Subpixel.
 @export var held_scale: float = 1.0
 ## Zusatzdrehung nur fuer das Held-Item-Sprite, nicht fuer Pivot oder Hitbox.
@@ -116,6 +119,10 @@ func is_placeable() -> bool:
 
 func is_seed() -> bool:
 	return item_type == ItemType.SEED or tree_type != &""
+
+
+func is_plant() -> bool:
+	return item_type == ItemType.PLANT or plant_id != &""
 
 
 func is_tool() -> bool:
@@ -173,6 +180,8 @@ func get_kind_display_name() -> String:
 			return "Block"
 		ItemType.SEED:
 			return "Samen"
+		ItemType.PLANT:
+			return "Pflanze"
 		ItemType.TOOL:
 			return "Werkzeug"
 		_:

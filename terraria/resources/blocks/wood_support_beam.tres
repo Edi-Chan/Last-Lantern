@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 29
+display_name = "Holzstütze"
+atlas_coords = Vector2i(4, 3)
+hardness = 1.0
+drop_item_id = 60
+solid = false
+vision_occlusion = 0.15
+required_tool = 2
+required_tool_power = 1
+structural_enabled = true
+structural_role = 3
+structural_weight = 1
+support_strength = 10
+max_horizontal_support = 8
+is_foundation_material = false
+is_support_beam = true
+enemy_break_cost = 3
+structural_importance = 5

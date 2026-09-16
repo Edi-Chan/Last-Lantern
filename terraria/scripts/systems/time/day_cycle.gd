@@ -70,7 +70,8 @@ func _process(delta: float) -> void:
 func _compute_night() -> bool:
 	if settings == null:
 		return false
-	return time_of_day >= settings.night_start_time
+	var t := time_of_day
+	return t >= settings.night_start_time or t < settings.night_end_time
 
 
 func _maybe_emit_time() -> void:
@@ -91,32 +92,143 @@ func _apply_visuals() -> void:
 
 
 func _sample_light(t: float) -> Dictionary:
+	var night_start := 0.75
+	var night_end := 0.25
+	if settings != null:
+		night_start = settings.night_start_time
+		night_end = settings.night_end_time
 	var sky_day := Color(0.49, 0.78, 0.91, 1)
-	var sky_dusk := Color(0.72, 0.38, 0.28, 1)
+	var sky_dusk := Color(0.78, 0.40, 0.38, 1)
 	var sky_night := Color(0.05, 0.07, 0.14, 1)
-	var sky_dawn := Color(0.62, 0.55, 0.48, 1)
+	var sky_dawn := Color(0.60, 0.68, 0.82, 1)
 	var mod_day := Color(1, 1, 1, 1)
-	var mod_dusk := Color(0.92, 0.68, 0.55, 1)
+	var mod_dusk := Color(0.94, 0.66, 0.52, 1)
 	var mod_night := Color(0.22, 0.28, 0.48, 1)
-	var mod_dawn := Color(0.78, 0.72, 0.68, 1)
+	var mod_dawn := Color(0.82, 0.74, 0.68, 1)
 	var sky: Color
 	var modulate: Color
-	if t < 0.18:
+	if t >= night_start:
+		var u := clampf((t - night_start) / maxf(1.0 - night_start, 0.001), 0.0, 1.0)
+		sky = sky_dusk.lerp(sky_night, u)
+		modulate = mod_dusk.lerp(mod_night, u)
+	elif t < 0.18:
+		# 00:00 bleibt Nacht, nicht Morgengrauen. Frueher: t=0 war Dawn und die Laterne blitzte.
 		var u := t / 0.18
-		sky = sky_dawn.lerp(sky_day, u)
-		modulate = mod_dawn.lerp(mod_day, u)
+		sky = sky_night.lerp(sky_dawn, u * 0.12)
+		modulate = mod_night.lerp(mod_dawn, u * 0.10)
+	elif t < night_end:
+		var u := (t - 0.18) / maxf(night_end - 0.18, 0.001)
+		sky = sky_night.lerp(sky_dawn, 0.12).lerp(sky_day, u)
+		modulate = mod_night.lerp(mod_dawn, 0.10).lerp(mod_day, u)
 	elif t < 0.58:
 		sky = sky_day
 		modulate = mod_day
-	elif t < 0.75:
-		var u := (t - 0.58) / 0.17
+	else:
+		var u := (t - 0.58) / maxf(night_start - 0.58, 0.001)
 		sky = sky_day.lerp(sky_dusk, u)
 		modulate = mod_day.lerp(mod_dusk, u)
-	else:
-		var u := clampf((t - 0.75) / 0.25, 0.0, 1.0)
-		sky = sky_dusk.lerp(sky_night, u)
-		modulate = mod_dusk.lerp(mod_night, u)
 	return {"sky": sky, "modulate": modulate}
+
+
+func sun_visibility() -> float:
+	return sun_visibility_at(time_of_day)
+
+
+func moon_visibility() -> float:
+	return moon_visibility_at(time_of_day)
+
+
+func star_visibility() -> float:
+	return star_visibility_at(time_of_day)
+
+
+func sun_path() -> float:
+	return _path_in_window(time_of_day, _night_end(), _night_start())
+
+
+func moon_path() -> float:
+	return _path_in_window(time_of_day, _night_start(), _night_end() + 1.0)
+
+
+func dusk_amount() -> float:
+	var t := time_of_day
+	var night_start := _night_start()
+	if t >= 0.58 and t < night_start:
+		return clampf((t - 0.58) / maxf(night_start - 0.58, 0.001), 0.0, 1.0)
+	if t >= night_start:
+		return 1.0
+	if t < 0.18:
+		return 0.0
+	if t < _night_end():
+		return 1.0 - clampf((t - 0.18) / maxf(_night_end() - 0.18, 0.001), 0.0, 1.0)
+	return 0.0
+
+
+func sun_visibility_at(t: float) -> float:
+	var ns := _night_start()
+	var ne := _night_end()
+	if t >= ns or t < ne:
+		return 0.0
+	var fade := 0.045
+	var from_dawn := t - ne
+	var to_dusk := ns - t
+	return clampf(minf(from_dawn, to_dusk) / fade, 0.0, 1.0)
+
+
+func moon_visibility_at(t: float) -> float:
+	var ns := _night_start()
+	var ne := _night_end()
+	if t >= ns:
+		return clampf((t - ns) / 0.05, 0.0, 1.0)
+	if t < ne:
+		return clampf((ne - t) / 0.05, 0.0, 1.0)
+	return 0.0
+
+
+func star_visibility_at(t: float) -> float:
+	var ns := _night_start()
+	var ne := _night_end()
+	if t >= 0.62:
+		return clampf((t - 0.62) / maxf(ns + 0.04 - 0.62, 0.001), 0.0, 1.0)
+	if t < 0.16:
+		return 1.0
+	if t < ne:
+		return 1.0 - clampf((t - 0.16) / maxf(ne - 0.16, 0.001), 0.0, 1.0)
+	return 0.0
+
+
+func _night_start() -> float:
+	if settings == null:
+		return 0.75
+	return settings.night_start_time
+
+
+func _night_end() -> float:
+	if settings == null:
+		return 0.25
+	return settings.night_end_time
+
+
+func _window_alpha(t: float, start: float, end: float, fade: float) -> float:
+	if end <= start:
+		end += 1.0
+	var x := t
+	if x < start:
+		x += 1.0
+	if x < start or x > end:
+		return 0.0
+	var into := x - start
+	var out := end - x
+	return clampf(minf(into, out) / maxf(fade, 0.001), 0.0, 1.0)
+
+
+func _path_in_window(t: float, start: float, end: float) -> float:
+	if end <= start:
+		end += 1.0
+	var x := t
+	if x < start:
+		x += 1.0
+	return clampf((x - start) / maxf(end - start, 0.001), 0.0, 1.0)
 
 
 func clock_minutes() -> int:

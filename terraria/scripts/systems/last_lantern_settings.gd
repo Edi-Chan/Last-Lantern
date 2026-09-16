@@ -11,6 +11,8 @@ extends Resource
 @export var time_scale: float = 1.0
 ## 0.0 = 00:00, 0.5 = 12:00, 0.75 = 18:00.
 @export var night_start_time: float = 0.75
+## Nacht endet hier (0.25 = 06:00). 00:00 bleibt Nacht.
+@export var night_end_time: float = 0.25
 
 @export_group("Nebel")
 @export var fog_interval_days: int = 7

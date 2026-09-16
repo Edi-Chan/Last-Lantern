@@ -27,6 +27,10 @@ var _player_in_range: bool = false
 
 var _base_energy: float = 1.15
 var _base_texture_scale: float = 4.0
+var _base_glow_scale: Vector2 = Vector2(0.38, 0.38)
+var _foundation_height_px: float = 16.0
+var _stone_tile_image: Image
+var _altar_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -45,6 +49,7 @@ func _ready() -> void:
 	if _hint != null:
 		_hint.visible = false
 	level = start_level
+	_ensure_foundation()
 	apply_level(level, false)
 	set_lantern_active(is_lantern_active)
 	call_deferred("place_near_spawn")
@@ -192,25 +197,34 @@ func _apply_visual(data: LanternLevelData) -> void:
 	if _base_sprite == null:
 		return
 	_base_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_base_sprite.light_mask = 0
 	if data.texture != null:
-		_base_sprite.texture = _texture_with_alpha(data.texture)
-		var width := float(data.texture.get_width())
-		var scale_v := data.sprite_width_px / maxf(width, 1.0)
-		_base_sprite.scale = Vector2(scale_v, scale_v)
+		var fitted := _make_altar_texture(data.texture, data.sprite_width_px)
+		_base_sprite.texture = fitted
+		_base_sprite.scale = Vector2.ONE
 		_base_sprite.centered = true
-		var height := float(data.texture.get_height()) * scale_v
+		_base_sprite.offset = Vector2.ZERO
+		var height := float(fitted.get_height())
+		var width := float(fitted.get_width())
 		_base_sprite.position = Vector2(0.0, -height * 0.5)
+		var shrine_h := maxf(height - _foundation_height_px, height * 0.6)
+		var glow_y := -_foundation_height_px - shrine_h * 0.58
+		_base_glow_scale = Vector2(0.20 + float(level) * 0.03, 0.20 + float(level) * 0.03)
 		if _glow_sprite != null:
-			_glow_sprite.position = Vector2(0.0, -height * 0.62)
-			_glow_sprite.scale = Vector2(1.15 + float(level) * 0.28, 1.15 + float(level) * 0.28)
+			_glow_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			_glow_sprite.position = Vector2(0.0, glow_y)
+			_glow_sprite.scale = _base_glow_scale
 		if _beam_sprite != null:
-			_beam_sprite.position = Vector2(0.0, -height * 0.95)
-			_beam_sprite.scale = Vector2(0.55 + float(level) * 0.12, 1.15 + float(level) * 0.22)
+			_beam_sprite.visible = false
+			_beam_sprite.modulate.a = 0.0
+			_beam_sprite.position = Vector2(0.0, -height + 8.0)
 		if _hint != null:
 			_hint.position = Vector2(-48.0, -height - 12.0)
 		if _light != null:
-			_light.position = Vector2(0.0, -height * 0.62)
-	_base_sprite.offset = Vector2.ZERO
+			_light.position = Vector2(0.0, glow_y)
+		_update_foundation_collision(width)
+	else:
+		_base_sprite.offset = Vector2.ZERO
 
 
 func _apply_light(data: LanternLevelData) -> void:
@@ -225,23 +239,193 @@ func _apply_light(data: LanternLevelData) -> void:
 	_light.shadow_enabled = false
 
 
-func _texture_with_alpha(tex: Texture2D) -> Texture2D:
+func _make_altar_texture(tex: Texture2D, width_px: float) -> Texture2D:
 	if tex == null:
 		return null
-	var image := Image.new()
-	var loaded := false
-	if not tex.resource_path.is_empty():
-		loaded = image.load(tex.resource_path) == OK
-	if not loaded:
-		image = tex.get_image()
+	var key := "%s:%.0f" % [tex.resource_path, width_px]
+	if _altar_cache.has(key):
+		return _altar_cache[key]
+	var image := _load_texture_image(tex)
 	if image == null:
 		return tex
 	if image.get_format() != Image.FORMAT_RGBA8:
 		image.convert(Image.FORMAT_RGBA8)
+	var max_dim := 256
+	var iw := image.get_width()
+	var ih := image.get_height()
+	if maxi(iw, ih) > max_dim:
+		var s := float(max_dim) / float(maxi(iw, ih))
+		image.resize(maxi(8, int(round(float(iw) * s))), maxi(8, int(round(float(ih) * s))), Image.INTERPOLATE_LANCZOS)
+	_remove_backdrop(image)
 	var used := image.get_used_rect()
-	if used.size.x >= 8 and used.size.y >= 8 and used.size != image.get_size():
+	if used.size.x >= 4 and used.size.y >= 4:
 		image = image.get_region(used)
-	return ImageTexture.create_from_image(image)
+	var target_w := maxi(24, int(round(width_px)))
+	var aspect := float(image.get_height()) / maxf(float(image.get_width()), 1.0)
+	var target_h := maxi(24, int(round(float(target_w) * aspect)))
+	image.resize(target_w, target_h, Image.INTERPOLATE_NEAREST)
+	var fitted := _composite_foundation(image)
+	var result := ImageTexture.create_from_image(fitted)
+	_altar_cache[key] = result
+	return result
+
+
+func _load_texture_image(tex: Texture2D) -> Image:
+	if tex == null:
+		return null
+	var image := Image.new()
+	if not tex.resource_path.is_empty() and image.load(tex.resource_path) == OK:
+		return image
+	var img := tex.get_image()
+	if img == null:
+		return null
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	return img
+
+
+func _remove_backdrop(image: Image) -> void:
+	var w := image.get_width()
+	var h := image.get_height()
+	if w < 2 or h < 2:
+		return
+	var corner := image.get_pixel(0, 0)
+	if corner.a < 0.08:
+		return
+	var lum := corner.r * 0.3 + corner.g * 0.59 + corner.b * 0.11
+	if lum > 0.28:
+		return
+	var visited := PackedByteArray()
+	visited.resize(w * h)
+	var stack: Array[int] = []
+	var tol := 0.14
+	for x in w:
+		_backdrop_try_push(image, visited, stack, x, 0, corner, tol)
+		_backdrop_try_push(image, visited, stack, x, h - 1, corner, tol)
+	for y in h:
+		_backdrop_try_push(image, visited, stack, 0, y, corner, tol)
+		_backdrop_try_push(image, visited, stack, w - 1, y, corner, tol)
+	while not stack.is_empty():
+		var packed: int = stack.pop_back()
+		var px := packed % w
+		var py := int(packed / w)
+		image.set_pixel(px, py, Color(0, 0, 0, 0))
+		_backdrop_try_push(image, visited, stack, px + 1, py, corner, tol)
+		_backdrop_try_push(image, visited, stack, px - 1, py, corner, tol)
+		_backdrop_try_push(image, visited, stack, px, py + 1, corner, tol)
+		_backdrop_try_push(image, visited, stack, px, py - 1, corner, tol)
+
+
+func _backdrop_try_push(image: Image, visited: PackedByteArray, stack: Array[int], x: int, y: int, corner: Color, tol: float) -> void:
+	var w := image.get_width()
+	var h := image.get_height()
+	if x < 0 or y < 0 or x >= w or y >= h:
+		return
+	var idx := y * w + x
+	if visited[idx] != 0:
+		return
+	var c := image.get_pixel(x, y)
+	if c.a < 0.04:
+		visited[idx] = 1
+		return
+	if absf(c.r - corner.r) > tol or absf(c.g - corner.g) > tol or absf(c.b - corner.b) > tol:
+		return
+	visited[idx] = 1
+	stack.append(idx)
+
+
+func _composite_foundation(shrine: Image) -> Image:
+	var overlap := 4
+	var found_h := int(_foundation_height_px)
+	var shrine_w := shrine.get_width()
+	var shrine_h := shrine.get_height()
+	var tile_count := maxi(3, int(ceil(float(shrine_w) / 16.0)))
+	var found_w := tile_count * 16
+	var canvas_w := maxi(shrine_w, found_w)
+	var canvas_h := shrine_h + found_h - overlap
+	var canvas := Image.create(canvas_w, canvas_h, false, Image.FORMAT_RGBA8)
+	canvas.fill(Color(0, 0, 0, 0))
+	var stone := _stone_tile()
+	var found_x := int((canvas_w - found_w) / 2)
+	var found_y := canvas_h - found_h
+	for i in tile_count:
+		canvas.blit_rect(stone, Rect2i(0, 0, 16, 16), Vector2i(found_x + i * 16, found_y))
+	_darken_foundation_edge(canvas, found_x, found_y, found_w, found_h)
+	var shrine_x := int((canvas_w - shrine_w) / 2)
+	var shrine_y := found_y + overlap - shrine_h
+	canvas.blit_rect(shrine, Rect2i(0, 0, shrine_w, shrine_h), Vector2i(shrine_x, shrine_y))
+	return canvas
+
+
+func _darken_foundation_edge(canvas: Image, fx: int, fy: int, fw: int, fh: int) -> void:
+	var bottom := fy + fh - 1
+	for x in range(fx, fx + fw):
+		if x < 0 or x >= canvas.get_width() or bottom < 0 or bottom >= canvas.get_height():
+			continue
+		var c := canvas.get_pixel(x, bottom)
+		canvas.set_pixel(x, bottom, Color(c.r * 0.55, c.g * 0.55, c.b * 0.55, c.a))
+	for y in range(fy, fy + fh):
+		if y < 0 or y >= canvas.get_height():
+			continue
+		if fx >= 0 and fx < canvas.get_width():
+			var left := canvas.get_pixel(fx, y)
+			canvas.set_pixel(fx, y, Color(left.r * 0.7, left.g * 0.7, left.b * 0.7, left.a))
+		var rx := fx + fw - 1
+		if rx >= 0 and rx < canvas.get_width():
+			var right := canvas.get_pixel(rx, y)
+			canvas.set_pixel(rx, y, Color(right.r * 0.7, right.g * 0.7, right.b * 0.7, right.a))
+
+
+func _stone_tile() -> Image:
+	if _stone_tile_image != null:
+		return _stone_tile_image
+	var atlas_tex := load("res://assets/world/tiles/terrain_atlas.png") as Texture2D
+	if atlas_tex == null:
+		_stone_tile_image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		_stone_tile_image.fill(Color(0.42, 0.42, 0.45, 1))
+		return _stone_tile_image
+	var atlas := atlas_tex.get_image()
+	if atlas == null:
+		_stone_tile_image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		_stone_tile_image.fill(Color(0.42, 0.42, 0.45, 1))
+		return _stone_tile_image
+	atlas = atlas.duplicate()
+	if atlas.is_compressed():
+		atlas.decompress()
+	if atlas.get_format() != Image.FORMAT_RGBA8:
+		atlas.convert(Image.FORMAT_RGBA8)
+	_stone_tile_image = atlas.get_region(Rect2i(48, 0, 16, 16))
+	return _stone_tile_image
+
+
+func _ensure_foundation() -> void:
+	if get_node_or_null("FoundationBody") != null:
+		return
+	var body := StaticBody2D.new()
+	body.name = "FoundationBody"
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var shape_node := CollisionShape2D.new()
+	shape_node.name = "CollisionShape2D"
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(48, 16)
+	shape_node.shape = rect
+	shape_node.position = Vector2(0, -8)
+	body.add_child(shape_node)
+	add_child(body)
+
+
+func _update_foundation_collision(width_px: float) -> void:
+	var body := get_node_or_null("FoundationBody") as StaticBody2D
+	if body == null:
+		return
+	var shape_node := body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node == null or not (shape_node.shape is RectangleShape2D):
+		return
+	var rect := shape_node.shape as RectangleShape2D
+	rect.size = Vector2(maxf(width_px, 32.0), _foundation_height_px)
+	shape_node.position = Vector2(0.0, -_foundation_height_px * 0.5)
 
 
 func _ensure_light_texture() -> void:
@@ -292,35 +476,18 @@ func _make_beam_texture() -> Texture2D:
 
 
 func _update_fog_light() -> void:
-	var fog_boost := 0.0
-	var fog := get_tree().get_first_node_in_group("fog_event") as FogEvent
-	if fog != null:
-		match fog.state:
-			FogEvent.State.WARNING:
-				fog_boost = 0.35 + fog.warning_progress() * 0.25
-			FogEvent.State.FOG_ACTIVE:
-				fog_boost = 1.0
-			FogEvent.State.FOG_ENDING:
-				fog_boost = fog.ending_progress() * 0.85
-			_:
-				fog_boost = 0.0
-	var pulse := 0.92 + sin(Time.get_ticks_msec() * 0.0032) * 0.08
-	if fog_boost > 0.01:
-		pulse = 0.88 + sin(Time.get_ticks_msec() * 0.0022) * (0.10 + fog_boost * 0.06)
+	# Helligkeit bleibt konstant. Kein Fog- oder Mitternachts-Boost.
+	var pulse := 0.94 + sin(Time.get_ticks_msec() * 0.0032) * 0.06
 	if _glow_sprite != null:
-		_glow_sprite.modulate.a = pulse * (0.85 + fog_boost * 0.35)
-		if fog_boost > 0.01:
-			var extra := 1.0 + fog_boost * (0.12 + float(level) * 0.04)
-			_glow_sprite.scale = Vector2(1.15 + float(level) * 0.28, 1.15 + float(level) * 0.28) * extra
+		_glow_sprite.modulate = Color(1.0, 0.62, 0.22, pulse * 0.22)
+		_glow_sprite.scale = _base_glow_scale
+		_glow_sprite.visible = is_lantern_active
 	if _light != null and is_lantern_active:
-		_light.energy = _base_energy * (1.0 + fog_boost * 0.42)
-		_light.texture_scale = _base_texture_scale * (1.0 + fog_boost * 0.18)
+		_light.energy = _base_energy
+		_light.texture_scale = _base_texture_scale
 	if _beam_sprite != null:
-		var beam_a := fog_boost * (0.18 + float(level) * 0.05)
-		if level >= 4:
-			beam_a += fog_boost * 0.08
-		_beam_sprite.modulate.a = beam_a * pulse
-		_beam_sprite.visible = is_lantern_active and beam_a > 0.01
+		_beam_sprite.visible = false
+		_beam_sprite.modulate.a = 0.0
 
 
 func _make_radial_texture(size: int, color: Color) -> Texture2D:

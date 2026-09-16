@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PlantData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/plant_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/world/vegetation/wild_grass.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+plant_id = &"wild_grass"
+display_name = "Wildgras"
+plant_category = 1
+valid_biomes = Array[StringName]([&"grassland", &"forest"])
+spawn_weight = 1.4
+cluster_chance = 0.35
+min_cluster_size = 3
+max_cluster_size = 5
+valid_ground_types = Array[int]([1, 2])
+can_be_harvested = true
+can_be_planted = true
+item_id = 55
+world_texture = ExtResource("2")
+wind_strength = 0.9
+harvest_time = 0.05

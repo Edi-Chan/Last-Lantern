@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/items/plants/bush.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = 58
+display_name = "Kleiner Busch"
+description = "Eine niedrige Buschpflanze."
+icon = ExtResource("2_icon")
+max_stack = 999
+item_type = 7
+category = 7
+plant_id = &"bush"

@@ -13,6 +13,7 @@ day_duration = 75.0
 night_duration = 35.0
 time_scale = 1.0
 night_start_time = 0.75
+night_end_time = 0.25
 fog_interval_days = 7
 fog_start_time = 0.75
 warning_duration = 8.0

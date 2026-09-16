@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PlantData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/plant_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/world/vegetation/red_wildflower.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+plant_id = &"red_wildflower"
+display_name = "Rotes Wildkraut"
+plant_category = 0
+valid_biomes = Array[StringName]([&"grassland"])
+spawn_weight = 0.7
+cluster_chance = 0.18
+min_cluster_size = 2
+max_cluster_size = 4
+valid_ground_types = Array[int]([1, 2])
+can_be_harvested = true
+can_be_planted = true
+item_id = 52
+world_texture = ExtResource("2")
+wind_strength = 0.5
+harvest_time = 0.05

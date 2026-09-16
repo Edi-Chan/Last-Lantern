@@ -265,7 +265,15 @@ func _is_aiming() -> bool:
 		return true
 	if InputMap.has_action("block_autolock") and Input.is_action_pressed("block_autolock"):
 		return true
+	if is_auto_tool_held():
+		return true
 	return _is_swinging()
+
+
+func is_auto_tool_held() -> bool:
+	if Input.is_key_pressed(KEY_ALT) or Input.is_physical_key_pressed(KEY_ALT):
+		return true
+	return InputMap.has_action("auto_tool") and Input.is_action_pressed("auto_tool")
 
 
 func _is_swinging() -> bool:

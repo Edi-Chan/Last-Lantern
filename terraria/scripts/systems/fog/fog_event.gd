@@ -106,7 +106,8 @@ func _should_start_fog(day: int) -> bool:
 		return false
 	if _fog_done_for_day == day:
 		return false
-	return _day_cycle.time_of_day >= settings.fog_start_time or _day_cycle.is_night
+	# Nur ab fog_start (18:00). is_night nach 00:00 darf Fog nicht neu starten.
+	return _day_cycle.time_of_day >= settings.fog_start_time
 
 
 func _begin_warning(day: int) -> void:

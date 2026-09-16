@@ -240,6 +240,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if UIManager.is_blocking_gameplay():
 		return
+	var player := get_tree().get_first_node_in_group("player") as Player
+	if player != null and player.is_auto_tool_held():
+		return
+	if InputMap.has_action("auto_tool") and Input.is_action_pressed("auto_tool"):
+		return
 	var world_map := get_tree().get_first_node_in_group("world_map_ui")
 	if world_map != null and world_map.has_method("is_open") and world_map.is_open():
 		return

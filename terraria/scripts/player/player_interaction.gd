@@ -49,6 +49,14 @@ var _debug_refresh_left: float = 0.0
 var _mouse_marker: ColorRect
 var _target_marker: ColorRect
 var _mouse_cell := Vector2i(9999, 9999)
+var _auto_tool_held: bool = false
+var _auto_tool_saved_slot: int = -1
+var _frame_poly: Polygon2D
+var _progress_poly: Polygon2D
+var _last_vp_mouse := Vector2.ZERO
+var _vegetation: VegetationSystem
+var _plant_progress: float = 0.0
+var _plant_tile := Vector2i(9999, 9999)
 
 func _ready() -> void:
 	_tile_map = get_tree().get_first_node_in_group("terrain") as TileMapLayer
@@ -62,6 +70,7 @@ func _ready() -> void:
 		_highlight_frame = _highlight.get_node_or_null("Frame") as ColorRect
 		_progress_fill = _highlight.get_node_or_null("Progress") as ColorRect
 		_weak_hint = _highlight.get_node_or_null("WeakHint") as Label
+		_setup_world_highlight()
 
 
 func _process(delta: float) -> void:
@@ -74,6 +83,7 @@ func _process(delta: float) -> void:
 	if not _can_interact_with_world():
 		_autolock_active = false
 		_world_use_held = false
+		_clear_auto_tool(true)
 		_reset_mining()
 		_attack_cooldown_left = maxf(0.0, _attack_cooldown_left - delta)
 		if _highlight != null:
@@ -88,15 +98,23 @@ func _process(delta: float) -> void:
 	_mouse_cell = hover_tile
 	var tile := _resolve_target_tile(hover_tile)
 	current_target_cell = tile
+	_handle_auto_tool(tile)
 	var block := get_block_data(tile)
 	var in_range := _is_in_range(tile)
 	var hover_in_range := _is_in_range(hover_tile)
 	var place_state := _get_place_state(hover_tile, hover_in_range)
-	_update_highlight(tile, block, in_range, place_state)
+	var plant_cell := _resolve_plant_cell(hover_tile)
+	if plant_cell == INVALID_TILE:
+		plant_cell = _resolve_plant_cell(tile)
+	_update_highlight(tile, block, in_range, place_state, plant_cell)
 	_handle_tool_use(delta)
-	_handle_mining(delta, tile, block, in_range)
+	var plant_in_range := plant_cell != INVALID_TILE and _is_in_range(plant_cell)
+	var harvesting_plant := _handle_plant_harvest(delta, plant_cell, plant_in_range)
+	if not harvesting_plant:
+		_handle_mining(delta, tile, block, in_range)
 	_handle_placement(hover_tile, place_state)
 	_handle_seed_plant(hover_tile, hover_in_range)
+	_handle_plant_place(hover_tile, hover_in_range)
 	_update_targeting_markers(hover_tile, tile)
 	_debug_refresh_left -= delta
 	_update_debug(tile, block, in_range, place_state)
@@ -135,15 +153,47 @@ func _is_pointer_over_blocking_ui() -> bool:
 	return false
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouse:
+		_last_vp_mouse = event.position
+
+
+func _setup_world_highlight() -> void:
+	if _highlight == null:
+		return
+	if _highlight_frame != null:
+		_highlight_frame.visible = false
+		_highlight_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _progress_fill != null:
+		_progress_fill.visible = false
+		_progress_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _frame_poly == null:
+		_frame_poly = Polygon2D.new()
+		_frame_poly.z_index = 0
+		_highlight.add_child(_frame_poly)
+	if _progress_poly == null:
+		_progress_poly = Polygon2D.new()
+		_progress_poly.z_index = 1
+		_highlight.add_child(_progress_poly)
+
+
+func _viewport_mouse() -> Vector2:
+	var vp := get_viewport()
+	if vp != null:
+		return vp.get_mouse_position()
+	return _last_vp_mouse
+
+
 func _get_hovered_tile() -> Vector2i:
 	if _tile_map == null:
 		return INVALID_TILE
-	return _tile_map.local_to_map(_tile_map.get_local_mouse_position())
+	# Viewport-Maus in TileMap-Lokalraum: dasselbe Raster, das gerendert wird.
+	return _tile_map.local_to_map(_tile_map.make_canvas_position_local(_viewport_mouse()))
 
 
 func _get_world_mouse() -> Vector2:
 	if _tile_map != null:
-		return _tile_map.to_global(_tile_map.get_local_mouse_position())
+		return _tile_map.to_global(_tile_map.make_canvas_position_local(_viewport_mouse()))
 	if _player != null:
 		return _player.get_world_mouse_position()
 	var vp := get_viewport()
@@ -152,15 +202,36 @@ func _get_world_mouse() -> Vector2:
 	return vp.get_canvas_transform().affine_inverse() * vp.get_mouse_position()
 
 
+func _player_reach_origin() -> Vector2:
+	if _player == null:
+		return Vector2.ZERO
+	var collision := _player.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision != null:
+		return collision.global_position
+	return _player.global_position
+
+
 func _is_in_range(tile_position: Vector2i) -> bool:
-	if tile_position == INVALID_TILE or _tile_map == null:
+	if tile_position == INVALID_TILE or _tile_map == null or _player == null:
 		return false
-	var tile_center := _tile_map.to_global(_tile_map.map_to_local(tile_position))
+	var origin := _player_reach_origin()
 	var reach := interaction_range_tiles * float(tile_size)
-	return _player.global_position.distance_to(tile_center) <= reach
+	var tile_center := _tile_map.to_global(_tile_map.map_to_local(tile_position))
+	if origin.distance_to(tile_center) <= reach:
+		return true
+	# Mausfeld: wenn der Cursor selbst in Reichweite liegt, zaehlt der Block unter der Maus.
+	if tile_position == _mouse_cell:
+		return origin.distance_to(_get_world_mouse()) <= reach
+	return false
 
 
 func _resolve_target_tile(hover_tile: Vector2i) -> Vector2i:
+	# Maus hat Vorrang: das Feld unter dem Cursor ist immer das Ziel, sobald dort ein Block liegt.
+	# STRG-Autolock greift nur, wenn die Maus in der Luft haengt.
+	if get_block_data(hover_tile) != null:
+		_autolock_active = false
+		_autolock_dir = Vector2i.ZERO
+		return hover_tile
 	var want_autolock := InputMap.has_action("block_autolock") and Input.is_action_pressed("block_autolock")
 	if not want_autolock:
 		_autolock_active = false
@@ -168,6 +239,61 @@ func _resolve_target_tile(hover_tile: Vector2i) -> Vector2i:
 		return hover_tile
 	_autolock_active = true
 	return _autolock_tile()
+
+
+func _is_auto_tool_held() -> bool:
+	if _player != null and _player.has_method("is_auto_tool_held"):
+		return bool(_player.call("is_auto_tool_held"))
+	if Input.is_key_pressed(KEY_ALT) or Input.is_physical_key_pressed(KEY_ALT):
+		return true
+	return InputMap.has_action("auto_tool") and Input.is_action_pressed("auto_tool")
+
+
+func _handle_auto_tool(target_tile: Vector2i) -> void:
+	if not _is_auto_tool_held():
+		_clear_auto_tool(true)
+		return
+	if _inventory == null:
+		return
+	if not _auto_tool_held:
+		_auto_tool_held = true
+		_auto_tool_saved_slot = _inventory.selected_hotbar_index
+	var block := get_block_data(target_tile)
+	if block == null or not _is_in_range(target_tile):
+		_restore_auto_tool_slot()
+		return
+	var preferred := _auto_tool_preferred_kind(target_tile, block)
+	var slot := _inventory.find_best_hotbar_tool_for(block, preferred)
+	if slot < 0:
+		_restore_auto_tool_slot()
+		return
+	_inventory.set_selected_hotbar_index(slot)
+
+
+func _auto_tool_preferred_kind(tile: Vector2i, block: BlockData) -> int:
+	if block != null:
+		var need := block.get_required_tool()
+		if need != 0:
+			return need
+	var trees := get_tree().get_first_node_in_group("tree_system") as TreeSystem
+	if trees != null and trees.is_tree_tile(tile):
+		return int(ItemData.ToolKind.AXE)
+	if block != null:
+		return int(ItemData.ToolKind.PICKAXE)
+	return 0
+
+
+func _restore_auto_tool_slot() -> void:
+	if _inventory == null or _auto_tool_saved_slot < 0:
+		return
+	_inventory.set_selected_hotbar_index(_auto_tool_saved_slot)
+
+
+func _clear_auto_tool(restore: bool) -> void:
+	if restore and _auto_tool_held:
+		_restore_auto_tool_slot()
+	_auto_tool_held = false
+	_auto_tool_saved_slot = -1
 
 
 func _autolock_tile() -> Vector2i:
@@ -357,33 +483,58 @@ func _get_place_state(tile: Vector2i, in_range: bool) -> Dictionary:
 	}
 
 
-func _update_highlight(tile: Vector2i, block: BlockData, in_range: bool, place_state: Dictionary) -> void:
+func _set_highlight_color(color: Color) -> void:
+	if _frame_poly != null:
+		_frame_poly.color = color
+	elif _highlight_frame != null:
+		_highlight_frame.color = color
+
+
+func _update_highlight(tile: Vector2i, block: BlockData, in_range: bool, place_state: Dictionary, plant_cell: Vector2i = Vector2i(9999, 9999)) -> void:
 	if _highlight == null:
 		return
 	if tile == INVALID_TILE:
 		_highlight.visible = false
 		return
-	var show := block != null or bool(place_state["holding"]) or _holding_seed()
+	var show := block != null or bool(place_state["holding"]) or _holding_seed() or _holding_plant() or plant_cell != INVALID_TILE
 	_highlight.visible = show
 	if not show:
 		return
-	var top_left := _tile_map.to_global(_tile_map.map_to_local(tile) - Vector2(tile_size, tile_size) * 0.5)
+	var draw_tile := tile
+	if not _holding_plant() and not _holding_seed() and not bool(place_state["holding"]) and plant_cell != INVALID_TILE:
+		draw_tile = plant_cell
+	var cell := Vector2(float(tile_size), float(tile_size))
+	if _tile_map.tile_set != null:
+		cell = Vector2(_tile_map.tile_set.tile_size)
+	var top_left := _tile_map.to_global(_tile_map.map_to_local(draw_tile) - cell * 0.5)
 	_highlight.global_position = top_left
-	if _highlight_frame == null:
-		return
-	if _holding_seed():
-		_highlight_frame.color = Color(0.35, 0.9, 0.4, 0.45) if _can_plant_seed(tile, in_range) else Color(0.9, 0.25, 0.2, 0.45)
+	if _frame_poly != null:
+		_frame_poly.polygon = PackedVector2Array([
+			Vector2.ZERO,
+			Vector2(cell.x, 0.0),
+			cell,
+			Vector2(0.0, cell.y),
+		])
+	if _highlight_frame != null:
+		_highlight_frame.position = Vector2.ZERO
+		_highlight_frame.size = cell
+	if _holding_plant():
+		_set_highlight_color(Color(0.35, 0.9, 0.4, 0.45) if _can_plant_item(tile, in_range) else Color(0.9, 0.25, 0.2, 0.45))
+	elif _holding_seed():
+		_set_highlight_color(Color(0.35, 0.9, 0.4, 0.45) if _can_plant_seed(tile, in_range) else Color(0.9, 0.25, 0.2, 0.45))
 	elif bool(place_state["holding"]) and bool(place_state["empty"]):
-		_highlight_frame.color = Color(0.35, 0.9, 0.4, 0.45) if bool(place_state["can_place"]) else Color(0.9, 0.25, 0.2, 0.45)
+		_set_highlight_color(_placement_preview_color(place_state, tile))
+	elif plant_cell != INVALID_TILE:
+		_set_highlight_color(Color(0.95, 0.95, 0.4, 0.45) if _is_in_range(plant_cell) else Color(0.9, 0.25, 0.2, 0.4))
 	elif block != null:
 		if _weak_flash_left > 0.0:
-			_highlight_frame.color = Color(0.95, 0.18, 0.12, 0.7)
+			_set_highlight_color(Color(0.95, 0.18, 0.12, 0.7))
 		elif _autolock_active and in_range:
-			_highlight_frame.color = Color(1.0, 0.86, 0.2, 0.55)
+			_set_highlight_color(Color(1.0, 0.86, 0.2, 0.55))
 		else:
-			_highlight_frame.color = Color(0.95, 0.95, 0.4, 0.45) if in_range else Color(0.9, 0.25, 0.2, 0.4)
+			_set_highlight_color(Color(0.95, 0.95, 0.4, 0.45) if in_range else Color(0.9, 0.25, 0.2, 0.4))
 	else:
-		_highlight_frame.color = Color(0.9, 0.25, 0.2, 0.4)
+		_set_highlight_color(Color(0.9, 0.25, 0.2, 0.4))
 
 
 func _handle_mining(delta: float, tile: Vector2i, block: BlockData, in_range: bool) -> void:
@@ -444,8 +595,7 @@ func _show_break_denied_feedback(result: BlockData.BreakCheck, block: BlockData)
 	if result == BlockData.BreakCheck.UNBREAKABLE:
 		return
 	_weak_flash_left = 0.18
-	if _highlight_frame != null:
-		_highlight_frame.color = Color(0.95, 0.18, 0.12, 0.7)
+	_set_highlight_color(Color(0.95, 0.18, 0.12, 0.7))
 	if _weak_message_cooldown > 0.0:
 		return
 	_weak_message_cooldown = WEAK_FEEDBACK_INTERVAL
@@ -478,9 +628,13 @@ func _handle_placement(tile: Vector2i, place_state: Dictionary) -> void:
 		block_catalog.set_block_cell(_tile_map, tile, block)
 	else:
 		_tile_map.set_cell(tile, _terrain_source_id(), block.atlas_coords)
+	_notify_structure_placed(tile)
 	_notify_map_tile(tile)
 	if _inventory != null:
 		_inventory.consume_from_slot(_inventory.selected_hotbar_index, 1)
+	var veg := _veg()
+	if veg != null:
+		veg.on_block_placed(tile)
 	if _anim != null:
 		_anim.play(&"block_place")
 	_player.play_sfx(&"BlockPlace")
@@ -496,6 +650,11 @@ func _terrain_source_id() -> int:
 
 
 func _tile_overlaps_player(tile: Vector2i) -> bool:
+	var item := _inventory.get_selected_item() if _inventory != null else null
+	if item != null and block_catalog != null:
+		var placing := block_catalog.get_by_id(item.placeable_block_id)
+		if placing != null and not placing.solid:
+			return false
 	var collision := _player.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if collision == null:
 		return true
@@ -515,7 +674,7 @@ func _has_solid_neighbor(tile: Vector2i) -> bool:
 		if _tile_map.get_cell_source_id(neighbor) == -1:
 			continue
 		var neighbor_block := get_block_data(neighbor)
-		if neighbor_block == null or neighbor_block.solid:
+		if neighbor_block == null or neighbor_block.solid or neighbor_block.structural_enabled:
 			return true
 	return false
 
@@ -528,7 +687,11 @@ func _break_block(tile: Vector2i, block: BlockData) -> void:
 		_refresh_target_after_break()
 		return
 	_tile_map.erase_cell(tile)
+	_notify_structure_removed(tile, true)
 	_notify_map_tile(tile)
+	var veg := _veg()
+	if veg != null:
+		veg.on_block_removed(tile)
 	_player.play_sfx(&"BlockBreak")
 	_spawn_drop(tile, block)
 	_reset_mining()
@@ -553,6 +716,107 @@ func _handle_seed_plant(tile: Vector2i, in_range: bool) -> void:
 	if _anim != null:
 		_anim.play(&"block_place")
 	_player.play_sfx(&"BlockPlace")
+
+
+func _veg() -> VegetationSystem:
+	if _vegetation == null or not is_instance_valid(_vegetation):
+		_vegetation = get_tree().get_first_node_in_group("vegetation_system") as VegetationSystem
+	return _vegetation
+
+
+func _plant_at(tile: Vector2i) -> PlantData:
+	var veg := _veg()
+	if veg == null:
+		return null
+	var cell := _resolve_plant_cell(tile)
+	if cell == INVALID_TILE:
+		return null
+	return veg.get_plant(cell)
+
+
+func _resolve_plant_cell(tile: Vector2i) -> Vector2i:
+	var veg := _veg()
+	if veg == null or tile == INVALID_TILE:
+		return INVALID_TILE
+	if veg.has_plant(tile):
+		return tile
+	var above := tile + Vector2i.UP
+	if veg.has_plant(above):
+		return above
+	return INVALID_TILE
+
+
+func _holding_plant() -> bool:
+	var item := _inventory.get_selected_item() if _inventory != null else null
+	return item != null and item.is_plant()
+
+
+func _plant_from_selected() -> PlantData:
+	var veg := _veg()
+	var item := _inventory.get_selected_item() if _inventory != null else null
+	if veg == null or veg.catalog == null or item == null:
+		return null
+	var plant := veg.catalog.get_by_item_id(item.id)
+	if plant == null and item.plant_id != &"":
+		plant = veg.catalog.get_by_id(item.plant_id)
+	return plant
+
+
+func _plant_item_cell(tile: Vector2i) -> Vector2i:
+	if get_block_data(tile) != null:
+		return tile + Vector2i.UP
+	return tile
+
+
+func _can_plant_item(tile: Vector2i, in_range: bool) -> bool:
+	if not in_range or not _holding_plant():
+		return false
+	var veg := _veg()
+	var plant := _plant_from_selected()
+	if veg == null or plant == null:
+		return false
+	var cell := _plant_item_cell(tile)
+	if _tile_overlaps_player(cell):
+		return false
+	return veg.can_place(cell, plant)
+
+
+func _handle_plant_place(tile: Vector2i, in_range: bool) -> void:
+	if not Input.is_action_just_pressed("interact_secondary"):
+		return
+	if not _can_plant_item(tile, in_range):
+		return
+	var veg := _veg()
+	var plant := _plant_from_selected()
+	if veg == null or plant == null:
+		return
+	if not veg.try_plant(_plant_item_cell(tile), plant):
+		return
+	if _inventory != null:
+		_inventory.consume_from_slot(_inventory.selected_hotbar_index, 1)
+	if _anim != null:
+		_anim.play(&"block_place")
+	_player.play_sfx(&"BlockPlace")
+
+
+func _handle_plant_harvest(delta: float, tile: Vector2i, in_range: bool) -> bool:
+	var veg := _veg()
+	if veg == null or tile == INVALID_TILE or not veg.has_plant(tile) or not in_range:
+		_plant_progress = 0.0
+		_plant_tile = INVALID_TILE
+		return false
+	if not _world_use_held:
+		_plant_progress = 0.0
+		return false
+	if tile != _plant_tile:
+		_plant_tile = tile
+		_plant_progress = 0.0
+	_plant_progress += delta
+	if Input.is_action_just_pressed("use_item") or _plant_progress >= veg.harvest_time(tile):
+		veg.harvest(tile, _player)
+		_plant_progress = 0.0
+		_reset_mining()
+	return true
 
 
 func _holding_seed() -> bool:
@@ -629,14 +893,14 @@ func _spawn_drop(tile: Vector2i, block: BlockData) -> void:
 
 
 func _refresh_target_after_break() -> void:
-	if _autolock_active:
-		current_target_cell = _autolock_tile()
-	else:
-		current_target_cell = _get_hovered_tile()
+	var hover := _get_hovered_tile()
+	current_target_cell = _resolve_target_tile(hover)
 	var block := get_block_data(current_target_cell)
 	var in_range := _is_in_range(current_target_cell)
-	var hover := _get_hovered_tile()
-	_update_highlight(current_target_cell, block, in_range, _get_place_state(hover, _is_in_range(hover)))
+	var plant_cell := _resolve_plant_cell(hover)
+	if plant_cell == INVALID_TILE:
+		plant_cell = _resolve_plant_cell(current_target_cell)
+	_update_highlight(current_target_cell, block, in_range, _get_place_state(hover, _is_in_range(hover)), plant_cell)
 
 
 func _reset_mining() -> void:
@@ -647,11 +911,24 @@ func _reset_mining() -> void:
 
 
 func _update_progress_bar(ratio: float) -> void:
+	var clamped := clampf(ratio, 0.0, 1.0)
+	var width := float(tile_size) * clamped
+	if _progress_poly != null:
+		_progress_poly.visible = clamped > 0.0
+		if clamped > 0.0:
+			var y0 := float(tile_size) - 3.0
+			_progress_poly.polygon = PackedVector2Array([
+				Vector2(0.0, y0),
+				Vector2(width, y0),
+				Vector2(width, float(tile_size)),
+				Vector2(0.0, float(tile_size)),
+			])
+			_progress_poly.color = Color(1.0, 0.75, 0.2, 0.95)
+		return
 	if _progress_fill == null:
 		return
-	var clamped := clampf(ratio, 0.0, 1.0)
 	_progress_fill.visible = clamped > 0.0
-	_progress_fill.size = Vector2(float(tile_size) * clamped, 3.0)
+	_progress_fill.size = Vector2(width, 3.0)
 
 
 func _update_debug(tile: Vector2i, block: BlockData, in_range: bool, _place_state: Dictionary) -> void:
@@ -671,7 +948,48 @@ func _update_debug(tile: Vector2i, block: BlockData, in_range: bool, _place_stat
 		"Mine %.2f  CD %.2f  Hand %s" % [mining_progress, _attack_cooldown_left, selected_name],
 	]
 	lines.append_array(_world_debug_lines(tile))
+	var mgr := _structural()
+	if mgr != null and bool(mgr.get("debug_enabled")):
+		var info := str(mgr.call("debug_info", tile))
+		if not info.is_empty():
+			lines.append(info)
 	_debug_label.text = "\n".join(lines)
+
+
+func _placement_preview_color(place_state: Dictionary, tile: Vector2i) -> Color:
+	if not bool(place_state["can_place"]):
+		return Color(0.9, 0.25, 0.2, 0.45)
+	var item: ItemData = place_state["item"]
+	var block := block_catalog.get_by_id(item.placeable_block_id) if item != null and block_catalog != null else null
+	var mgr := _structural()
+	if mgr == null or block == null or not block.structural_enabled:
+		return Color(0.35, 0.9, 0.4, 0.45)
+	var grade := int(mgr.call("preview_grade", tile, block))
+	match grade:
+		1:
+			return Color(0.25, 0.9, 0.35, 0.5)
+		2:
+			return Color(0.95, 0.85, 0.2, 0.5)
+		3:
+			return Color(0.95, 0.2, 0.15, 0.5)
+		_:
+			return Color(0.35, 0.9, 0.4, 0.45)
+
+
+func _structural() -> Node:
+	return get_tree().get_first_node_in_group(&"structural_manager")
+
+
+func _notify_structure_placed(tile: Vector2i) -> void:
+	var mgr := _structural()
+	if mgr != null:
+		mgr.call("notify_block_placed", tile)
+
+
+func _notify_structure_removed(tile: Vector2i, mined: bool) -> void:
+	var mgr := _structural()
+	if mgr != null:
+		mgr.call("notify_block_removed", tile, mined)
 
 
 func get_targeting_debug() -> Dictionary:
@@ -712,6 +1030,7 @@ func _targeting_debug_text() -> String:
 		"Mining Cell: %s" % str(data["mining_cell"]),
 		"Auto Target: %s" % ("ON" if bool(data["autolock"]) else "OFF"),
 		"CTRL: %s" % ("ON" if bool(data["autolock"]) else "OFF"),
+		"ALT Auto-Tool: %s" % ("ON" if _is_auto_tool_held() else "OFF"),
 		"Camera Zoom: %.2f (out %.2f)" % [zoom_v.x, float(data["zoom_out"])],
 	])
 

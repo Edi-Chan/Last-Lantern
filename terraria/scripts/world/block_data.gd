@@ -11,44 +11,50 @@ enum BreakCheck {
 	TOOL_TOO_WEAK,
 }
 
+enum StructuralRole {
+	NONE,
+	FOUNDATION,
+	STRUCTURAL_BLOCK,
+	SUPPORT_BEAM,
+}
+
 @export var id: int = 0
 @export var display_name: String = ""
 @export var atlas_coords: Vector2i = Vector2i.ZERO
 @export var hardness: float = 1.0
 @export var drop_item_id: int = -1
 @export var solid: bool = true
-## -1 = automatisch aus Blocktyp. 0 = Luft, 1 = volle Steinwand.
 @export var vision_occlusion: float = -1.0
-## Optional. Nur Erze setzen das.
 @export var ore_data: OreData
 @export var map_color: Color = Color(0, 0, 0, 0)
-## Welches Werkzeug diesen Block abbauen darf. 0 = NONE, ohne spezielles Werkzeug.
-## ItemData.ToolKind als int, analog zu OreData.
 @export var required_tool: int = 0
 @export var required_tool_power: int = 0
-## Hartes Override. Bedrock setzt das. hardness >= 100 bleibt zusaetzlicher Fallback.
 @export var is_unbreakable: bool = false
-
+@export var structural_enabled: bool = false
+@export var structural_role: StructuralRole = StructuralRole.NONE
+@export var structural_weight: int = 1
+@export var support_strength: int = 0
+@export var max_horizontal_support: int = 0
+@export var is_foundation_material: bool = false
+@export var is_support_beam: bool = false
+@export var enemy_break_cost: int = 0
+@export var structural_importance: int = 0
 
 func get_required_tool() -> int:
 	if ore_data != null:
 		return int(ore_data.required_tool)
 	return int(required_tool)
 
-
 func get_required_tool_power() -> int:
 	if ore_data != null:
 		return ore_data.get_required_tool_power()
 	return required_tool_power
 
-
 func get_required_pickaxe_power() -> int:
 	return get_required_tool_power()
 
-
 func is_block_unbreakable() -> bool:
 	return is_unbreakable or hardness >= 100.0
-
 
 func evaluate_break(item: Resource = null, inst: RefCounted = null) -> BreakCheck:
 	if is_block_unbreakable():
@@ -70,10 +76,8 @@ func evaluate_break(item: Resource = null, inst: RefCounted = null) -> BreakChec
 		return BreakCheck.TOOL_TOO_WEAK
 	return BreakCheck.CAN_BREAK
 
-
 func can_break_with(item: Resource = null, inst: RefCounted = null) -> bool:
 	return evaluate_break(item, inst) == BreakCheck.CAN_BREAK
-
 
 func get_map_color() -> Color:
 	if map_color.a > 0.0:
@@ -81,7 +85,6 @@ func get_map_color() -> Color:
 	if ore_data != null:
 		return ore_data.map_color
 	return Color(0, 0, 0, 0)
-
 
 func get_vision_occlusion() -> float:
 	if vision_occlusion >= 0.0:

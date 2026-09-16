@@ -12,6 +12,6 @@ safe_radius_tiles = 100
 light_energy = 1.7
 light_texture_scale = 7.4
 texture = ExtResource("2_tex")
-sprite_width_px = 112.0
+sprite_width_px = 64.0
 cost_item_ids = Array[int]([11, 12, 9])
 cost_amounts = Array[int]([35, 25, 20])

@@ -110,6 +110,7 @@ var _tiles: PackedByteArray
 var _surface: PackedInt32Array
 var _is_sand_column: PackedByteArray
 var _hut_blocked: PackedByteArray
+var _forest_column: PackedByteArray
 var _used_seed: int = 0
 var _cave_noise: FastNoiseLite
 var _cave_threshold: float = 1.0
@@ -134,6 +135,8 @@ func generate_world() -> void:
 	_is_sand_column.resize(world_width)
 	_hut_blocked = PackedByteArray()
 	_hut_blocked.resize(world_width)
+	_forest_column = PackedByteArray()
+	_forest_column.resize(world_width)
 	stats = {}
 
 	generate_surface()
@@ -144,11 +147,15 @@ func generate_world() -> void:
 	generate_world_bounds()
 	cleanup_surface()
 	find_spawn_position()
+	_reserve_test_house()
 	generate_ores()
 	generate_cave_entrances()
 	generate_huts()
 	generate_trees()
+	_build_forest_mask()
+	generate_vegetation()
 	_align_underground_backdrop()
+	_align_surface_background()
 	_commit_to_tilemap()
 	if debug_place_ore_row:
 		place_progression_test_row()
@@ -177,11 +184,39 @@ func get_region(tile: Vector2i) -> String:
 		return "Underground"
 	if _is_sand_column[tile.x] != 0:
 		return "Sand Area"
+	if _forest_column.size() == world_width and _forest_column[tile.x] != 0:
+		return "Forest"
 	return "Grassland"
+
+
+func get_block_id(tile_x: int, tile_y: int) -> int:
+	return _get_tile(tile_x, tile_y)
+
+
+func is_sand_column(tile_x: int) -> bool:
+	if tile_x < 0 or tile_x >= world_width:
+		return false
+	return _is_sand_column[tile_x] != 0
+
+
+func get_surface_biome(tile_x: int) -> StringName:
+	if tile_x < 0 or tile_x >= world_width:
+		return &"grassland"
+	if _is_sand_column[tile_x] != 0:
+		return &"sand"
+	if _forest_column.size() == world_width and _forest_column[tile_x] != 0:
+		return &"forest"
+	return &"grassland"
 
 
 func get_seed() -> int:
 	return _used_seed
+
+
+func is_hut_column(tile_x: int) -> bool:
+	if tile_x < 0 or tile_x >= world_width:
+		return false
+	return _hut_blocked[tile_x] != 0
 
 
 # ------------------------------------------------------------------- Oberflaeche
@@ -586,6 +621,35 @@ func generate_trees() -> void:
 	stats["trees_pine"] = pine_n
 
 
+func _build_forest_mask() -> void:
+	_forest_column = PackedByteArray()
+	_forest_column.resize(world_width)
+	var trees := get_node_or_null("TreeSystem") as TreeSystem
+	if trees == null:
+		return
+	var counts := PackedInt32Array()
+	counts.resize(world_width)
+	for base in trees.trees_by_base.keys():
+		var bx: int = base.x
+		for dx in range(-12, 13):
+			var cx := bx + dx
+			if cx >= 0 and cx < world_width:
+				counts[cx] += 1
+	var forest_n := 0
+	for x in world_width:
+		_forest_column[x] = 1 if counts[x] >= 2 else 0
+		if _forest_column[x] != 0:
+			forest_n += 1
+	stats["forest_columns"] = forest_n
+
+
+func generate_vegetation() -> void:
+	var veg := get_node_or_null("VegetationSystem") as VegetationSystem
+	if veg == null:
+		return
+	veg.generate_from_world(self)
+
+
 func _plant_tree(rng: RandomNumberGenerator, x: int, species: TreeData, trees: TreeSystem) -> bool:
 	if species == null:
 		return false
@@ -678,6 +742,15 @@ func _build_hut(rng: RandomNumberGenerator, x: int, width: int) -> void:
 		_set_tile(door_x, floor_y - i, AIR)
 
 
+func _reserve_test_house() -> void:
+	var origin_x := spawn_tile.x + 12
+	var width := 17
+	for cx in range(origin_x - 2, origin_x + width + 2):
+		if cx >= 0 and cx < world_width:
+			_hut_blocked[cx] = 1
+	stats["test_house_origin_x"] = origin_x
+
+
 # ------------------------------------------------------------------- Uebergabe
 
 func _commit_to_tilemap() -> void:
@@ -746,6 +819,13 @@ func _align_underground_backdrop() -> void:
 	if backdrop == null:
 		return
 	backdrop.set_profile(_surface, TILE_SIZE, float(world_height * TILE_SIZE))
+
+
+func _align_surface_background() -> void:
+	var sky := get_node_or_null("Background/SurfaceSky") as SurfaceBackground
+	if sky == null:
+		return
+	sky.setup(self)
 
 
 ## Der Testgegner steht sonst im neuen Terrain fest.

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/lantern.gd" id="1_script"]
 [ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="2_settings"]
@@ -22,7 +22,10 @@ shader_parameter/debug_ring = 0.0
 radius = 704.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_interact"]
-radius = 96.0
+radius = 48.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_foundation"]
+size = Vector2(48, 16)
 
 [node name="Lantern" type="Node2D"]
 z_index = 7
@@ -30,6 +33,7 @@ script = ExtResource("1_script")
 settings = ExtResource("2_settings")
 
 [node name="Visuals" type="Node2D" parent="."]
+light_mask = 0
 
 [node name="BeamSprite" type="Sprite2D" parent="Visuals"]
 visible = false
@@ -40,12 +44,14 @@ centered = true
 
 [node name="BaseSprite" type="Sprite2D" parent="Visuals"]
 texture_filter = 0
+light_mask = 0
 position = Vector2(0, -40)
 
 [node name="GlowSprite" type="Sprite2D" parent="Visuals"]
 texture_filter = 0
-position = Vector2(0, -52)
-modulate = Color(1, 0.62, 0.22, 0.85)
+position = Vector2(0, -36)
+scale = Vector2(0.24, 0.24)
+modulate = Color(1, 0.62, 0.22, 0.22)
 
 [node name="SafeZoneVisual" type="Node2D" parent="."]
 z_index = -1
@@ -66,8 +72,16 @@ amount = 8
 lifetime = 2.2
 local_coords = true
 
+[node name="FoundationBody" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FoundationBody"]
+position = Vector2(0, -8)
+shape = SubResource("RectangleShape2D_foundation")
+
 [node name="PointLight2D" type="PointLight2D" parent="."]
-position = Vector2(0, -52)
+position = Vector2(0, -36)
 color = Color(1, 0.72, 0.38, 1)
 energy = 1.15
 texture_scale = 4.0
@@ -92,7 +106,7 @@ monitoring = true
 monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionArea"]
-position = Vector2(0, -20)
+position = Vector2(0, -16)
 shape = SubResource("CircleShape2D_interact")
 
 [node name="HintLabel" type="Label" parent="."]

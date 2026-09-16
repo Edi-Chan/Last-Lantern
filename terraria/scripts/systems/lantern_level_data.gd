@@ -11,7 +11,7 @@ extends Resource
 @export var light_energy: float = 1.15
 @export var light_texture_scale: float = 4.0
 @export var texture: Texture2D
-@export var sprite_width_px: float = 80.0
+@export var sprite_width_px: float = 48.0
 @export var cost_item_ids: Array[int] = []
 @export var cost_amounts: Array[int] = []
 

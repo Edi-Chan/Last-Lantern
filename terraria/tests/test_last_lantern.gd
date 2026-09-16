@@ -100,13 +100,56 @@ func test_fog_shader_has_soft_distance_zones() -> void:
 	assert_false(shader.contains("mouse_position.x -="))
 
 
+func test_midnight_stays_night() -> void:
+	var src := _read("res://scripts/systems/time/day_cycle.gd")
+	assert_true(src.contains("or t < settings.night_end_time"))
+	assert_true(src.contains("00:00 bleibt Nacht"))
+	assert_false(src.contains("sky = sky_dawn.lerp(sky_day, u)"))
+	var settings_src := _read("res://scripts/systems/last_lantern_settings.gd")
+	assert_true(settings_src.contains("@export var night_end_time"))
+	var tres := _read("res://resources/systems/last_lantern_settings.tres")
+	assert_true(tres.contains("night_end_time = 0.25"))
+
+
+func test_lantern_brightness_stays_constant() -> void:
+	var src := _read("res://scripts/world/lantern.gd")
+	assert_true(src.contains("_light.energy = _base_energy"))
+	assert_false(src.contains("fog_boost * 0.42"))
+	assert_true(src.contains("_make_altar_texture"))
+	assert_true(src.contains("_composite_foundation"))
+	var fog := _read("res://scripts/systems/fog/fog_event.gd")
+	assert_true(fog.contains("time_of_day >= settings.fog_start_time"))
+	assert_false(fog.contains("or _day_cycle.is_night"))
+	var l1 := _read("res://resources/lantern/lantern_level_1.tres")
+	assert_true(l1.contains("sprite_width_px = 48"))
+
+
 func test_mouse_targeting_uses_canvas_transform() -> void:
 	var player := _read("res://scripts/player/player.gd")
 	assert_true(player.contains("get_canvas_transform().affine_inverse()"))
 	assert_false(player.contains("get_screen_center_position() + (vp.get_mouse_position()"))
 	var mining := _read("res://scripts/player/player_interaction.gd")
-	assert_true(mining.contains("local_to_map(_tile_map.get_local_mouse_position())"))
+	assert_true(mining.contains("_tile_map.make_canvas_position_local"))
+	assert_true(mining.contains("Maus hat Vorrang"))
+	assert_true(mining.contains("_player_reach_origin"))
 	assert_true(mining.contains("debug_targeting"))
+
+
+func test_auto_tool_uses_hotbar_and_restores() -> void:
+	var mining := _read("res://scripts/player/player_interaction.gd")
+	assert_true(mining.contains("func _handle_auto_tool"))
+	assert_true(mining.contains("_auto_tool_saved_slot"))
+	assert_true(mining.contains("_restore_auto_tool_slot"))
+	assert_true(mining.contains("find_best_hotbar_tool_for"))
+	assert_true(mining.contains("KEY_ALT"))
+	var inv := _read("res://scripts/inventory/inventory.gd")
+	assert_true(inv.contains("func find_best_hotbar_tool_for"))
+	assert_true(inv.contains("for i in HOTBAR_COUNT"))
+	assert_true(inv.contains("evaluate_break"))
+	assert_true(inv.contains("ToolKind.NONE"))
+	var player := _read("res://scripts/player/player.gd")
+	assert_true(player.contains("func is_auto_tool_held"))
+	assert_true(player.contains("KEY_ALT"))
 
 
 func _read(path: String) -> String:
