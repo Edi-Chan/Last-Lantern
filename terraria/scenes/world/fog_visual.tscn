@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Shader" path="res://shaders/fog_overlay.gdshader" id="1_shader"]
+[ext_resource type="Script" path="res://scripts/systems/fog/fog_visual.gd" id="2_script"]
+[ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="3_settings"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fog"]
+shader = ExtResource("1_shader")
+shader_parameter/fog_density = 0.0
+shader_parameter/fog_color = Color(0.012, 0.008, 0.02, 1)
+shader_parameter/fog_color_b = Color(0.09, 0.018, 0.14, 1)
+shader_parameter/fog_color_c = Color(0.12, 0.016, 0.028, 1)
+shader_parameter/warm_color = Color(1, 0.82, 0.48, 0.16)
+shader_parameter/lightning_color = Color(0.78, 0.42, 1, 1)
+
+[node name="FogVisual" type="CanvasLayer"]
+layer = 8
+script = ExtResource("2_script")
+settings = ExtResource("3_settings")
+
+[node name="BackBuffer" type="BackBufferCopy" parent="."]
+copy_mode = 2
+
+[node name="Overlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_fog")
+color = Color(1, 1, 1, 1)

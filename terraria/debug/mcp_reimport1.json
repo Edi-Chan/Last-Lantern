@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":22,"method":"tools/call","params":{"name":"filesystem_manage","arguments":{"op":"reimport","params":{"paths":["res://assets/world/lantern/lantern_level_1_sprite.png","res://assets/world/lantern/lantern_level_2_sprite.png","res://assets/world/lantern/lantern_level_3_sprite.png","res://assets/world/lantern/lantern_level_4_sprite.png"]}}}}

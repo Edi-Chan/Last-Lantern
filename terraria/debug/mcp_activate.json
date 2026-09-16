@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":20,"method":"tools/call","params":{"name":"session_activate","arguments":{"session_id":"terraria@6b3b034a38219ba6"}}}

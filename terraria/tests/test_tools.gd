@@ -132,6 +132,22 @@ func test_prepared_tool_items() -> void:
 	assert_eq(scanner.max_stack, 1)
 
 
+func test_default_hotbar_tool_order() -> void:
+	assert_eq(Inventory.DEFAULT_HOTBAR_TOOL_IDS.size(), 10)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[0]), 22)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[1]), 23)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[2]), 24)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[3]), 25)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[4]), 26)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[5]), 28)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[6]), 27)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[7]), 29)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[8]), 30)
+	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[9]), 31)
+	assert_true(32 in Inventory.START_TOOL_IDS)
+	assert_false(32 in Inventory.DEFAULT_HOTBAR_TOOL_IDS)
+
+
 func test_instance_upgrades_do_not_mutate_resource() -> void:
 	var pick := _tool("res://resources/items/tools/mining/pickaxes/stone_pickaxe.tres")
 	var a := ItemInstanceData.from_item(pick)

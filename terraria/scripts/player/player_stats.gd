@@ -65,10 +65,10 @@ func set_energy(value: float) -> void:
 	energy_changed.emit(energy, max_energy)
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, ignore_armor: bool = false) -> void:
 	if amount <= 0.0:
 		return
-	var reduced := maxf(amount - float(armor_defense), 0.0)
+	var reduced := amount if ignore_armor else maxf(amount - float(armor_defense), 0.0)
 	set_health(health - reduced)
 
 

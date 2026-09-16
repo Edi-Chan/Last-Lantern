@@ -1,0 +1,109 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/lantern.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="2_settings"]
+[ext_resource type="Script" path="res://scripts/systems/fog/safe_zone.gd" id="3_safe"]
+[ext_resource type="Script" path="res://scripts/systems/fog/safe_zone_visual.gd" id="4_shield"]
+[ext_resource type="Shader" path="res://shaders/safe_zone_shield.gdshader" id="5_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shield"]
+shader = ExtResource("5_shader")
+shader_parameter/radius_px = 704.0
+shader_parameter/rect_size = Vector2(1648, 1648)
+shader_parameter/pulse = 1.0
+shader_parameter/intensity = 0.32
+shader_parameter/level_power = 0.0
+shader_parameter/time_scroll = 0.0
+shader_parameter/lightning_boost = 0.0
+shader_parameter/underground_fade = 1.0
+shader_parameter/debug_ring = 0.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_safe"]
+radius = 704.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_interact"]
+radius = 96.0
+
+[node name="Lantern" type="Node2D"]
+z_index = 7
+script = ExtResource("1_script")
+settings = ExtResource("2_settings")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BeamSprite" type="Sprite2D" parent="Visuals"]
+visible = false
+modulate = Color(1, 0.82, 0.42, 0)
+texture_filter = 0
+position = Vector2(0, -48)
+centered = true
+
+[node name="BaseSprite" type="Sprite2D" parent="Visuals"]
+texture_filter = 0
+position = Vector2(0, -40)
+
+[node name="GlowSprite" type="Sprite2D" parent="Visuals"]
+texture_filter = 0
+position = Vector2(0, -52)
+modulate = Color(1, 0.62, 0.22, 0.85)
+
+[node name="SafeZoneVisual" type="Node2D" parent="."]
+z_index = -1
+script = ExtResource("4_shield")
+
+[node name="ShieldOverlay" type="ColorRect" parent="SafeZoneVisual"]
+offset_left = -824.0
+offset_top = -824.0
+offset_right = 824.0
+offset_bottom = 824.0
+mouse_filter = 2
+material = SubResource("ShaderMaterial_shield")
+color = Color(1, 1, 1, 1)
+
+[node name="EdgeParticles" type="GPUParticles2D" parent="SafeZoneVisual"]
+emitting = false
+amount = 8
+lifetime = 2.2
+local_coords = true
+
+[node name="PointLight2D" type="PointLight2D" parent="."]
+position = Vector2(0, -52)
+color = Color(1, 0.72, 0.38, 1)
+energy = 1.15
+texture_scale = 4.0
+shadow_enabled = false
+
+[node name="SafeZone" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+script = ExtResource("3_safe")
+tile_size = 16
+radius_tiles = 44.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SafeZone"]
+shape = SubResource("CircleShape2D_safe")
+
+[node name="InteractionArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionArea"]
+position = Vector2(0, -20)
+shape = SubResource("CircleShape2D_interact")
+
+[node name="HintLabel" type="Label" parent="."]
+visible = false
+offset_left = -44.0
+offset_top = -92.0
+offset_right = 44.0
+offset_bottom = -78.0
+theme_override_colors/font_color = Color(1, 0.9, 0.55, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "[E] Laterne"
+horizontal_alignment = 1

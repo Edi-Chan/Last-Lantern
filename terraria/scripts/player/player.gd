@@ -5,6 +5,8 @@ extends CharacterBody2D
 ## Bewegung, Sprint, Crouch, Blickrichtung und Hand-Ausrichtung.
 ## Mining bleibt in player_interaction.gd, die Charakterwerte in player_stats.gd.
 
+signal fog_hurt(amount: float)
+
 @export var move_speed: float = 130.0
 @export var ground_acceleration: float = 900.0
 @export var air_acceleration: float = 500.0
@@ -122,12 +124,14 @@ func play_sfx(sound: StringName, volume_offset_db: float = 0.0) -> void:
 		_audio.play(sound, volume_offset_db)
 
 
-## Einstiegspunkt fuer Tool-Hitboxen und spaetere Gegner.
-func take_damage(amount: float, _source: Node = null) -> void:
+## Einstiegspunkt fuer Tool-Hitboxen, Nebel und spaetere Gegner.
+func take_damage(amount: float, _source: Node = null, damage_type: StringName = &"") -> void:
 	if stats == null:
 		return
-	stats.take_damage(amount)
-	print("Player hp=%.0f/%.0f (-%.0f)" % [stats.health, stats.max_health, amount])
+	stats.take_damage(amount, damage_type == &"fog")
+	print("Player hp=%.0f/%.0f (-%.0f) %s" % [stats.health, stats.max_health, amount, damage_type])
+	if damage_type == &"fog":
+		fog_hurt.emit(amount)
 
 
 func _handle_inventory_toggle() -> void:
@@ -268,19 +272,14 @@ func _is_swinging() -> bool:
 	return _anim != null and _anim.is_playing() and _anim.current_animation == &"tool_swing"
 
 
-## Weltposition unter dem Systemcursor. Nutzt die sichtbare Kamera
-## (Smoothing, Zoom, Stretch), nicht die ungesmoothe Zielposition.
+## Weltposition unter dem Systemcursor.
+## Eine Transformation: Viewport-Maus -> Canvas-Transform (Kamera, Zoom, Stretch).
+## Keine handgerollte Screen-Center-Formel und kein fester Pixel-Offset.
 func get_world_mouse_position() -> Vector2:
 	var vp := get_viewport()
 	if vp == null:
-		return get_global_mouse_position()
-	var cam := vp.get_camera_2d() as Camera2D
-	if cam != null:
-		var view_size := vp.get_visible_rect().size
-		if view_size.x > 0.0 and view_size.y > 0.0:
-			var zoom := Vector2(maxf(cam.zoom.x, 0.0001), maxf(cam.zoom.y, 0.0001))
-			return cam.get_screen_center_position() + (vp.get_mouse_position() - view_size * 0.5) / zoom
-	return get_global_mouse_position()
+		return Vector2.ZERO
+	return vp.get_canvas_transform().affine_inverse() * vp.get_mouse_position()
 
 
 func _mouse_facing() -> float:

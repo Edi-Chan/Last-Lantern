@@ -4,11 +4,39 @@
 [ext_resource type="PackedScene" uid="uid://bvhr8a3hur358" path="res://scenes/player/player.tscn" id="2_l3cfh"]
 [ext_resource type="PackedScene" uid="uid://gfw5bd3vpha4" path="res://scenes/ui/hud.tscn" id="3_6q06x"]
 [ext_resource type="Script" path="res://scripts/main/main.gd" id="4_main"]
+[ext_resource type="Script" path="res://scripts/systems/time/day_cycle.gd" id="5_day"]
+[ext_resource type="Script" path="res://scripts/systems/fog/fog_event.gd" id="6_fog"]
+[ext_resource type="PackedScene" path="res://scenes/world/fog_visual.tscn" id="7_fogvis"]
+[ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="8_ll"]
+[ext_resource type="Script" path="res://scripts/systems/fog/lightning_fx.gd" id="9_bolt"]
 
 [node name="Main" type="Node" unique_id=562751607]
 script = ExtResource("4_main")
 
 [node name="World" parent="." unique_id=762429514 instance=ExtResource("1_k2fmo")]
+
+[node name="LightningFx" type="Node2D" parent="World"]
+z_index = 12
+script = ExtResource("9_bolt")
+
+[node name="DayCycle" type="Node" parent="."]
+script = ExtResource("5_day")
+settings = ExtResource("8_ll")
+
+[node name="FogEvent" type="Node" parent="."]
+script = ExtResource("6_fog")
+settings = ExtResource("8_ll")
+
+[node name="WarningSound" type="AudioStreamPlayer" parent="FogEvent"]
+bus = &"SFX"
+
+[node name="ThunderSound" type="AudioStreamPlayer" parent="FogEvent"]
+bus = &"SFX"
+
+[node name="WindSound" type="AudioStreamPlayer" parent="FogEvent"]
+bus = &"SFX"
+
+[node name="FogVisual" parent="." instance=ExtResource("7_fogvis")]
 
 [node name="Player" parent="." unique_id=1843147423 instance=ExtResource("2_l3cfh")]
 

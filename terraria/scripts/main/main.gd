@@ -14,3 +14,6 @@ func _ready() -> void:
 	if _world == null or _player == null:
 		return
 	_player.global_position = _world.player_spawn_position
+	var lantern := get_tree().get_first_node_in_group("lantern") as Lantern
+	if lantern != null:
+		lantern.place_near_spawn()

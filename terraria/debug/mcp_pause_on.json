@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":59,"method":"tools/call","params":{"name":"editor_manage","arguments":{"op":"game_eval","params":{"code":"var sm = get_node('/root/SettingsManager')\nvar stats_n = get_tree().get_first_node_in_group('player_stats')\nvar hp = stats_n.health\nsm.set_menu_pause(true)\nreturn {'hp_at_pause': hp, 'paused': get_tree().paused}"}}}}

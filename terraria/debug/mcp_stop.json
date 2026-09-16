@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":38,"method":"tools/call","params":{"name":"project_manage","arguments":{"op":"stop","params":{}}}}

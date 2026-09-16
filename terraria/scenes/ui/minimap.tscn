@@ -130,6 +130,15 @@ mouse_filter = 2
 texture = ExtResource("2_marker")
 stretch_mode = 5
 
+[node name="LanternMarker" type="ColorRect" parent="Layout/MapClip"]
+z_index = 2
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 0
+offset_right = 6.0
+offset_bottom = 6.0
+mouse_filter = 2
+color = Color(1, 0.78, 0.28, 0.95)
+
 [node name="InfoPanel" type="PanelContainer" parent="Layout" unique_id=983810435]
 layout_mode = 2
 mouse_filter = 2

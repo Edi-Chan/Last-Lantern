@@ -12,11 +12,158 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/options_menu.tscn" id="10_options"]
 [ext_resource type="Script" path="res://scripts/ui/fps_overlay.gd" id="11_fps"]
 [ext_resource type="Script" path="res://scripts/ui/zoom_overlay.gd" id="12_zoom"]
+[ext_resource type="Script" path="res://scripts/ui/day_night_hud.gd" id="13_day"]
+[ext_resource type="Script" path="res://scripts/ui/fog_hud.gd" id="14_foghud"]
+[ext_resource type="Script" path="res://scripts/ui/fog_debug_controls.gd" id="15_fogdbg"]
+[ext_resource type="Script" path="res://scripts/ui/last_lantern_debug.gd" id="16_lldebug"]
+[ext_resource type="PackedScene" path="res://scenes/ui/lantern_upgrade_menu.tscn" id="17_lanternui"]
+[ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="18_llset"]
+[ext_resource type="StyleBox" path="res://resources/ui/menu_button_style.tres" id="19_btn"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_day"]
+content_margin_left = 4.0
+content_margin_top = 3.0
+content_margin_right = 4.0
+content_margin_bottom = 3.0
+bg_color = Color(0.0666667, 0.0784314, 0.109804, 0.705882)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.611765)
 
 [node name="HUD" type="CanvasLayer" unique_id=31826393]
+layer = 20
 script = ExtResource("8_hud")
 
 [node name="PlayerStatsPanel" parent="." unique_id=20132823 instance=ExtResource("1_8qguk")]
+
+[node name="DayNightHud" type="PanelContainer" parent="."]
+offset_left = 12.0
+offset_top = 68.0
+offset_right = 166.0
+offset_bottom = 118.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_day")
+script = ExtResource("13_day")
+
+[node name="Rows" type="VBoxContainer" parent="DayNightHud"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="DayLabel" type="Label" parent="DayNightHud/Rows"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.88, 0.62, 1)
+theme_override_font_sizes/font_size = 10
+text = "Tag 1"
+
+[node name="TimeLabel" type="Label" parent="DayNightHud/Rows"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 10
+text = "☀ 06:00"
+
+[node name="FogLabel" type="Label" parent="DayNightHud/Rows"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.78, 0.82, 0.88, 0.9)
+theme_override_font_sizes/font_size = 9
+text = "Nebel in 6 T."
+
+[node name="FogDebug" type="VBoxContainer" parent="."]
+process_mode = 3
+z_index = 200
+offset_left = 12.0
+offset_top = 124.0
+offset_right = 188.0
+offset_bottom = 220.0
+mouse_filter = 0
+theme_override_constants/separation = 4
+script = ExtResource("15_fogdbg")
+settings = ExtResource("18_llset")
+
+[node name="TestFogButton" type="Button" parent="FogDebug"]
+process_mode = 3
+custom_minimum_size = Vector2(176, 28)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 0
+action_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("19_btn")
+text = "TEST: TAG 7 22:00"
+
+[node name="EndFogButton" type="Button" parent="FogDebug"]
+process_mode = 3
+custom_minimum_size = Vector2(176, 24)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 0
+action_mode = 0
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("19_btn")
+text = "Nebel beenden"
+
+[node name="LightningButton" type="Button" parent="FogDebug"]
+process_mode = 3
+custom_minimum_size = Vector2(176, 24)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 0
+action_mode = 0
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("19_btn")
+text = "TEST: BLITZ"
+
+[node name="FogHud" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("14_foghud")
+
+[node name="Vignette" type="ColorRect" parent="FogHud"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.45, 0.05, 0.08, 0)
+
+[node name="WarningLabel" type="Label" parent="FogHud"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 28.0
+offset_bottom = 52.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.78, 0.38, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.02, 0, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "⚠ DER NEBEL KOMMT ..."
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="FogHud"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 52.0
+offset_bottom = 70.0
+mouse_filter = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 11
+text = "GESCHÜTZT"
+horizontal_alignment = 1
+
 
 [node name="FpsOverlay" type="Label" parent="."]
 process_mode = 3
@@ -317,9 +464,9 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 8.0
-offset_top = -100.0
+offset_top = -176.0
 offset_right = 180.0
-offset_bottom = -76.0
+offset_bottom = -152.0
 grow_vertical = 0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 0.94, 0.96, 0.95)
@@ -329,6 +476,23 @@ theme_override_font_sizes/font_size = 14
 text = "Zoom 1.00"
 vertical_alignment = 2
 script = ExtResource("12_zoom")
+
+[node name="LanternDebugLabel" type="Label" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = -148.0
+offset_right = 240.0
+offset_bottom = -62.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.788235, 0.815686, 0.858824, 0.784314)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.705882)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 8
+vertical_alignment = 2
+script = ExtResource("16_lldebug")
 
 [node name="DebugLabel" type="Label" parent="." unique_id=1431330675 groups=["mining_debug"]]
 anchors_preset = 2
@@ -352,7 +516,28 @@ script = ExtResource("6_gss2c")
 
 [node name="WorldMap" parent="." unique_id=1012792551 instance=ExtResource("4_worldmap")]
 
-[node name="MiniMap" parent="." unique_id=2039592394 instance=ExtResource("7_h022r")]
+[node name="RightHud" type="VBoxContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -212.0
+offset_top = 12.0
+offset_right = -12.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="MiniMap" parent="RightHud" unique_id=2039592394 instance=ExtResource("7_h022r")]
+layout_mode = 2
+anchors_preset = 0
+anchor_left = 0.0
+anchor_right = 0.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+
+[node name="LanternUpgradeMenu" parent="." instance=ExtResource("17_lanternui")]
 
 [node name="PauseMenu" parent="." instance=ExtResource("9_pause")]
 

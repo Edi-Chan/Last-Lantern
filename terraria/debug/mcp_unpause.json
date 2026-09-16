@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":35,"method":"tools/call","params":{"name":"editor_manage","arguments":{"op":"game_eval","params":{"code":"var sm = get_node_or_null('/root/SettingsManager')\nvar was = get_tree().paused\nif sm != null:\n\tsm._paused_by_focus = false\n\tsm._menu_pause_active = false\nget_tree().paused = false\nreturn {'was_paused': was, 'now_paused': get_tree().paused}"}}}}

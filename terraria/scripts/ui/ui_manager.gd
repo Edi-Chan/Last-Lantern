@@ -39,7 +39,12 @@ func is_options_open() -> bool:
 
 
 func is_blocking_gameplay() -> bool:
-	return is_pause_open() or is_options_open() or SettingsManager.is_gameplay_blocked()
+	if is_pause_open() or is_options_open() or SettingsManager.is_gameplay_blocked():
+		return true
+	var lantern_ui := get_tree().get_first_node_in_group("lantern_ui")
+	if lantern_ui != null and lantern_ui.has_method("is_open") and bool(lantern_ui.call("is_open")):
+		return true
+	return false
 
 
 func open_pause() -> void:
@@ -66,6 +71,9 @@ func _handle_escape() -> bool:
 	_refresh_refs()
 	if _options_menu != null and bool(_options_menu.call("is_open")):
 		return bool(_options_menu.call("handle_escape"))
+	var lantern_ui := get_tree().get_first_node_in_group("lantern_ui")
+	if lantern_ui != null and lantern_ui.has_method("consume_escape") and bool(lantern_ui.call("consume_escape")):
+		return true
 	var inventory := get_tree().get_first_node_in_group("inventory_ui")
 	if inventory != null and inventory.has_method("consume_escape") and bool(inventory.call("consume_escape")):
 		return true

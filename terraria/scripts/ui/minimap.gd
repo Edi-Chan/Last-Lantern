@@ -15,6 +15,7 @@ const MARGIN := 12.0
 @onready var _map_content: Control = $Layout/MapClip/MapContent
 @onready var _world_texture: TextureRect = $Layout/MapClip/MapContent/WorldTexture
 @onready var _player_marker: TextureRect = $Layout/MapClip/PlayerMarker
+@onready var _lantern_marker: ColorRect = $Layout/MapClip/LanternMarker
 @onready var _coords_label: Label = $Layout/TopBar/CoordinatesLabel
 @onready var _biome_label: Label = $Layout/InfoPanel/BiomeLabel
 @onready var _size_down: Button = $Layout/TopBar/SizeDownButton
@@ -105,6 +106,9 @@ func _apply_size() -> void:
 	var next := SIZES[_size_index]
 	custom_minimum_size = next
 	size = next
+	if get_parent() is BoxContainer:
+		_update_view()
+		return
 	offset_left = -(MARGIN + next.x)
 	offset_top = MARGIN
 	offset_right = -MARGIN
@@ -161,10 +165,25 @@ func _update_view() -> void:
 	if _player_marker != null:
 		_player_marker.size = MARKER_SIZE
 		_player_marker.position = clip * 0.5 - MARKER_SIZE * 0.5
+	_update_lantern_marker(clip, scale_v, tile)
 	if _coords_label != null:
 		_coords_label.text = "X:%d Y:%d" % [tile.x, tile.y]
 	if _biome_label != null:
 		_biome_label.text = "%s  %s" % [_region_name(tile), _depth_name(tile)]
+
+
+func _update_lantern_marker(clip: Vector2, scale_v: float, player_tile: Vector2i) -> void:
+	if _lantern_marker == null:
+		return
+	var lantern := get_tree().get_first_node_in_group("lantern") as Node2D
+	if lantern == null or _data == null:
+		_lantern_marker.visible = false
+		return
+	_lantern_marker.visible = true
+	_lantern_marker.size = Vector2(6, 6)
+	var lantern_tile := _data.world_to_map(lantern.global_position)
+	var offset := (Vector2(lantern_tile) - Vector2(player_tile)) * scale_v
+	_lantern_marker.position = clip * 0.5 + offset - _lantern_marker.size * 0.5
 
 
 func _player_tile() -> Vector2i:

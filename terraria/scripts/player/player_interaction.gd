@@ -11,6 +11,7 @@ extends Node
 @export var block_catalog: BlockCatalog
 @export var item_catalog: ItemCatalog
 @export var item_drop_scene: PackedScene
+@export var debug_targeting: bool = false
 
 var current_mining_tile := Vector2i(9999, 9999)
 var mining_progress: float = 0.0
@@ -45,6 +46,9 @@ var _weak_flash_left: float = 0.0
 var _weak_message_cooldown: float = 0.0
 var _weak_hint: Label
 var _debug_refresh_left: float = 0.0
+var _mouse_marker: ColorRect
+var _target_marker: ColorRect
+var _mouse_cell := Vector2i(9999, 9999)
 
 func _ready() -> void:
 	_tile_map = get_tree().get_first_node_in_group("terrain") as TileMapLayer
@@ -74,12 +78,14 @@ func _process(delta: float) -> void:
 		_attack_cooldown_left = maxf(0.0, _attack_cooldown_left - delta)
 		if _highlight != null:
 			_highlight.visible = false
+		_hide_targeting_markers()
 		return
 	if Input.is_action_just_pressed("use_item"):
 		_world_use_held = true
 	if not Input.is_action_pressed("use_item"):
 		_world_use_held = false
 	var hover_tile := _get_hovered_tile()
+	_mouse_cell = hover_tile
 	var tile := _resolve_target_tile(hover_tile)
 	current_target_cell = tile
 	var block := get_block_data(tile)
@@ -91,6 +97,7 @@ func _process(delta: float) -> void:
 	_handle_mining(delta, tile, block, in_range)
 	_handle_placement(hover_tile, place_state)
 	_handle_seed_plant(hover_tile, hover_in_range)
+	_update_targeting_markers(hover_tile, tile)
 	_debug_refresh_left -= delta
 	_update_debug(tile, block, in_range, place_state)
 
@@ -115,7 +122,7 @@ func _is_pointer_over_blocking_ui() -> bool:
 	if get_viewport().gui_get_hovered_control() != null:
 		return true
 	var mouse := get_viewport().get_mouse_position()
-	var groups: Array[StringName] = [&"minimap_ui", &"inventory_ui", &"world_map_ui", &"hotbar_ui", &"pause_menu", &"options_menu"]
+	var groups: Array[StringName] = [&"minimap_ui", &"inventory_ui", &"world_map_ui", &"hotbar_ui", &"pause_menu", &"options_menu", &"fog_debug_ui", &"lantern_ui"]
 	for group_name in groups:
 		var node := get_tree().get_first_node_in_group(group_name)
 		var control := node as Control
@@ -129,15 +136,20 @@ func _is_pointer_over_blocking_ui() -> bool:
 
 
 func _get_hovered_tile() -> Vector2i:
-	return _world_to_cell(_get_world_mouse())
+	if _tile_map == null:
+		return INVALID_TILE
+	return _tile_map.local_to_map(_tile_map.get_local_mouse_position())
 
 
 func _get_world_mouse() -> Vector2:
-	if _player != null:
-		return _player.get_world_mouse_position()
 	if _tile_map != null:
 		return _tile_map.to_global(_tile_map.get_local_mouse_position())
-	return get_viewport().get_mouse_position()
+	if _player != null:
+		return _player.get_world_mouse_position()
+	var vp := get_viewport()
+	if vp == null:
+		return Vector2.ZERO
+	return vp.get_canvas_transform().affine_inverse() * vp.get_mouse_position()
 
 
 func _is_in_range(tile_position: Vector2i) -> bool:
@@ -149,10 +161,12 @@ func _is_in_range(tile_position: Vector2i) -> bool:
 
 
 func _resolve_target_tile(hover_tile: Vector2i) -> Vector2i:
-	_autolock_active = InputMap.has_action("block_autolock") and Input.is_action_pressed("block_autolock")
-	if not _autolock_active:
+	var want_autolock := InputMap.has_action("block_autolock") and Input.is_action_pressed("block_autolock")
+	if not want_autolock:
+		_autolock_active = false
 		_autolock_dir = Vector2i.ZERO
 		return hover_tile
+	_autolock_active = true
 	return _autolock_tile()
 
 
@@ -643,9 +657,12 @@ func _update_progress_bar(ratio: float) -> void:
 func _update_debug(tile: Vector2i, block: BlockData, in_range: bool, _place_state: Dictionary) -> void:
 	if _debug_label == null:
 		return
-	if _debug_refresh_left > 0.0:
+	if not debug_targeting and _debug_refresh_left > 0.0:
 		return
-	_debug_refresh_left = 0.25
+	_debug_refresh_left = 0.05 if debug_targeting else 0.25
+	if debug_targeting:
+		_debug_label.text = _targeting_debug_text()
+		return
 	var block_name := block.display_name if block != null else "Air"
 	var selected := _inventory.get_selected_item() if _inventory != null else null
 	var selected_name := selected.display_name if selected != null else "leer"
@@ -655,6 +672,101 @@ func _update_debug(tile: Vector2i, block: BlockData, in_range: bool, _place_stat
 	]
 	lines.append_array(_world_debug_lines(tile))
 	_debug_label.text = "\n".join(lines)
+
+
+func get_targeting_debug() -> Dictionary:
+	var vp := get_viewport()
+	var cam := vp.get_camera_2d() as Camera2D if vp != null else null
+	var world := _get_world_mouse()
+	var screen := vp.get_mouse_position() if vp != null else Vector2.ZERO
+	var local := _tile_map.to_local(world) if _tile_map != null else Vector2.ZERO
+	var zoom_out := 1.0
+	if cam != null and cam.has_method("get_zoom_out"):
+		zoom_out = float(cam.call("get_zoom_out"))
+	return {
+		"mouse_screen": screen,
+		"mouse_world": world,
+		"tilemap_local": local,
+		"mouse_cell": _mouse_cell,
+		"final_target": current_target_cell,
+		"mining_cell": current_mining_tile,
+		"autolock": _autolock_active,
+		"zoom": cam.zoom if cam != null else Vector2.ONE,
+		"zoom_out": zoom_out,
+		"match": _mouse_cell == current_target_cell,
+	}
+
+
+func _targeting_debug_text() -> String:
+	var data := get_targeting_debug()
+	var world: Vector2 = data["mouse_world"]
+	var screen: Vector2 = data["mouse_screen"]
+	var local: Vector2 = data["tilemap_local"]
+	var zoom_v: Vector2 = data["zoom"]
+	return "\n".join([
+		"Mouse Screen: %s" % str(screen.round()),
+		"Mouse World: %s" % str(world.round()),
+		"TileMap Local: %s" % str(local.round()),
+		"Mouse Cell: %s" % str(data["mouse_cell"]),
+		"Final Target Cell: %s" % str(data["final_target"]),
+		"Mining Cell: %s" % str(data["mining_cell"]),
+		"Auto Target: %s" % ("ON" if bool(data["autolock"]) else "OFF"),
+		"CTRL: %s" % ("ON" if bool(data["autolock"]) else "OFF"),
+		"Camera Zoom: %.2f (out %.2f)" % [zoom_v.x, float(data["zoom_out"])],
+	])
+
+
+func _update_targeting_markers(mouse_cell: Vector2i, target_cell: Vector2i) -> void:
+	if not debug_targeting:
+		_hide_targeting_markers()
+		return
+	_ensure_targeting_markers()
+	_place_marker(_mouse_marker, mouse_cell)
+	_place_marker(_target_marker, target_cell)
+
+
+func _ensure_targeting_markers() -> void:
+	if _mouse_marker != null and _target_marker != null:
+		return
+	var parent: Node = _highlight.get_parent() if _highlight != null else _tile_map
+	if parent == null:
+		return
+	if _mouse_marker == null:
+		_mouse_marker = _make_debug_marker(Color(1.0, 1.0, 1.0, 0.72), Vector2(float(tile_size), float(tile_size)))
+		parent.add_child(_mouse_marker)
+	if _target_marker == null:
+		_target_marker = _make_debug_marker(Color(1.0, 0.86, 0.12, 0.78), Vector2(float(tile_size) - 4.0, float(tile_size) - 4.0))
+		parent.add_child(_target_marker)
+
+
+func _make_debug_marker(color: Color, size: Vector2) -> ColorRect:
+	var rect := ColorRect.new()
+	rect.size = size
+	rect.color = color
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.z_index = 11
+	rect.visible = false
+	return rect
+
+
+func _place_marker(marker: ColorRect, cell: Vector2i) -> void:
+	if marker == null or _tile_map == null:
+		return
+	if cell == INVALID_TILE:
+		marker.visible = false
+		return
+	var top_left := _tile_map.to_global(_tile_map.map_to_local(cell) - Vector2(tile_size, tile_size) * 0.5)
+	if marker == _target_marker:
+		top_left += Vector2(2.0, 2.0)
+	marker.global_position = top_left
+	marker.visible = true
+
+
+func _hide_targeting_markers() -> void:
+	if _mouse_marker != null:
+		_mouse_marker.visible = false
+	if _target_marker != null:
+		_target_marker.visible = false
 
 
 ## Weltinfos nur anzeigen, wenn tatsaechlich ein Generator in der Szene haengt.

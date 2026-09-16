@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":37,"method":"tools/call","params":{"name":"editor_manage","arguments":{"op":"game_eval","params":{"code":"var fv = get_tree().get_first_node_in_group('fog_visual')\nvar hidden = false\nif fv != null:\n\tvar o = fv.get_node_or_null('Overlay')\n\tif o != null:\n\t\to.visible = false\n\t\thidden = true\nreturn {'hidden': hidden}"}}}}

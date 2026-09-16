@@ -20,6 +20,8 @@
 [ext_resource type="AudioStream" uid="uid://bfcc5clej3n73" path="res://audio/sfx/tree_fall.wav" id="15_treefall"]
 [ext_resource type="Script" uid="uid://quvxfdu4m3ng" path="res://scripts/world/cave_atmosphere.gd" id="16_cave"]
 [ext_resource type="Script" uid="uid://d21w5meq8b3n7" path="res://scripts/world/visibility_overlay.gd" id="20_vis"]
+[ext_resource type="PackedScene" path="res://scenes/world/lantern/lantern.tscn" id="21_lantern"]
+
 [node name="World" type="Node2D" unique_id=762429514]
 script = ExtResource("1_worldgen")
 block_catalog = ExtResource("2_catalog")
@@ -28,7 +30,7 @@ ore_catalog = ExtResource("2_orecat")
 [node name="Background" type="Node2D" parent="." unique_id=1573718673]
 script = ExtResource("16_cave")
 
-[node name="Sky" type="ColorRect" parent="Background" unique_id=1336321024]
+[node name="Sky" type="ColorRect" parent="Background" unique_id=1336321024 groups=["world_sky"]]
 z_index = -12
 offset_left = -4000.0
 offset_top = -4000.0
@@ -132,6 +134,8 @@ volume_db = -6.0
 
 [node name="Entities" type="Node2D" parent="." unique_id=921514440]
 
+[node name="Lantern" parent="Entities" instance=ExtResource("21_lantern")]
+
 [node name="ItemDrops" type="Node2D" parent="." unique_id=874844409 groups=["item_drops"]]
 
 [node name="Enemies" type="Node2D" parent="." unique_id=368881272]
@@ -172,3 +176,6 @@ horizontal_alignment = 1
 z_index = 6
 centered = false
 script = ExtResource("20_vis")
+
+[node name="WorldModulate" type="CanvasModulate" parent="." groups=["world_modulate"]]
+color = Color(1, 1, 1, 1)

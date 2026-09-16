@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LanternLevelData" format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/lantern_level_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/world/lantern/lantern_level_3_sprite.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_script")
+level = 3
+display_name = "Große Laterne"
+description = "Große Siedlung. Sehr starkes Licht und weiter Schutz."
+safe_radius_tiles = 100
+light_energy = 1.7
+light_texture_scale = 7.4
+texture = ExtResource("2_tex")
+sprite_width_px = 112.0
+cost_item_ids = Array[int]([11, 12, 9])
+cost_amounts = Array[int]([35, 25, 20])

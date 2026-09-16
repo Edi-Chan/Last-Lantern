@@ -1,0 +1,113 @@
+@tool
+extends McpTestSuite
+
+
+func suite_name() -> String:
+	return "last_lantern"
+
+
+func test_fog_day_formula() -> void:
+	var settings := LastLanternSettings.new()
+	settings.fog_interval_days = 7
+	assert_eq(settings.is_fog_day(7), true)
+	assert_eq(settings.is_fog_day(14), true)
+	assert_eq(settings.is_fog_day(21), true)
+	assert_eq(settings.is_fog_day(28), true)
+	assert_eq(settings.is_fog_day(6), false)
+	assert_eq(settings.is_fog_day(8), false)
+	assert_eq(settings.is_fog_day(13), false)
+	assert_eq(settings.is_fog_day(35), true)
+
+
+func test_fog_cycle_and_next_day() -> void:
+	var settings := LastLanternSettings.new()
+	settings.fog_interval_days = 7
+	assert_eq(settings.fog_cycle_for_day(7), 1)
+	assert_eq(settings.fog_cycle_for_day(14), 2)
+	assert_eq(settings.fog_cycle_for_day(21), 3)
+	assert_eq(settings.fog_cycle_for_day(28), 4)
+	assert_eq(settings.next_fog_day(1, false), 7)
+	assert_eq(settings.next_fog_day(7, false), 7)
+	assert_eq(settings.next_fog_day(7, true), 14)
+	assert_eq(settings.next_fog_day(8, false), 14)
+
+
+func test_fog_damage_curve_and_cap() -> void:
+	var settings := LastLanternSettings.new()
+	assert_eq(settings.fog_damage_per_second(1), 5.0)
+	assert_eq(settings.fog_damage_per_second(2), 7.0)
+	assert_eq(settings.fog_damage_per_second(3), 9.0)
+	assert_eq(settings.fog_damage_per_second(4), 12.0)
+	assert_true(settings.fog_damage_per_second(80) <= 24.0)
+	assert_eq(settings.fog_duration_seconds(1), settings.fog_duration_base)
+	assert_true(settings.fog_duration_seconds(40) <= settings.fog_duration_max)
+
+
+func test_debug_jump_is_22_00() -> void:
+	var settings := LastLanternSettings.new()
+	var t := settings.clock_hour_to_time(22.0)
+	assert_eq(int(round(t * 24.0 * 60.0)), 22 * 60)
+	assert_true(t > 0.75)
+
+
+func test_lantern_radii() -> void:
+	var l1 := _read("res://resources/lantern/lantern_level_1.tres")
+	var l2 := _read("res://resources/lantern/lantern_level_2.tres")
+	var l3 := _read("res://resources/lantern/lantern_level_3.tres")
+	var l4 := _read("res://resources/lantern/lantern_level_4.tres")
+	assert_true(l1.contains("safe_radius_tiles = 44"))
+	assert_true(l2.contains("safe_radius_tiles = 68"))
+	assert_true(l3.contains("safe_radius_tiles = 100"))
+	assert_true(l4.contains("safe_radius_tiles = 140"))
+	assert_eq(44 * 16, 704)
+	assert_eq(68 * 16, 1088)
+	assert_eq(100 * 16, 1600)
+	assert_eq(140 * 16, 2240)
+
+
+func test_safe_zone_pixels_use_tile_size() -> void:
+	var zone := SafeZone.new()
+	zone.tile_size = 16
+	zone.radius_tiles = 44
+	assert_eq(zone.get_radius_pixels(), 704.0)
+	zone.radius_tiles = 68
+	assert_eq(zone.get_radius_pixels(), 1088.0)
+	zone.free()
+
+
+func test_lightning_palette_weights_and_roll() -> void:
+	var palette := _read("res://scripts/systems/fog/lightning_palette.gd")
+	assert_true(palette.contains("WEIGHT_PURPLE := 0.45"))
+	assert_true(palette.contains("WEIGHT_CRIMSON := 0.30"))
+	assert_true(palette.contains("WEIGHT_RED := 0.20"))
+	assert_true(palette.contains("WEIGHT_VOID := 0.05"))
+	assert_true(palette.contains("PURPLE"))
+	assert_true(palette.contains("CRIMSON"))
+	assert_true(palette.contains("VOID_PURPLE"))
+	assert_true(palette.contains("func pick_variant"))
+	var vis := _read("res://scripts/systems/fog/fog_visual.gd")
+	assert_true(vis.contains("LightningPalette.pick_variant()"))
+	assert_true(vis.contains("_pre_left"))
+
+
+func test_fog_shader_has_soft_distance_zones() -> void:
+	var shader := _read("res://shaders/fog_overlay.gdshader")
+	assert_true(shader.contains("ZONE_B = 5.0 * TILE"))
+	assert_true(shader.contains("ZONE_C = 12.0 * TILE"))
+	assert_true(shader.contains("ZONE_D = 25.0 * TILE"))
+	assert_true(shader.contains("smoothstep(0.0, ZONE_B, dist_out)"))
+	assert_true(shader.contains("fog_color_c"))
+	assert_false(shader.contains("mouse_position.x -="))
+
+
+func test_mouse_targeting_uses_canvas_transform() -> void:
+	var player := _read("res://scripts/player/player.gd")
+	assert_true(player.contains("get_canvas_transform().affine_inverse()"))
+	assert_false(player.contains("get_screen_center_position() + (vp.get_mouse_position()"))
+	var mining := _read("res://scripts/player/player_interaction.gd")
+	assert_true(mining.contains("local_to_map(_tile_map.get_local_mouse_position())"))
+	assert_true(mining.contains("debug_targeting"))
+
+
+func _read(path: String) -> String:
+	return FileAccess.get_file_as_string(path)

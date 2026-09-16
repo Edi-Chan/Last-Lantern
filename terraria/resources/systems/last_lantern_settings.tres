@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="LastLanternSettings" format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/last_lantern_settings.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/lantern/lantern_level_1.tres" id="2_l1"]
+[ext_resource type="Resource" path="res://resources/lantern/lantern_level_2.tres" id="3_l2"]
+[ext_resource type="Resource" path="res://resources/lantern/lantern_level_3.tres" id="4_l3"]
+[ext_resource type="Resource" path="res://resources/lantern/lantern_level_4.tres" id="5_l4"]
+
+[resource]
+script = ExtResource("1_script")
+tile_size = 16
+day_duration = 75.0
+night_duration = 35.0
+time_scale = 1.0
+night_start_time = 0.75
+fog_interval_days = 7
+fog_start_time = 0.75
+warning_duration = 8.0
+fog_duration_base = 22.0
+fog_duration_per_cycle = 6.0
+fog_duration_max = 55.0
+fog_ending_duration = 4.0
+fog_damage_base = 5.0
+fog_damage_tick = 0.5
+fog_grace_period = 0.75
+lantern_spawn_offset_tiles = 5
+lantern_levels = [ExtResource("2_l1"), ExtResource("3_l2"), ExtResource("4_l3"), ExtResource("5_l4")]
+show_debug_fog_button = true
+debug_jump_hour = 22.0
+show_debug_safe_radius = false

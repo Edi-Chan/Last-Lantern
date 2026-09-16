@@ -753,11 +753,15 @@ func _place_combat_dummy() -> void:
 	var dummy := get_node_or_null("Enemies/CombatDummy") as Node2D
 	if dummy == null:
 		return
-	var x := clampi(spawn_tile.x + 7, world_edge_width, world_width - world_edge_width - 1)
+	var x := clampi(spawn_tile.x + 14, world_edge_width, world_width - world_edge_width - 1)
 	dummy.global_position = _ground_position(x)
 
 
 ## Weltkoordinate in Spaltenmitte, auf der Oberkante des obersten Bodenblocks.
+func ground_world_position(tile_x: int) -> Vector2:
+	return _ground_position(tile_x)
+
+
 func _ground_position(tile_x: int) -> Vector2:
 	var size := float(TILE_SIZE)
 	return Vector2(float(tile_x) * size + size * 0.5, float(_surface[tile_x]) * size - 1.0)

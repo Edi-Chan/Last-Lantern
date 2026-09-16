@@ -21,6 +21,7 @@ const TITLE_KEEP := 96.0
 @onready var _map_content: Control = $WindowPanel/MapClip/MapContent
 @onready var _world_texture: TextureRect = $WindowPanel/MapClip/MapContent/WorldTexture
 @onready var _player_marker: TextureRect = $WindowPanel/MapClip/MapContent/PlayerMarker
+@onready var _lantern_marker: ColorRect = $WindowPanel/MapClip/MapContent/LanternMarker
 @onready var _resize_handle: Control = $WindowPanel/ResizeHandle
 
 var _data: WorldMapData
@@ -423,6 +424,16 @@ func _update_marker_and_labels() -> void:
 	if marker_size.x < 1.0:
 		marker_size = Vector2(16, 16)
 	_player_marker.position = Vector2(tile) - marker_size * 0.5 * inverse
+	if _lantern_marker != null:
+		var lantern := get_tree().get_first_node_in_group("lantern") as Node2D
+		if lantern == null:
+			_lantern_marker.visible = false
+		else:
+			_lantern_marker.visible = true
+			_lantern_marker.size = Vector2(8, 8)
+			_lantern_marker.scale = Vector2(inverse, inverse)
+			var lantern_tile := _player_tile_of(lantern.global_position)
+			_lantern_marker.position = Vector2(lantern_tile) - _lantern_marker.size * 0.5 * inverse
 	if _coords_label != null:
 		_coords_label.text = "X: %d   Y: %d" % [tile.x, tile.y]
 	if _zoom_label != null:
@@ -436,6 +447,14 @@ func _player_tile() -> Vector2i:
 	if _tilemap == null or _player == null:
 		return Vector2i.ZERO
 	return _tilemap.local_to_map(_tilemap.to_local(_player.global_position))
+
+
+func _player_tile_of(world_pos: Vector2) -> Vector2i:
+	if _data != null:
+		return _data.world_to_map(world_pos)
+	if _tilemap == null:
+		return Vector2i.ZERO
+	return _tilemap.local_to_map(_tilemap.to_local(world_pos))
 
 
 func _clip_center_local() -> Vector2:

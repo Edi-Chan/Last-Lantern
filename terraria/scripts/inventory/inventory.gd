@@ -16,6 +16,9 @@ const TEST_CHEST_ID := 5
 const TEST_LEGS_ID := 21
 const START_STONE_ID := 2
 const START_TOOL_IDS := [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+## Default-Hotbar nur fuer neues Spiel / Testcharakter. Reihenfolge entspricht der Toolbar 1-0.
+## Sichel vor Angel, wie im bestehenden Werkzeugset vorgesehen. Scanner bleibt im Beutel.
+const DEFAULT_HOTBAR_TOOL_IDS := [START_PICKAXE_ID, 23, 24, 25, 26, 28, 27, 29, 30, 31]
 
 ## Welcher ItemData.EquipmentSlot in welchen Equipment-Key passt.
 const EQUIPMENT_TYPES := {
@@ -44,10 +47,10 @@ func _ready() -> void:
 		"accessory_2": _empty_slot(),
 	}
 	add_to_group("player_inventory")
-	add_item(START_PICKAXE_ID, 1)
 	_give_demo_armor_once()
 	_give_demo_tools_once()
 	_give_demo_stone_once()
+	_give_lantern_upgrade_materials_once()
 
 
 func _empty_slot() -> Dictionary:
@@ -171,6 +174,41 @@ func get_total_amount(item_id: int) -> int:
 		if int(data["item_id"]) == item_id:
 			total += int(data["amount"])
 	return total
+
+
+func get_bag_amount(item_id: int) -> int:
+	var total := 0
+	for slot in slots:
+		if int(slot["item_id"]) == item_id:
+			total += int(slot["amount"])
+	return total
+
+
+func can_consume_items(costs: Array) -> bool:
+	for cost in costs:
+		if get_bag_amount(int(cost["item_id"])) < int(cost["amount"]):
+			return false
+	return true
+
+
+func try_consume_items(costs: Array) -> bool:
+	if not can_consume_items(costs):
+		return false
+	for cost in costs:
+		var remaining := int(cost["amount"])
+		var item_id := int(cost["item_id"])
+		for slot in slots:
+			if remaining <= 0:
+				break
+			if int(slot["item_id"]) != item_id:
+				continue
+			var take := mini(int(slot["amount"]), remaining)
+			slot["amount"] = int(slot["amount"]) - take
+			remaining -= take
+			if int(slot["amount"]) <= 0:
+				_clear(slot)
+	inventory_changed.emit()
+	return true
 
 
 func get_total_defense() -> int:
@@ -453,16 +491,80 @@ func _give_demo_armor_once() -> void:
 
 
 func _give_demo_tools_once() -> void:
+	_apply_default_hotbar_loadout()
 	for item_id in START_TOOL_IDS:
 		if get_total_amount(item_id) > 0:
 			continue
 		_add_item_to_bag(item_id, 1)
+	inventory_changed.emit()
+
+
+## Fuellt nur LEERE Hotbar-Slots. Belegte Slots (Savegame/manuelles Layout) bleiben.
+## Vorhandene Instanzen werden aus dem Beutel verschoben, nie dupliziert.
+func _apply_default_hotbar_loadout() -> void:
+	for i in DEFAULT_HOTBAR_TOOL_IDS.size():
+		if i >= HOTBAR_COUNT:
+			break
+		var item_id := int(DEFAULT_HOTBAR_TOOL_IDS[i])
+		var slot := slots[i]
+		if int(slot["item_id"]) >= 0 and int(slot["amount"]) > 0:
+			continue
+		if _hotbar_contains(item_id):
+			continue
+		var bag_slot := _find_bag_slot_with_item(item_id)
+		if bag_slot >= 0:
+			transfer(bag_slot, i)
+			continue
+		_put_item_in_empty_slot(i, item_id)
+
+
+func _hotbar_contains(item_id: int) -> bool:
+	for i in HOTBAR_COUNT:
+		if int(slots[i]["item_id"]) == item_id and int(slots[i]["amount"]) > 0:
+			return true
+	return false
+
+
+func _find_bag_slot_with_item(item_id: int) -> int:
+	for i in range(HOTBAR_COUNT, SLOT_COUNT):
+		if int(slots[i]["item_id"]) == item_id and int(slots[i]["amount"]) > 0:
+			return i
+	return -1
+
+
+func _put_item_in_empty_slot(index: int, item_id: int) -> void:
+	if index < 0 or index >= slots.size() or item_id < 0:
+		return
+	var slot := slots[index]
+	if int(slot["item_id"]) >= 0 and int(slot["amount"]) > 0:
+		return
+	var item := _get_item(item_id)
+	slot["item_id"] = item_id
+	slot["amount"] = 1
+	_init_instance(slot, item)
 
 
 func _give_demo_stone_once() -> void:
 	if get_total_amount(START_STONE_ID) > 0:
 		return
 	_add_item_to_bag(START_STONE_ID, 20)
+
+
+func _give_lantern_upgrade_materials_once() -> void:
+	## Testvorrat fuer Laternen-Upgrades. Nur Beutel, keine neuen Itemtypen.
+	var packs := [
+		[9, 80],
+		[2, 80],
+		[11, 50],
+		[12, 40],
+		[13, 40],
+	]
+	for pack in packs:
+		var item_id := int(pack[0])
+		var amount := int(pack[1])
+		if get_bag_amount(item_id) >= amount:
+			continue
+		_add_item_to_bag(item_id, amount - get_bag_amount(item_id))
 
 
 ## Demo-Ruestung landet im Beutel, nicht in der Hotbar, damit Search/Filter greifen.

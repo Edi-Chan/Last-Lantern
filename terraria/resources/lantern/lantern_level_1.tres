@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LanternLevelData" format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/lantern_level_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/world/lantern/lantern_level_1_sprite.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_script")
+level = 1
+display_name = "Alte Laterne"
+description = "Erste kleine Basis. Warmes Licht, begrenzter Schutz."
+safe_radius_tiles = 44
+light_energy = 1.15
+light_texture_scale = 4.0
+texture = ExtResource("2_tex")
+sprite_width_px = 80.0
+cost_item_ids = Array[int]([])
+cost_amounts = Array[int]([])

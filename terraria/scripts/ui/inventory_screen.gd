@@ -275,6 +275,9 @@ func toggle() -> void:
 
 
 func open() -> void:
+	var lantern_ui := get_tree().get_first_node_in_group("lantern_ui")
+	if lantern_ui != null and lantern_ui.has_method("close_menu"):
+		lantern_ui.call("close_menu")
 	var world_map := get_tree().get_first_node_in_group("world_map_ui")
 	if world_map != null and world_map.has_method("is_open") and world_map.is_open():
 		world_map.call("close", false)
