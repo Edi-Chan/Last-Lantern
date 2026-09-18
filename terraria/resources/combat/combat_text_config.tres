@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="CombatTextConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/combat_text_config.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+physical_color = Color(1, 1, 1, 1)
+critical_color = Color(1, 0.82, 0.18, 1)
+player_damage_color = Color(1, 0.22, 0.22, 1)
+darkness_color = Color(0.72, 0.32, 0.95, 1)
+fire_color = Color(1, 0.48, 0.12, 1)
+frost_color = Color(0.52, 0.86, 1, 1)
+heal_color = Color(0.32, 0.92, 0.38, 1)
+reduced_color = Color(0.62, 0.62, 0.66, 1)
+outline_color = Color(0, 0, 0, 0.88)
+normal_font_size = 11
+critical_font_size = 15
+dot_font_size = 9
+outline_size = 3
+lifetime = 0.9
+fade_time = 0.32
+rise_distance = 22.0
+critical_rise_distance = 28.0
+random_x_offset = 7.0
+stack_x = 8.0
+stack_y = -6.0
+critical_pop_scale = 1.3
+normal_pop_scale = 1.12
+pop_time = 0.1
+max_combat_text = 30
+dot_aggregate_window = 0.28
+text_above_health_bar = 14.0

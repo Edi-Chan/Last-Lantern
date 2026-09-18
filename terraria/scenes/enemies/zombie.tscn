@@ -42,6 +42,9 @@ position = Vector2(0, -32)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 
+[node name="HealthBarAnchor" type="Marker2D" parent="."]
+position = Vector2(0, -58)
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -23)
 shape = SubResource("RectangleShape2D_body")
@@ -172,6 +175,6 @@ bus = &"SFX"
 
 [node name="Darkness" type="AudioStreamPlayer2D" parent="Audio"]
 stream = ExtResource("11_dark")
-volume_db = -16.0
-max_distance = 360.0
-bus = &"SFX"
+volume_db = -22.0
+max_distance = 280.0
+bus = &"Ambient"

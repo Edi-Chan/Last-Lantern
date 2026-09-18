@@ -20,6 +20,7 @@ var _weapon_data: Resource
 var _anim_name: StringName = &"tool_swing"
 var _hit_start: float = 0.08
 var _hit_end: float = 0.18
+var _kind: int = 0
 
 @onready var _anim: AnimationPlayer = $"../../../AnimationPlayer"
 @onready var _shape: CollisionShape2D = $CollisionShape2D
@@ -57,6 +58,7 @@ func begin_attack(
 	_anim_name = anim_name
 	_hit_start = hit_start
 	_hit_end = hit_end
+	_kind = kind
 	_apply_shape(kind, item_range)
 
 
@@ -117,4 +119,7 @@ func _try_hit(node: Node) -> void:
 		return
 	already_hit_targets.append(target)
 	var resolved := CombatResolver.resolve_damage(_damage, _weapon_data, target)
-	CombatResolver.apply_hit(target, resolved, _knockback, _source)
+	CombatResolver.apply_hit(target, resolved, _knockback, _source, _weapon_data)
+	var darkness := target.has_method("is_darkness_form") and bool(target.call("is_darkness_form"))
+	if _source != null and _source.has_method("play_hit"):
+		_source.call("play_hit", _kind, darkness)

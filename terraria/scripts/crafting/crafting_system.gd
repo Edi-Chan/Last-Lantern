@@ -70,7 +70,7 @@ func max_craftable(recipe: RecipeData, inventory: Inventory, nearby_stations: Ar
 		if need <= 0:
 			continue
 		var have := inventory.get_bag_amount(int(ingredient["item_id"]))
-		limit = mini(limit, int(have / need))
+		limit = mini(limit, int(float(have) / float(need)))
 	if limit <= 0:
 		return 0
 	var output := recipe.output_amount if recipe.output_amount > 0 else 1
@@ -79,7 +79,7 @@ func max_craftable(recipe: RecipeData, inventory: Inventory, nearby_stations: Ar
 		item = item_catalog.get_item(recipe.output_item_id)
 	var max_stack := item.max_stack if item != null else 999
 	var space := _count_add_space(inventory, recipe.output_item_id, max_stack)
-	limit = mini(limit, int(space / output))
+	limit = mini(limit, int(float(space) / float(output)))
 	return maxi(0, limit)
 
 

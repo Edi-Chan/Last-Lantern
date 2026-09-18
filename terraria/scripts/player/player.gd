@@ -34,12 +34,15 @@ var is_sprinting: bool = false
 var is_crouching: bool = false
 
 var _inventory_action_held: bool = false
-var _footstep_cooldown: float = 0.0
+var _was_on_floor: bool = true
+var _peak_fall_speed: float = 0.0
+var _land_lock: float = 0.0
 var _stamina_regen_left: float = 0.0
 ## Gesetzt, sobald die Ausdauer auf 0 faellt. Blockiert den Sprint, bis
 ## sprint_min_stamina wieder erreicht ist.
 var _sprint_exhausted: bool = false
 var _drop_through_left: float = 0.0
+var _step_gate: float = 0.0
 ## Wird nur beim Aufstehversuch gebraucht, deshalb einmalig angelegt statt
 ## pro Frame neu erzeugt.
 var _headroom_shape := RectangleShape2D.new()
@@ -76,12 +79,10 @@ const FALL_TOOL_PIVOT_Y := -25.0
 ## Solange die Maus naeher als das am Player steht, bleibt die Blickrichtung
 ## stehen. Ohne das flippt der Sprite bei jeder kleinen Mausbewegung.
 const MOUSE_FACING_DEADZONE := 10.0
-## Schrittabstand bei voller Laufgeschwindigkeit. Weil der Abstand mit der
-## tatsaechlichen Geschwindigkeit skaliert, ergibt Sprint automatisch 0.20 s
-## und Schleichen rund 0.67 s.
-const FOOTSTEP_INTERVAL := 0.30
 const CROUCH_FOOTSTEP_VOLUME := -6.0
+const SPRINT_FOOTSTEP_VOLUME := 1.5
 const MOVING_SPEED_EPSILON := 8.0
+const LANDING_MIN_SPEED := 140.0
 
 func _ready() -> void:
 	add_to_group("player")
@@ -101,6 +102,8 @@ func _ready() -> void:
 	_headroom_query.collide_with_areas = false
 	_headroom_query.exclude = [get_rid()]
 	_animated_sprite.play("idle")
+	if _animated_sprite != null and not _animated_sprite.frame_changed.is_connected(_on_sprite_frame_changed):
+		_animated_sprite.frame_changed.connect(_on_sprite_frame_changed)
 	var inventory := get_node_or_null("Inventory") as Inventory
 	if inventory != null:
 		inventory.equipment_changed.connect(_refresh_armor_visuals)
@@ -123,22 +126,74 @@ func _physics_process(delta: float) -> void:
 	_aim_tool()
 	_update_animation()
 	_sync_armor_layers()
-	_update_footsteps(delta)
+	_update_landing(delta)
 
 
-func play_sfx(sound: StringName, volume_offset_db: float = 0.0) -> void:
+func play_sfx(sound: StringName, volume_offset_db: float = 0.0, sfx_material: StringName = &"") -> void:
 	if _audio != null:
-		_audio.play(sound, volume_offset_db)
+		_audio.play(sound, volume_offset_db, sfx_material)
+
+
+func play_weapon_swing(kind: int) -> void:
+	if _audio != null:
+		_audio.play_weapon_swing(kind)
+
+
+func play_hit(kind: int = 0, darkness_bonus: bool = false) -> void:
+	if _audio != null:
+		_audio.play_hit(kind, darkness_bonus)
+
+
+func get_combat_text_origin() -> Vector2:
+	return global_position + Vector2(0, -58)
 
 
 ## Einstiegspunkt fuer Tool-Hitboxen, Finsternis und spaetere Gegner.
-func take_damage(amount: float, _source: Node = null, damage_type: StringName = &"") -> void:
-	if stats == null:
+func take_damage(amount: float, _source: Node = null, damage_type: Variant = null) -> void:
+	var event: DamageEvent
+	if damage_type is DamageEvent:
+		event = damage_type
+	else:
+		event = DamageEvent.new()
+		event.incoming_amount = int(round(amount))
+		event.amount = event.incoming_amount
+		event.source_node = _source
+		event.target_node = self
+		event.damage_type = DamageTypes.from_legacy(damage_type)
+		event.element = event.damage_type
+		if StringName(str(damage_type)) == &"fog":
+			event.ignore_armor = true
+			event.is_dot = true
+			event.damage_type = DamageTypes.Type.DARKNESS
+			event.element = DamageTypes.Type.DARKNESS
+	apply_damage_event(event)
+
+
+func apply_damage_event(event: DamageEvent) -> void:
+	if stats == null or event == null:
 		return
-	stats.take_damage(amount, damage_type == &"fog")
-	print("Player hp=%.0f/%.0f (-%.0f) %s" % [stats.health, stats.max_health, amount, damage_type])
-	if damage_type == &"fog":
-		fog_hurt.emit(amount)
+	event.target_node = self
+	event.is_player_target = true
+	if event.world_position == Vector2.ZERO:
+		event.world_position = get_combat_text_origin()
+	var result := stats.apply_incoming_damage(float(event.incoming_amount if event.incoming_amount > 0 else event.amount), event.ignore_armor)
+	event.incoming_amount = int(round(float(result["incoming"])))
+	event.amount = int(round(float(result["applied"])))
+	event.reduced = bool(result["reduced"])
+	event.blocked = bool(result["blocked"])
+	print("Player hp=%.0f/%.0f (-%d) type=%d" % [stats.health, stats.max_health, event.amount, event.damage_type])
+	CombatTextSystem.present(event)
+	if event.is_dot and event.damage_type == DamageTypes.Type.DARKNESS:
+		fog_hurt.emit(float(event.incoming_amount))
+
+
+func heal(amount: float) -> float:
+	if stats == null:
+		return 0.0
+	var applied := stats.heal(amount)
+	if applied > 0.0:
+		CombatTextSystem.present(DamageEvent.healing(int(round(applied)), self))
+	return applied
 
 
 func _handle_inventory_toggle() -> void:
@@ -347,14 +402,55 @@ func _update_animation() -> void:
 		_animated_sprite.play("idle")
 
 
-func _update_footsteps(delta: float) -> void:
-	if not is_on_floor() or absf(velocity.x) < 12.0:
-		_footstep_cooldown = 0.0
+func _update_landing(delta: float) -> void:
+	_land_lock = maxf(_land_lock - delta, 0.0)
+	_step_gate = maxf(_step_gate - delta, 0.0)
+	var grounded := is_on_floor()
+	if not grounded:
+		_peak_fall_speed = maxf(_peak_fall_speed, velocity.y)
+	elif not _was_on_floor:
+		if _peak_fall_speed >= LANDING_MIN_SPEED:
+			var amp := clampf((_peak_fall_speed - LANDING_MIN_SPEED) / 360.0, 0.0, 1.0)
+			play_sfx(&"Land", lerpf(-8.0, 0.0, amp), _ground_material())
+		_land_lock = 0.08
+		_peak_fall_speed = 0.0
+	_was_on_floor = grounded
+
+
+func _on_sprite_frame_changed() -> void:
+	if _land_lock > 0.0 or not is_on_floor() or _animated_sprite == null:
 		return
-	_footstep_cooldown -= delta
-	if _footstep_cooldown > 0.0:
+	var anim := _animated_sprite.animation
+	if anim != &"walk" and anim != &"run" and anim != &"crouch_walk":
 		return
-	play_sfx(&"Footstep", CROUCH_FOOTSTEP_VOLUME if is_crouching else 0.0)
+	if absf(velocity.x) < MOVING_SPEED_EPSILON:
+		return
+	if _step_gate > 0.0:
+		return
+	var vol := CROUCH_FOOTSTEP_VOLUME if is_crouching else (SPRINT_FOOTSTEP_VOLUME if is_sprinting else 0.0)
+	play_sfx(&"Footstep", vol, _ground_material())
+	if is_crouching:
+		_step_gate = 0.14
+	elif is_sprinting:
+		_step_gate = 0.08
+	else:
+		_step_gate = 0.11
+
+
+func _ground_material() -> StringName:
+	var interaction := get_node_or_null("Interaction")
+	if interaction == null or not interaction.has_method("get_block_data"):
+		return &"dirt"
+	var tilemap := get_tree().get_first_node_in_group("terrain") as TileMapLayer
+	if tilemap == null:
+		return &"dirt"
+	var cell: Vector2i = tilemap.local_to_map(tilemap.to_local(global_position + Vector2(0.0, 4.0)))
+	var block: Variant = interaction.call("get_block_data", cell)
+	if block == null:
+		block = interaction.call("get_block_data", cell + Vector2i(0, 1))
+	if block == null or not block.has_method("get_audio_material"):
+		return &"dirt"
+	return StringName(block.call("get_audio_material"))
 
 
 func _update_drop_through(delta: float) -> void:
@@ -365,7 +461,7 @@ func _update_drop_through(delta: float) -> void:
 		set_collision_mask_value(6, true)
 
 
-func _try_ladder(delta: float) -> bool:
+func _try_ladder(_delta: float) -> bool:
 	var parts := get_tree().get_first_node_in_group(&"building_part_system") as BuildingPartSystem
 	if parts == null or not parts.is_climbable_at_world(global_position + Vector2(0, -16)):
 		return false

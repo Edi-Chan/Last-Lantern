@@ -32,6 +32,12 @@
 [ext_resource type="Script" path="res://scripts/world/structural_manager.gd" id="24_struct"]
 [ext_resource type="Script" path="res://scripts/buildings/building_manager.gd" id="25_build"]
 [ext_resource type="Resource" path="res://resources/buildings/forge_blueprint.tres" id="26_forge_bp"]
+[ext_resource type="Resource" path="res://resources/buildings/carpenter_blueprint.tres" id="31_carp_bp"]
+[ext_resource type="Resource" path="res://resources/buildings/hunter_blueprint.tres" id="32_hunt_bp"]
+[ext_resource type="Resource" path="res://resources/buildings/lantern_maker_blueprint.tres" id="33_lantern_bp"]
+[ext_resource type="Resource" path="res://resources/buildings/gardener_blueprint.tres" id="34_garden_bp"]
+[ext_resource type="Resource" path="res://resources/buildings/mechanic_blueprint.tres" id="35_mech_bp"]
+[ext_resource type="Resource" path="res://resources/buildings/merchant_blueprint.tres" id="36_merch_bp"]
 [ext_resource type="Script" path="res://scripts/building_parts/building_part_system.gd" id="27_parts"]
 
 [node name="World" type="Node2D" unique_id=762429514]
@@ -173,10 +179,12 @@ falling_tree_scene = ExtResource("13_falling")
 [node name="WoodHit" type="AudioStreamPlayer2D" parent="TreeSystem" unique_id=1515055656]
 stream = ExtResource("14_woodhit")
 volume_db = -4.0
+bus = &"SFX"
 
 [node name="TreeFall" type="AudioStreamPlayer2D" parent="TreeSystem" unique_id=1273068639]
 stream = ExtResource("15_treefall")
 volume_db = -6.0
+bus = &"SFX"
 
 [node name="VegetationSystem" type="Node2D" parent="."]
 z_index = 1
@@ -202,6 +210,7 @@ script = ExtResource("25_build")
 block_catalog = ExtResource("2_catalog")
 item_catalog = ExtResource("11_items")
 default_blueprint = ExtResource("26_forge_bp")
+registered_blueprints = [ExtResource("26_forge_bp"), ExtResource("31_carp_bp"), ExtResource("32_hunt_bp"), ExtResource("33_lantern_bp"), ExtResource("34_garden_bp"), ExtResource("35_mech_bp"), ExtResource("36_merch_bp")]
 
 [node name="BuildingPartSystem" type="Node2D" parent="." groups=["building_part_system"]]
 script = ExtResource("27_parts")

@@ -24,6 +24,7 @@ var _thunder_in: float = -1.0
 var _bolt: LightningFx
 var _variant_id: int = LightningPalette.VariantId.PURPLE
 var _force_next_bolt: bool = false
+var _pending_thunder_intensity: float = 0.55
 
 
 func _ready() -> void:
@@ -91,6 +92,7 @@ func trigger_lightning(force_bolt: bool = false) -> void:
 	lightning_intensity = 0.20
 	_second_flash_in = -1.0
 	_thunder_in = randf_range(0.20, 1.20)
+	_pending_thunder_intensity = 0.42 if _density < 0.45 else (0.86 if force_bolt else randf_range(0.38, 0.92))
 	if _material != null:
 		_material.set_shader_parameter("lightning_color", LightningPalette.color_for(_variant_id))
 
@@ -105,6 +107,7 @@ func _tick_lightning(delta: float) -> void:
 			_peak_left = randf_range(0.035, 0.065)
 			if _force_next_bolt or randf() < 0.68:
 				_spawn_bolt()
+				_pending_thunder_intensity = maxf(_pending_thunder_intensity, 0.82)
 			_force_next_bolt = false
 			if randf() < 0.46:
 				_second_flash_in = randf_range(0.05, 0.13)
@@ -128,7 +131,7 @@ func _tick_lightning(delta: float) -> void:
 		if _thunder_in <= 0.0:
 			_thunder_in = -1.0
 			if _fog != null:
-				_fog.play_thunder_hook()
+				_fog.play_thunder_hook(_pending_thunder_intensity)
 	var storm := 0.0
 	if _fog != null:
 		match _fog.state:

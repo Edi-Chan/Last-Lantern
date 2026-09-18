@@ -53,18 +53,45 @@ static func quick_ranged_damage(weapon: Resource, ammo: ItemData) -> int:
 	return maxi(int(round(float(base) * 0.5)), 1)
 
 
-static func apply_hit(target: Node, amount: int, knockback_force: float, source: Node2D) -> bool:
+static func roll_critical(chance: float, rng: RandomNumberGenerator = null) -> bool:
+	if chance <= 0.0:
+		return false
+	if rng != null:
+		return rng.randf() < chance
+	return randf() < chance
+
+
+static func critical_amount(base_amount: int, multiplier: float = 2.0) -> int:
+	return maxi(int(round(float(maxi(base_amount, 0)) * multiplier)), 1)
+
+
+static func apply_hit(target: Node, amount: int, knockback_force: float, source: Node2D, weapon: Resource = null) -> bool:
 	if target == null or amount <= 0:
 		return false
-	if not target.has_method("take_damage"):
+	if not target.has_method("take_damage") and not target.has_method("apply_damage_event"):
 		return false
-	target.take_damage(amount, source)
+	var event := DamageEvent.outgoing_hit(amount, source, target, weapon)
+	apply_damage_event(target, event)
 	if knockback_force > 0.0 and target.has_method("apply_knockback") and source != null:
 		var away: Vector2 = target.global_position - source.global_position
 		if away == Vector2.ZERO:
 			away = Vector2.RIGHT
 		target.apply_knockback(away.normalized() * knockback_force)
 	return true
+
+
+static func apply_damage_event(target: Node, event: DamageEvent) -> void:
+	if target == null or event == null:
+		return
+	event.target_node = target
+	if event.world_position == Vector2.ZERO:
+		event.world_position = CombatTextSystem.anchor_of(target)
+	if target.has_method("apply_damage_event"):
+		target.call("apply_damage_event", event)
+		return
+	if target.has_method("take_damage"):
+		target.take_damage(event.amount, event.source_node)
+		CombatTextSystem.present(event)
 
 
 static func find_damageable(node: Node) -> Node:

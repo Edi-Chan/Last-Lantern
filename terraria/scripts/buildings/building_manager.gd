@@ -17,9 +17,11 @@ const AREA_FORGE_INTERIOR := &"FORGE_INTERIOR"
 @export var block_catalog: BlockCatalog
 @export var item_catalog: ItemCatalog
 @export var default_blueprint: BuildingBlueprintResource
+@export var registered_blueprints: Array[BuildingBlueprintResource] = []
 
 var current_area: StringName = AREA_WORLD
 var interior_building_id: String = ""
+var _blueprint_by_id: Dictionary = {}
 
 var _instances: Dictionary = {}
 var _cell_index: Dictionary = {}
@@ -60,6 +62,7 @@ func _attach_hud() -> void:
 
 
 func _bind() -> void:
+	_register_blueprints()
 	var structural := _structural()
 	if structural != null:
 		if not structural.structure_changed.is_connected(_on_structure_changed):
@@ -68,6 +71,37 @@ func _bind() -> void:
 			structural.structure_collapsed.connect(_on_structure_collapsed)
 		if not structural.structure_became_unstable.is_connected(_on_structure_unstable):
 			structural.structure_became_unstable.connect(_on_structure_unstable)
+
+
+func _register_blueprints() -> void:
+	_blueprint_by_id.clear()
+	_remember_blueprint(default_blueprint)
+	for bp in registered_blueprints:
+		_remember_blueprint(bp)
+	if item_catalog == null:
+		return
+	for item in item_catalog.items:
+		if item != null and item.blueprint != null:
+			_remember_blueprint(item.blueprint)
+
+
+func _remember_blueprint(bp: BuildingBlueprintResource) -> void:
+	if bp == null:
+		return
+	_blueprint_by_id[bp.building_id] = bp
+
+
+func _blueprint_for(inst: BuildingInstance) -> BuildingBlueprintResource:
+	if inst != null and _blueprint_by_id.has(inst.blueprint_id):
+		return _blueprint_by_id[inst.blueprint_id]
+	return default_blueprint
+
+
+func _building_name(inst: BuildingInstance) -> String:
+	var bp := _blueprint_for(inst)
+	if bp != null and not bp.display_name.is_empty():
+		return bp.display_name
+	return "Gebäude"
 
 
 func is_player_inside() -> bool:
@@ -185,9 +219,9 @@ func try_enter(instance_id: String) -> void:
 			_hud.toast("⚠ Während der Finsternis geschlossen.")
 		return
 	if inst.state == BuildingBlueprintResource.BuildingState.DESTROYED or not inst.core_intact:
-		_lock_door(inst, "⚠ Schmiede zerstört")
+		_lock_door(inst, "⚠ %s zerstört" % _building_name(inst))
 		if _hud != null:
-			_hud.toast("⚠ Schmiede zerstört")
+			_hud.toast("⚠ %s zerstört" % _building_name(inst))
 		return
 	if inst.state == BuildingBlueprintResource.BuildingState.CRITICAL or not inst.entrance_ok:
 		_lock_door(inst, "⚠ Gebäude zu schwer beschädigt.")
@@ -215,7 +249,7 @@ func eject_for_fog(instance_id: String) -> void:
 	if not is_player_inside():
 		return
 	if _hud != null:
-		_hud.toast("⚠ DIE FINSTERNIS BEGINNT\nDie Schmiede wird geschlossen.", 1.6)
+		_hud.toast("⚠ DIE FINSTERNIS BEGINNT\nDas Gebäude wird geschlossen.", 1.6)
 	await get_tree().create_timer(0.85).timeout
 	await _leave_interior(true, instance_id)
 
@@ -255,6 +289,7 @@ func to_save_dict() -> Dictionary:
 
 
 func from_save_dict(data: Dictionary) -> void:
+	_register_blueprints()
 	_clear_all_runtime()
 	_next_index = int(data.get("next_index", 1))
 	current_area = StringName(str(data.get("current_area", "WORLD")))
@@ -287,7 +322,7 @@ func _commit_build(blueprint: BuildingBlueprintResource, report: Dictionary, inv
 	inst.building_type = blueprint.get_type_id()
 	inst.blueprint_id = blueprint.building_id
 	inst.origin = origin
-	inst.indestructible = blueprint.indestructible or blueprint.visual_background_only
+	inst.indestructible = blueprint.indestructible
 	inst.door_cell = origin + blueprint.door_local()
 	inst.return_cell = origin + blueprint.return_local()
 	inst.original_count = 0
@@ -344,6 +379,13 @@ func _stamp(origin: Vector2i, layout: Array, blueprint: BuildingBlueprintResourc
 		var role := int(spec["role"])
 		var solid_shell := _role_is_solid_shell(role)
 		if backdrop and parts != null:
+			var behind_id := int(spec.get("bg_id", -1))
+			if behind_id < 0 and role == BuildingBlueprintResource.ComponentRole.SUPPORT and blueprint != null and blueprint.layout_preset != &"forge":
+				behind_id = _shop_background_id(blueprint)
+			if behind_id >= 0:
+				var behind := block_catalog.get_by_id(behind_id)
+				if behind != null:
+					parts.stamp_backdrop(behind, cell)
 			if solid_shell:
 				parts.stamp_solid(block, cell, false)
 			elif _is_forge_foreground_prop(block, role):
@@ -368,6 +410,13 @@ func _stamp(origin: Vector2i, layout: Array, blueprint: BuildingBlueprintResourc
 
 
 func _stamp_interior_background(origin: Vector2i, blueprint: BuildingBlueprintResource, parts: BuildingPartSystem) -> void:
+	if blueprint.layout_preset == &"forge":
+		_stamp_forge_interior_background(origin, blueprint, parts)
+		return
+	_stamp_shop_interior_background(origin, blueprint, parts)
+
+
+func _stamp_forge_interior_background(origin: Vector2i, blueprint: BuildingBlueprintResource, parts: BuildingPartSystem) -> void:
 	var stone_bg := block_catalog.get_by_id(blueprint.stone_bg_id)
 	var stone_wall := block_catalog.get_by_id(blueprint.stone_wall_id)
 	var wood_bg := block_catalog.get_by_id(blueprint.wood_bg_id)
@@ -395,6 +444,52 @@ func _stamp_interior_background(origin: Vector2i, blueprint: BuildingBlueprintRe
 			var gable := wood_wall if (x == split or x == right or gy == rise) else wood_bg
 			if gable != null:
 				parts.stamp_backdrop(gable, cell)
+
+
+func _shop_background_id(blueprint: BuildingBlueprintResource) -> int:
+	if blueprint == null:
+		return 35
+	match blueprint.layout_preset:
+		&"hunter", &"mechanic":
+			return blueprint.stone_bg_id
+		_:
+			return blueprint.wood_bg_id
+
+
+func _stamp_shop_interior_background(origin: Vector2i, blueprint: BuildingBlueprintResource, parts: BuildingPartSystem) -> void:
+	var wood_bg := block_catalog.get_by_id(blueprint.wood_bg_id)
+	var stone_bg := block_catalog.get_by_id(blueprint.stone_bg_id)
+	var default_bg := wood_bg
+	if blueprint.layout_preset == &"hunter" or blueprint.layout_preset == &"mechanic":
+		default_bg = stone_bg if stone_bg != null else wood_bg
+	elif wood_bg == null:
+		default_bg = stone_bg
+	if default_bg == null:
+		return
+	var left := blueprint.foundation_overhang
+	var right := blueprint.total_width() - 1 - blueprint.foundation_overhang
+	var extra := 0
+	if blueprint.layout_preset == &"lantern_maker":
+		extra = 4
+	for y in range(-blueprint.wall_height - extra, 0):
+		for x in range(left, right + 1):
+			parts.stamp_backdrop(default_bg, origin + Vector2i(x, y))
+	for spec in blueprint.get_layout():
+		var role := int(spec["role"])
+		if role == BuildingBlueprintResource.ComponentRole.FOUNDATION:
+			continue
+		if role == BuildingBlueprintResource.ComponentRole.ROOF:
+			continue
+		var offset: Vector2i = spec["offset"]
+		if offset.y >= 0:
+			continue
+		var bg := default_bg
+		var block_id := int(spec["block_id"])
+		if (block_id == blueprint.stone_bg_id or block_id == blueprint.stone_wall_id) and stone_bg != null:
+			bg = stone_bg
+		elif (block_id == blueprint.wood_bg_id or block_id == blueprint.wood_wall_id) and wood_bg != null:
+			bg = wood_bg
+		parts.stamp_backdrop(bg, origin + offset)
 
 
 func _is_forge_foreground_prop(block: BlockData, role: int) -> bool:
@@ -452,12 +547,15 @@ func _clear_interior_air(origin: Vector2i, layout: Array) -> void:
 
 
 func _restamp_instance(inst: BuildingInstance) -> void:
-	if inst.indestructible and default_blueprint != null:
-		_stamp(inst.origin, default_blueprint.get_layout(), default_blueprint)
+	var blueprint := _blueprint_for(inst)
+	if inst.indestructible and blueprint != null:
+		_stamp(inst.origin, blueprint.get_layout(), blueprint)
 		return
 	if _tilemap == null or block_catalog == null:
 		return
 	var parts := get_tree().get_first_node_in_group(&"building_part_system") as BuildingPartSystem
+	if blueprint != null and blueprint.visual_background_only and parts != null:
+		_stamp_interior_background(inst.origin, blueprint, parts)
 	for key in inst.components.keys():
 		var cell: Vector2i = key
 		var data: Dictionary = inst.components[key]
@@ -487,15 +585,16 @@ func _restamp_instance(inst: BuildingInstance) -> void:
 func _spawn_exterior(inst: BuildingInstance) -> void:
 	if _tilemap == null:
 		return
+	var blueprint := _blueprint_for(inst)
 	var root: Node2D
 	var packed: PackedScene = null
-	if default_blueprint != null:
-		packed = default_blueprint.get_exterior_scene()
+	if blueprint != null:
+		packed = blueprint.get_exterior_scene()
 	if packed != null:
 		root = packed.instantiate() as Node2D
 	if root == null:
 		root = Node2D.new()
-		root.name = "ForgeExterior"
+		root.name = "BuildingExterior"
 	root.name = inst.instance_id
 	root.add_to_group("building_exterior")
 	add_child(root)
@@ -510,14 +609,18 @@ func _spawn_exterior(inst: BuildingInstance) -> void:
 	door.z_index = 0
 	door.position = Vector2.ZERO
 	door.building_instance_id = inst.instance_id
-	door.set_locked(false, "[E] Schmiede betreten")
+	var prompt := "[E] Betreten"
+	if blueprint != null:
+		prompt = blueprint.enter_prompt()
+	door.set_locked(false, prompt)
 	_attach_workshop_fx(root, inst)
 	if inst.core_cell != Vector2i.ZERO:
 		var light := PointLight2D.new()
-		light.name = "ForgeCoreLight"
-		light.color = Color(1.0, 0.5, 0.18, 1)
-		light.energy = 0.42
-		light.texture_scale = 1.35
+		light.name = "BuildingCoreLight"
+		var warm := inst.building_type == &"LANTERN_MAKER" or inst.building_type == &"FORGE"
+		light.color = Color(1.0, 0.62, 0.22, 1) if warm else Color(1.0, 0.72, 0.4, 1)
+		light.energy = 0.7 if inst.building_type == &"LANTERN_MAKER" else 0.42
+		light.texture_scale = 1.55 if inst.building_type == &"LANTERN_MAKER" else 1.35
 		root.add_child(light)
 		light.global_position = _cell_center(inst.core_cell)
 		var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
@@ -533,9 +636,12 @@ func _spawn_exterior(inst: BuildingInstance) -> void:
 
 
 func _attach_workshop_fx(root: Node2D, inst: BuildingInstance) -> void:
-	if default_blueprint == null or _tilemap == null:
+	var blueprint := _blueprint_for(inst)
+	if blueprint == null or _tilemap == null:
 		return
-	var chim := origin_cell_center(inst.origin + default_blueprint.chimney_local())
+	if blueprint.layout_preset != &"forge":
+		return
+	var chim := origin_cell_center(inst.origin + blueprint.chimney_local())
 	var smoke := GPUParticles2D.new()
 	smoke.name = "ChimneySmoke"
 	smoke.z_index = 8
@@ -575,17 +681,18 @@ func origin_cell_center(cell: Vector2i) -> Vector2:
 
 
 func _enter_interior(inst: BuildingInstance) -> void:
-	var blueprint := default_blueprint
+	var blueprint := _blueprint_for(inst)
 	if blueprint == null or blueprint.get_interior_scene() == null:
 		return
 	_set_world_visible(false)
 	_clear_interior()
 	_interior = blueprint.get_interior_scene().instantiate() as Node2D
+	if _interior is BuildingInterior:
+		(_interior as BuildingInterior).building_instance_id = inst.instance_id
+		(_interior as BuildingInterior).building_type = blueprint.get_type_id()
 	var host := _interior_host()
 	host.add_child(_interior)
 	_interior.position = Vector2.ZERO
-	if _interior is BuildingInterior:
-		(_interior as BuildingInterior).building_instance_id = inst.instance_id
 	current_area = AREA_FORGE_INTERIOR
 	interior_building_id = inst.instance_id
 	var player := get_tree().get_first_node_in_group("player") as Player
@@ -816,7 +923,7 @@ func _show_cost_panel(blueprint: BuildingBlueprintResource, _inventory: Inventor
 
 
 func _snap_origin(hover: Vector2i, blueprint: BuildingBlueprintResource) -> Vector2i:
-	var half := blueprint.total_width() / 2
+	var half := int(float(blueprint.total_width()) / 2.0)
 	var y := hover.y
 	if _is_support_ground(_foreground_block(hover)):
 		y = hover.y - 1
@@ -1041,6 +1148,11 @@ func _notify_map(cell: Vector2i) -> void:
 
 
 func _block_at(cell: Vector2i) -> BlockData:
+	var parts := get_tree().get_first_node_in_group(&"building_part_system") as BuildingPartSystem
+	if parts != null:
+		var from_parts := parts.get_block_at(cell)
+		if from_parts != null:
+			return from_parts
 	if _tilemap == null or block_catalog == null:
 		return null
 	if _tilemap.get_cell_source_id(cell) == -1:
@@ -1076,13 +1188,14 @@ func _update_door_prompt(inst: BuildingInstance) -> void:
 	var door := root.find_child("EntranceDoor", true, false) as BuildingDoor
 	if door == null:
 		return
+	var bp := _blueprint_for(inst)
 	match inst.state:
 		BuildingBlueprintResource.BuildingState.DESTROYED:
-			door.set_locked(true, "[E] Schmiede zerstört")
+			door.set_locked(true, bp.destroyed_prompt() if bp != null else "[E] Gebäude zerstört")
 		BuildingBlueprintResource.BuildingState.CRITICAL:
 			door.set_locked(true, "[E] Gebäude zu schwer beschädigt.")
 		_:
-			door.set_locked(false, "[E] Schmiede betreten")
+			door.set_locked(false, bp.enter_prompt() if bp != null else "[E] Betreten")
 
 
 func _refund(inventory: Inventory, costs: Array) -> void:

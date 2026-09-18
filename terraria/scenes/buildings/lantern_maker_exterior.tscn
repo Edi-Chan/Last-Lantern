@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/buildings/building_door.gd" id="1_door"]
+
+[node name="LanternMakerExterior" type="Node2D"]
+
+[node name="BuildingRoot" type="Node2D" parent="."]
+
+[node name="EntranceDoor" type="Node2D" parent="BuildingRoot"]
+script = ExtResource("1_door")

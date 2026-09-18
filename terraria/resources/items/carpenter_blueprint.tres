@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/items/buildings/carpenter_blueprint.png" id="2_icon"]
+[ext_resource type="Resource" path="res://resources/buildings/carpenter_blueprint.tres" id="3_bp"]
+
+[resource]
+script = ExtResource("1_script")
+id = 95
+display_name = "Schreinerei-Bauplan"
+description = "Ein Bauplan für eine kleine Schreinerei.
+Errichtet ein vollständiges Werkstattgebäude,
+wenn genügend Baumaterialien vorhanden sind."
+icon = ExtResource("2_icon")
+max_stack = 10
+item_type = 8
+category = 17
+equipment_slot = 0
+placeable_block_id = -1
+blueprint = ExtResource("3_bp")
+held_scale = 1.0
+rarity = 1

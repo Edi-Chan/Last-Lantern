@@ -237,7 +237,7 @@ func clock_minutes() -> int:
 
 func clock_text() -> String:
 	var total := clock_minutes()
-	return "%02d:%02d" % [total / 60, total % 60]
+	return "%02d:%02d" % [int(float(total) / 60.0), total % 60]
 
 
 func seconds_until_night() -> float:

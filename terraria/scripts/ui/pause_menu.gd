@@ -89,9 +89,9 @@ func resume_game() -> void:
 		player.world_input_enabled = true
 
 
-func set_hidden_for_options(hidden: bool) -> void:
-	_hidden_for_options = hidden
-	visible = _open and not hidden
+func set_hidden_for_options(hide_menu: bool) -> void:
+	_hidden_for_options = hide_menu
+	visible = _open and not hide_menu
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 
 

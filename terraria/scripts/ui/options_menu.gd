@@ -17,14 +17,17 @@ const KEYBIND_ROW := preload("res://scenes/ui/keybind_row.tscn")
 @onready var _master_slider: HSlider = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/MasterRow/MasterSlider
 @onready var _music_slider: HSlider = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/MusicRow/MusicSlider
 @onready var _sfx_slider: HSlider = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/SfxRow/SfxSlider
+@onready var _ambient_slider: HSlider = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/AmbientRow/AmbientSlider
 @onready var _ui_slider: HSlider = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/UiRow/UiSlider
 @onready var _master_mute: CheckButton = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/MasterRow/MasterMute
 @onready var _music_mute: CheckButton = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/MusicRow/MusicMute
 @onready var _sfx_mute: CheckButton = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/SfxRow/SfxMute
+@onready var _ambient_mute: CheckButton = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/AmbientRow/AmbientMute
 @onready var _ui_mute: CheckButton = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/UiRow/UiMute
 @onready var _master_value: Label = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/MasterRow/MasterValue
 @onready var _music_value: Label = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/MusicRow/MusicValue
 @onready var _sfx_value: Label = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/SfxRow/SfxValue
+@onready var _ambient_value: Label = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/AmbientRow/AmbientValue
 @onready var _ui_value: Label = $CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/UiRow/UiValue
 @onready var _pause_unfocused: CheckButton = $CenterWrap/Panel/Margin/Layout/Tabs/Spiel/Scroll/GameBox/PauseUnfocused
 @onready var _show_fps: CheckButton = $CenterWrap/Panel/Margin/Layout/Tabs/Spiel/Scroll/GameBox/ShowFps
@@ -158,12 +161,12 @@ func _setup_dropdowns() -> void:
 
 
 func _setup_audio_controls() -> void:
-	for slider in [_master_slider, _music_slider, _sfx_slider, _ui_slider]:
+	for slider in [_master_slider, _music_slider, _sfx_slider, _ambient_slider, _ui_slider]:
 		slider.min_value = 0.0
 		slider.max_value = 100.0
 		slider.step = 1.0
 		slider.value_changed.connect(_on_audio_changed)
-	for mute in [_master_mute, _music_mute, _sfx_mute, _ui_mute]:
+	for mute in [_master_mute, _music_mute, _sfx_mute, _ambient_mute, _ui_mute]:
 		mute.toggled.connect(func(_v: bool) -> void: _on_audio_changed(0.0))
 
 
@@ -189,10 +192,12 @@ func _load_from_applied() -> void:
 	_master_slider.value = float(aud.get("master", 1.0)) * 100.0
 	_music_slider.value = float(aud.get("music", 1.0)) * 100.0
 	_sfx_slider.value = float(aud.get("sfx", 1.0)) * 100.0
+	_ambient_slider.value = float(aud.get("ambient", 1.0)) * 100.0
 	_ui_slider.value = float(aud.get("ui", 1.0)) * 100.0
 	_master_mute.button_pressed = bool(aud.get("master_mute", false))
 	_music_mute.button_pressed = bool(aud.get("music_mute", false))
 	_sfx_mute.button_pressed = bool(aud.get("sfx_mute", false))
+	_ambient_mute.button_pressed = bool(aud.get("ambient_mute", false))
 	_ui_mute.button_pressed = bool(aud.get("ui_mute", false))
 	_refresh_audio_labels()
 	_pause_unfocused.button_pressed = bool(_draft["game"].get("pause_when_unfocused", true))
@@ -213,10 +218,12 @@ func _collect_draft() -> Dictionary:
 	aud["master"] = _master_slider.value / 100.0
 	aud["music"] = _music_slider.value / 100.0
 	aud["sfx"] = _sfx_slider.value / 100.0
+	aud["ambient"] = _ambient_slider.value / 100.0
 	aud["ui"] = _ui_slider.value / 100.0
 	aud["master_mute"] = _master_mute.button_pressed
 	aud["music_mute"] = _music_mute.button_pressed
 	aud["sfx_mute"] = _sfx_mute.button_pressed
+	aud["ambient_mute"] = _ambient_mute.button_pressed
 	aud["ui_mute"] = _ui_mute.button_pressed
 	var game: Dictionary = _draft.get("game", SettingsManager.game.duplicate(true))
 	game["pause_when_unfocused"] = _pause_unfocused.button_pressed
@@ -234,10 +241,12 @@ func _on_audio_changed(_value: float) -> void:
 		"master": _master_slider.value / 100.0,
 		"music": _music_slider.value / 100.0,
 		"sfx": _sfx_slider.value / 100.0,
+		"ambient": _ambient_slider.value / 100.0,
 		"ui": _ui_slider.value / 100.0,
 		"master_mute": _master_mute.button_pressed,
 		"music_mute": _music_mute.button_pressed,
 		"sfx_mute": _sfx_mute.button_pressed,
+		"ambient_mute": _ambient_mute.button_pressed,
 		"ui_mute": _ui_mute.button_pressed,
 	}
 	SettingsManager.preview_audio(preview)
@@ -247,6 +256,7 @@ func _refresh_audio_labels() -> void:
 	_master_value.text = "%d%%" % int(_master_slider.value)
 	_music_value.text = "%d%%" % int(_music_slider.value)
 	_sfx_value.text = "%d%%" % int(_sfx_slider.value)
+	_ambient_value.text = "%d%%" % int(_ambient_slider.value)
 	_ui_value.text = "%d%%" % int(_ui_slider.value)
 
 

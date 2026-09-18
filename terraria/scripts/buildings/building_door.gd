@@ -40,7 +40,7 @@ func set_locked(locked: bool, hint_text: String = "") -> void:
 	elif locked:
 		_hint.text = "[E] Geschlossen"
 	else:
-		_hint.text = "[E] Schmiede betreten"
+		_hint.text = "[E] Betreten"
 
 
 func _try_enter() -> void:
@@ -75,7 +75,7 @@ func _ensure_visuals() -> void:
 		_hint.add_theme_color_override("font_color", Color(1.0, 0.9, 0.55, 1))
 		_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 		_hint.add_theme_constant_override("outline_size", 3)
-		_hint.text = "[E] Schmiede betreten"
+		_hint.text = "[E] Betreten"
 		_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_hint)
 

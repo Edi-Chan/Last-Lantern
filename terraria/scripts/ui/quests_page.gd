@@ -26,12 +26,12 @@ func _ready() -> void:
 	var title := Label.new()
 	title.text = "QUESTS"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", 16)
 	title.add_theme_color_override("font_color", Color(0.92, 0.94, 0.96, 1))
 	var body := Label.new()
 	body.text = "Noch keine Quests verfügbar."
 	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.add_theme_font_size_override("font_size", 13)
+	body.add_theme_font_size_override("font_size", 11)
 	body.add_theme_color_override("font_color", Color(0.68, 0.74, 0.8, 1))
 	box.add_child(title)
 	box.add_child(body)

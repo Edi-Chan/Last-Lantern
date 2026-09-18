@@ -251,7 +251,7 @@ func generate_ground_layers() -> void:
 
 func generate_sand_regions() -> void:
 	var rng := _rng(11)
-	var region_count := clampi(world_width / 100, 4, 10)
+	var region_count := clampi(int(float(world_width) / 100.0), 4, 10)
 	var regions := 0
 	var columns: Array[int] = []
 	for i in region_count:
@@ -264,7 +264,7 @@ func generate_sand_regions() -> void:
 			for y in range(top, mini(top + depth, world_height)):
 				if _get_tile(x, y) in [GRASS, DIRT]:
 					_set_tile(x, y, SAND)
-		columns.append(start + width / 2)
+		columns.append(start + int(float(width) / 2.0))
 		regions += 1
 	stats["sand_regions"] = regions
 	stats["sand_columns"] = columns
@@ -557,7 +557,7 @@ func _find_top_solid(x: int) -> int:
 # ----------------------------------------------------------------------- Spawn
 
 func lantern_column_x() -> int:
-	return world_width / 2
+	return int(float(world_width) / 2.0)
 
 
 func is_spawn_pad_column(tile_x: int) -> bool:

@@ -66,20 +66,34 @@ func set_energy(value: float) -> void:
 
 
 func take_damage(amount: float, ignore_armor: bool = false) -> void:
-	if amount <= 0.0:
-		return
-	var reduced := amount if ignore_armor else maxf(amount - float(armor_defense), 0.0)
-	set_health(health - reduced)
+	apply_incoming_damage(amount, ignore_armor)
+
+
+func apply_incoming_damage(amount: float, ignore_armor: bool = false) -> Dictionary:
+	var incoming := maxf(amount, 0.0)
+	var final := incoming if ignore_armor else maxf(incoming - float(armor_defense), 0.0)
+	var before := health
+	if final > 0.0:
+		set_health(health - final)
+	var applied := before - health
+	return {
+		"incoming": incoming,
+		"applied": applied,
+		"reduced": not ignore_armor and armor_defense > 0 and final < incoming,
+		"blocked": incoming > 0.0 and applied <= 0.0 and not ignore_armor and armor_defense > 0,
+	}
 
 
 func set_armor_defense(value: int) -> void:
 	armor_defense = maxi(value, 0)
 
 
-func heal(amount: float) -> void:
+func heal(amount: float) -> float:
 	if amount <= 0.0:
-		return
+		return 0.0
+	var before := health
 	set_health(health + amount)
+	return health - before
 
 
 func drain_stamina(amount: float) -> void:

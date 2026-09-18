@@ -27,8 +27,8 @@ enum ToolCategory {
 @export var pickaxe_tier: int = 0
 
 
-static func get_category_display_name(tool_category: ToolCategory) -> String:
-	match tool_category:
+static func get_category_display_name(category: ToolCategory) -> String:
+	match category:
 		ToolCategory.MINING:
 			return "Bergbau"
 		ToolCategory.WOODCUTTING:

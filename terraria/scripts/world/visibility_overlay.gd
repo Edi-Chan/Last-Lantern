@@ -391,7 +391,7 @@ func _flood(start: Vector2i, origin: Vector2i, gw: int, gh: int, cell: int) -> v
 		if current >= MAX_COST:
 			continue
 		var cx := idx % gw
-		var cy := int(idx / gw)
+		var cy := int(float(idx) / float(gw))
 		var d := 0
 		while d < 4:
 			var nx := cx

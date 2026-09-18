@@ -63,16 +63,16 @@ func get_projectile_gravity() -> float:
 	return projectile_gravity if projectile_gravity > 0.0 else 0.0
 
 
-func scale_charge_damage(base_damage: int, charge: float) -> int:
+func scale_charge_damage(damage: int, charge: float) -> int:
 	var t := clampf(charge, 0.0, 1.0)
 	var min_m := charge_damage_min if charge_damage_min > 0.0 else 0.85
 	var max_m := charge_damage_max if charge_damage_max > 0.0 else 1.55
-	return maxi(int(round(float(base_damage) * lerpf(min_m, max_m, t))), 1)
+	return maxi(int(round(float(damage) * lerpf(min_m, max_m, t))), 1)
 
 
-func scale_quick_damage(base_damage: int) -> int:
+func scale_quick_damage(damage: int) -> int:
 	var mult := quick_shot_damage_mult if quick_shot_damage_mult > 0.0 else 0.5
-	return maxi(int(round(float(base_damage) * mult)), 1)
+	return maxi(int(round(float(damage) * mult)), 1)
 
 
 func get_quick_shot_cooldown() -> float:

@@ -283,6 +283,39 @@ focus_mode = 2
 theme_override_font_sizes/font_size = 8
 text = "Mute"
 
+[node name="AmbientRow" type="HBoxContainer" parent="CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="AmbientLabel" type="Label" parent="CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/AmbientRow"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "Umgebung"
+vertical_alignment = 1
+
+[node name="AmbientSlider" type="HSlider" parent="CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/AmbientRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+focus_mode = 2
+max_value = 100.0
+value = 100.0
+
+[node name="AmbientValue" type="Label" parent="CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/AmbientRow"]
+custom_minimum_size = Vector2(28, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "100%"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="AmbientMute" type="CheckButton" parent="CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox/AmbientRow"]
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "Mute"
+
 [node name="UiRow" type="HBoxContainer" parent="CenterWrap/Panel/Margin/Layout/Tabs/Audio/Scroll/AudioBox"]
 layout_mode = 2
 theme_override_constants/separation = 6

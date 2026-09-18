@@ -71,6 +71,20 @@ func spawn_zombie_at(world_pos: Vector2, darkness: bool, lock_form: bool = false
 	return zombie
 
 
+func debug_spawn_horde(count: int, darkness: bool = false) -> Array:
+	_refresh_refs()
+	var spawned: Array = []
+	var origin := _debug_position(darkness)
+	if origin == Vector2.INF:
+		return spawned
+	for i in maxi(count, 0):
+		var offset := Vector2(float((i % 10) - 5) * 28.0, float(i) / 10.0 * -8.0)
+		var node := spawn_zombie_at(origin + offset, darkness, true)
+		if node != null:
+			spawned.append(node)
+	return spawned
+
+
 func alive_zombie_count() -> int:
 	return _count_alive()
 

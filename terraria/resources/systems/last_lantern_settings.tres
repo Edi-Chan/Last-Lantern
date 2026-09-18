@@ -5,6 +5,7 @@
 [ext_resource type="Resource" path="res://resources/lantern/lantern_level_2.tres" id="3_l2"]
 [ext_resource type="Resource" path="res://resources/lantern/lantern_level_3.tres" id="4_l3"]
 [ext_resource type="Resource" path="res://resources/lantern/lantern_level_4.tres" id="5_l4"]
+[ext_resource type="Resource" path="res://resources/combat/combat_text_config.tres" id="6_ct"]
 
 [resource]
 script = ExtResource("1_script")
@@ -31,3 +32,10 @@ lantern_levels = [ExtResource("2_l1"), ExtResource("3_l2"), ExtResource("4_l3"),
 show_debug_fog_button = true
 debug_jump_hour = 22.0
 show_debug_safe_radius = false
+health_bar_visible_after_hit = 3.0
+max_visible_enemy_health_bars = 8
+health_bar_fade_in = 0.15
+health_bar_fade_out = 0.30
+health_bar_aim_grace = 0.20
+show_enemy_health_numbers = false
+combat_text = ExtResource("6_ct")

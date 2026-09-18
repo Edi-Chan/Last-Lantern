@@ -32,7 +32,6 @@ var _fog_style: StyleBox
 @onready var _day_row: HBoxContainer = $Margin/Rows/DayRow
 @onready var _status: Label = $Margin/Rows/StatusLabel
 @onready var _clock: Label = $Margin/Rows/ClockLabel
-@onready var _phase_row: HBoxContainer = $Margin/Rows/PhaseRow
 @onready var _track: Control = $Margin/Rows/Track
 @onready var _marker: ColorRect = $Margin/Rows/Track/Marker
 @onready var _sunrise: ColorRect = $Margin/Rows/Track/SunriseTick

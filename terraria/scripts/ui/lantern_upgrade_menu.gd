@@ -136,9 +136,9 @@ func _format_costs(costs: Array) -> String:
 		if _inventory != null:
 			have = _inventory.get_bag_amount(item_id)
 		var item := _get_item(item_id)
-		var name := item.display_name if item != null else "Item %d" % item_id
+		var item_name := item.display_name if item != null else "Item %d" % item_id
 		var color := "#8cff8c" if have >= need else "#ff7a70"
-		lines.append("[color=%s]%s  %d / %d[/color]" % [color, name, have, need])
+		lines.append("[color=%s]%s  %d / %d[/color]" % [color, item_name, have, need])
 	return "\n".join(lines)
 
 
@@ -148,8 +148,8 @@ func _format_missing(missing: Array) -> String:
 	var parts: PackedStringArray = []
 	for entry in missing:
 		var item := _get_item(int(entry["item_id"]))
-		var name := item.display_name if item != null else "Item"
-		parts.append("%s (%d/%d)" % [name, int(entry["have"]), int(entry["need"])])
+		var item_name := item.display_name if item != null else "Item"
+		parts.append("%s (%d/%d)" % [item_name, int(entry["have"]), int(entry["need"])])
 	return "Fehlt: " + ", ".join(parts)
 
 

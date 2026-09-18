@@ -135,7 +135,7 @@ func _panel_style() -> StyleBoxFlat:
 
 func _build_category_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(176, 0)
+	panel.custom_minimum_size = Vector2(141, 0)
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	var scroll := ScrollContainer.new()
@@ -167,7 +167,7 @@ func _build_recipe_panel() -> Control:
 	box.add_child(toolbar)
 	_search_edit = LineEdit.new()
 	_search_edit.placeholder_text = "Suchen..."
-	_search_edit.custom_minimum_size = Vector2(180, 24)
+	_search_edit.custom_minimum_size = Vector2(144, 19)
 	_search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_search_edit.add_theme_font_size_override("font_size", 11)
 	if ResourceLoader.exists("res://assets/ui/search_icon.png"):
@@ -198,7 +198,7 @@ func _build_recipe_panel() -> Control:
 
 func _build_detail_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(268, 0)
+	panel.custom_minimum_size = Vector2(214, 0)
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	var outer := VBoxContainer.new()
@@ -213,7 +213,7 @@ func _build_detail_panel() -> Control:
 	body.add_theme_constant_override("separation", 6)
 	_detail_scroll.add_child(body)
 	var icon_frame := PanelContainer.new()
-	icon_frame.custom_minimum_size = Vector2(72, 72)
+	icon_frame.custom_minimum_size = Vector2(58, 58)
 	icon_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	icon_frame.add_theme_stylebox_override("panel", preload("res://resources/ui/inv_slot.tres"))
 	body.add_child(icon_frame)
@@ -224,7 +224,7 @@ func _build_detail_panel() -> Control:
 	_detail_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	icon_frame.add_child(_detail_icon)
 	_detail_name = Label.new()
-	_detail_name.add_theme_font_size_override("font_size", 16)
+	_detail_name.add_theme_font_size_override("font_size", 14)
 	_detail_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(_detail_name)
 	_detail_sub = Label.new()
@@ -277,7 +277,7 @@ func _build_detail_panel() -> Control:
 	qty_row.add_child(_plus_btn)
 	_craft_btn = Button.new()
 	_craft_btn.text = "Herstellen"
-	_craft_btn.custom_minimum_size = Vector2(0, 32)
+	_craft_btn.custom_minimum_size = Vector2(0, 26)
 	_craft_btn.clip_contents = true
 	_craft_btn.add_theme_stylebox_override("normal", preload("res://resources/ui/inv_craft_button.tres"))
 	_craft_btn.add_theme_stylebox_override("hover", preload("res://resources/ui/inv_craft_button.tres"))
@@ -847,9 +847,11 @@ func _on_craft_pressed() -> void:
 		amount = maxi(1, _crafting.max_craftable(_selected, _inventory, _nearby))
 	var result := _crafting.try_craft(_selected, _inventory, amount, _nearby)
 	if result != CraftingSystem.Result.OK:
+		_play_ui(&"UiCraftFail")
 		_update_details()
 		return
 	refresh()
+	_play_ui(&"UiCraftOk")
 	_play_craft_feedback()
 
 
@@ -862,3 +864,9 @@ func _clear_box(box: VBoxContainer) -> void:
 
 static func _fmt(value: float) -> String:
 	return ("%.1f" % value).replace(".", ",")
+
+
+func _play_ui(event: StringName) -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	if player != null and player.has_method("play_sfx"):
+		player.call("play_sfx", event)

@@ -24,6 +24,7 @@ var _player_in_range: bool = false
 @onready var _safe_zone: SafeZone = $SafeZone
 @onready var _interact: Area2D = $InteractionArea
 @onready var _hint: Label = $HintLabel
+@onready var _hum: AudioStreamPlayer2D = get_node_or_null("SafeHum")
 
 var _base_energy: float = 1.15
 var _base_texture_scale: float = 4.0
@@ -57,6 +58,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_update_fog_light()
+	_update_safe_hum()
 	if not _player_in_range:
 		return
 	if UIManager.is_blocking_gameplay():
@@ -274,10 +276,11 @@ func _make_altar_texture(tex: Texture2D, width_px: float) -> Texture2D:
 func _load_texture_image(tex: Texture2D) -> Image:
 	if tex == null:
 		return null
-	var image := Image.new()
-	if not tex.resource_path.is_empty() and image.load(tex.resource_path) == OK:
-		return image
 	var img := tex.get_image()
+	if img == null and not tex.resource_path.is_empty():
+		var loaded := load(tex.resource_path)
+		if loaded is Texture2D:
+			img = (loaded as Texture2D).get_image()
 	if img == null:
 		return null
 	img = img.duplicate()
@@ -310,7 +313,7 @@ func _remove_backdrop(image: Image) -> void:
 	while not stack.is_empty():
 		var packed: int = stack.pop_back()
 		var px := packed % w
-		var py := int(packed / w)
+		var py := int(float(packed) / float(w))
 		image.set_pixel(px, py, Color(0, 0, 0, 0))
 		_backdrop_try_push(image, visited, stack, px + 1, py, corner, tol)
 		_backdrop_try_push(image, visited, stack, px - 1, py, corner, tol)
@@ -348,12 +351,12 @@ func _composite_foundation(shrine: Image) -> Image:
 	var canvas := Image.create(canvas_w, canvas_h, false, Image.FORMAT_RGBA8)
 	canvas.fill(Color(0, 0, 0, 0))
 	var stone := _stone_tile()
-	var found_x := int((canvas_w - found_w) / 2)
+	var found_x := int(float(canvas_w - found_w) / 2.0)
 	var found_y := canvas_h - found_h
 	for i in tile_count:
 		canvas.blit_rect(stone, Rect2i(0, 0, 16, 16), Vector2i(found_x + i * 16, found_y))
 	_darken_foundation_edge(canvas, found_x, found_y, found_w, found_h)
-	var shrine_x := int((canvas_w - shrine_w) / 2)
+	var shrine_x := int(float(canvas_w - shrine_w) / 2.0)
 	var shrine_y := found_y + overlap - shrine_h
 	canvas.blit_rect(shrine, Rect2i(0, 0, shrine_w, shrine_h), Vector2i(shrine_x, shrine_y))
 	return canvas
@@ -516,6 +519,35 @@ func _on_body_exited(body: Node) -> void:
 		_player_in_range = false
 		if _hint != null:
 			_hint.visible = false
+
+
+func _update_safe_hum() -> void:
+	if _hum == null:
+		return
+	if _hum.stream == null and ResourceLoader.exists("res://audio/ambient/lantern_hum.wav"):
+		_hum.stream = load("res://audio/ambient/lantern_hum.wav")
+	if not is_lantern_active:
+		if _hum.playing:
+			_hum.stop()
+		return
+	if not _hum.playing:
+		_hum.play()
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player == null:
+		_hum.volume_db = -28.0
+		return
+	var dist := global_position.distance_to(player.global_position)
+	var radius := get_safe_radius_pixels()
+	var inside := dist <= radius
+	var fog := get_tree().get_first_node_in_group("fog_event") as FogEvent
+	var storm := fog != null and fog.is_fog_active()
+	var closeness := clampf(1.0 - dist / maxf(radius * 1.35, 80.0), 0.0, 1.0)
+	var db := lerpf(-30.0, -16.0, closeness)
+	if inside:
+		db += 3.0 if storm else 0.0
+	else:
+		db -= 8.0 if storm else 4.0
+	_hum.volume_db = db
 
 
 func to_save_dict() -> Dictionary:

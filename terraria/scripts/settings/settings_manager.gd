@@ -18,6 +18,7 @@ const BUS_MASTER := "Master"
 const BUS_MUSIC := "Music"
 const BUS_SFX := "SFX"
 const BUS_UI := "UI"
+const BUS_AMBIENT := "Ambient"
 
 enum WindowMode {
 	WINDOWED = 0,
@@ -103,7 +104,6 @@ var game: Dictionary = {}
 var controls: Dictionary = {}
 
 var _factory_controls: Dictionary = {}
-var _pending_display: Dictionary = {}
 var _backup_display: Dictionary = {}
 var _display_confirm_left: float = 0.0
 var _display_confirm_active: bool = false
@@ -364,10 +364,12 @@ func _default_audio() -> Dictionary:
 		"music": 1.0,
 		"sfx": 1.0,
 		"ui": 1.0,
+		"ambient": 1.0,
 		"master_mute": false,
 		"music_mute": false,
 		"sfx_mute": false,
 		"ui_mute": false,
+		"ambient_mute": false,
 	}
 
 
@@ -401,10 +403,12 @@ func _load_from_disk() -> void:
 		"music": float(cfg.get_value("audio", "music", 1.0)),
 		"sfx": float(cfg.get_value("audio", "sfx", 1.0)),
 		"ui": float(cfg.get_value("audio", "ui", 1.0)),
+		"ambient": float(cfg.get_value("audio", "ambient", cfg.get_value("audio", "sfx", 1.0))),
 		"master_mute": bool(cfg.get_value("audio", "master_mute", false)),
 		"music_mute": bool(cfg.get_value("audio", "music_mute", false)),
 		"sfx_mute": bool(cfg.get_value("audio", "sfx_mute", false)),
 		"ui_mute": bool(cfg.get_value("audio", "ui_mute", false)),
+		"ambient_mute": bool(cfg.get_value("audio", "ambient_mute", false)),
 	})
 	game = _sanitize_game({
 		"pause_when_unfocused": bool(cfg.get_value("game", "pause_when_unfocused", true)),
@@ -438,10 +442,12 @@ func _save_to_disk(include_display: bool) -> void:
 	cfg.set_value("audio", "music", float(audio.get("music", 1.0)))
 	cfg.set_value("audio", "sfx", float(audio.get("sfx", 1.0)))
 	cfg.set_value("audio", "ui", float(audio.get("ui", 1.0)))
+	cfg.set_value("audio", "ambient", float(audio.get("ambient", 1.0)))
 	cfg.set_value("audio", "master_mute", bool(audio.get("master_mute", false)))
 	cfg.set_value("audio", "music_mute", bool(audio.get("music_mute", false)))
 	cfg.set_value("audio", "sfx_mute", bool(audio.get("sfx_mute", false)))
 	cfg.set_value("audio", "ui_mute", bool(audio.get("ui_mute", false)))
+	cfg.set_value("audio", "ambient_mute", bool(audio.get("ambient_mute", false)))
 	cfg.set_value("game", "pause_when_unfocused", bool(game.get("pause_when_unfocused", true)))
 	cfg.set_value("game", "show_fps", bool(game.get("show_fps", false)))
 	cfg.set_value("controls", "bindings", JSON.stringify(controls))
@@ -571,6 +577,7 @@ func _apply_audio_dict(data: Dictionary) -> void:
 	_set_bus_volume(BUS_MUSIC, float(data.get("music", 1.0)), bool(data.get("music_mute", false)))
 	_set_bus_volume(BUS_SFX, float(data.get("sfx", 1.0)), bool(data.get("sfx_mute", false)))
 	_set_bus_volume(BUS_UI, float(data.get("ui", 1.0)), bool(data.get("ui_mute", false)))
+	_set_bus_volume(BUS_AMBIENT, float(data.get("ambient", 1.0)), bool(data.get("ambient_mute", false)))
 
 
 func _set_bus_volume(bus_name: String, linear: float, muted: bool) -> void:
@@ -693,10 +700,12 @@ func _sanitize_audio(data: Dictionary) -> Dictionary:
 		"music": clampf(float(data.get("music", 1.0)), 0.0, 1.0),
 		"sfx": clampf(float(data.get("sfx", 1.0)), 0.0, 1.0),
 		"ui": clampf(float(data.get("ui", 1.0)), 0.0, 1.0),
+		"ambient": clampf(float(data.get("ambient", data.get("sfx", 1.0))), 0.0, 1.0),
 		"master_mute": bool(data.get("master_mute", false)),
 		"music_mute": bool(data.get("music_mute", false)),
 		"sfx_mute": bool(data.get("sfx_mute", false)),
 		"ui_mute": bool(data.get("ui_mute", false)),
+		"ambient_mute": bool(data.get("ambient_mute", false)),
 	}
 
 

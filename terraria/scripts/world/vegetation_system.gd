@@ -141,7 +141,7 @@ func harvest(cell: Vector2i, player: Player = null) -> bool:
 	if plant != null and plant.can_be_harvested and plant.item_id >= 0:
 		_spawn_drop(plant.item_id, 1, _cell_center(cell))
 	if player != null and player.has_method("play_sfx"):
-		player.play_sfx(&"BlockBreak")
+		player.play_sfx(&"BlockBreak", 0.0, &"grass")
 	return true
 
 

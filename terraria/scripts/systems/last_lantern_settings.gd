@@ -51,6 +51,18 @@ enum DayPhase {
 ## Optionaler Gameplay-Radius als duenne Linie. Standard aus, damit der heilige Rand allein steht.
 @export var show_debug_safe_radius: bool = false
 
+@export_group("Gegner-Lebensanzeige")
+@export var health_bar_visible_after_hit: float = 3.0
+@export var max_visible_enemy_health_bars: int = 8
+@export var health_bar_fade_in: float = 0.15
+@export var health_bar_fade_out: float = 0.30
+@export var health_bar_aim_grace: float = 0.20
+@export var show_enemy_health_numbers: bool = false
+
+@export_group("Kampftext")
+@export var combat_text: CombatTextConfig
+
+
 
 func clock_hour_to_time(hour: float) -> float:
 	return clampf(hour / 24.0, 0.0, 0.999)
@@ -63,7 +75,7 @@ func is_fog_day(day: int) -> bool:
 func fog_cycle_for_day(day: int) -> int:
 	if day <= 0:
 		return 0
-	return int(day / fog_interval_days)
+	return int(float(day) / float(fog_interval_days))
 
 
 func fog_damage_per_second(cycle: int) -> float:
@@ -92,12 +104,12 @@ func next_fog_day(current_day: int, fog_done_today: bool) -> int:
 		return current_day
 	if is_fog_day(current_day) and fog_done_today:
 		return current_day + fog_interval_days
-	return int((current_day - 1) / fog_interval_days + 1) * fog_interval_days
+	return (int(float(current_day - 1) / float(fog_interval_days)) + 1) * fog_interval_days
 
 
 func cycle_start_day(day: int) -> int:
 	var interval := maxi(fog_interval_days, 1)
-	return int((maxi(day, 1) - 1) / interval) * interval + 1
+	return int(float(maxi(day, 1) - 1) / float(interval)) * interval + 1
 
 
 func cycle_fog_day(day: int) -> int:

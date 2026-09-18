@@ -1,10 +1,11 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/lantern.gd" id="1_script"]
 [ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="2_settings"]
 [ext_resource type="Script" path="res://scripts/systems/fog/safe_zone.gd" id="3_safe"]
 [ext_resource type="Script" path="res://scripts/systems/fog/safe_zone_visual.gd" id="4_shield"]
 [ext_resource type="Shader" path="res://shaders/safe_zone_shield.gdshader" id="5_shader"]
+[ext_resource type="AudioStream" path="res://audio/ambient/lantern_hum.wav" id="6_hum"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_shield"]
 shader = ExtResource("5_shader")
@@ -121,3 +122,9 @@ theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 8
 text = "[E] Laterne"
 horizontal_alignment = 1
+
+[node name="SafeHum" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("6_hum")
+volume_db = -22.0
+max_distance = 720.0
+bus = &"Ambient"

@@ -207,7 +207,7 @@ func _apply_stair_collision(source: TileSetAtlasSource, coords: Vector2i, orient
 	data.set_collision_polygon_one_way_margin(PLATFORM_PHYSICS_LAYER, 0, 3.0)
 
 
-func _apply_tile_collision(source: TileSetAtlasSource, coords: Vector2i, block: BlockData, variant: int) -> void:
+func _apply_tile_collision(source: TileSetAtlasSource, coords: Vector2i, block: BlockData, _variant: int) -> void:
 	var data := source.get_tile_data(coords, 0)
 	if data == null:
 		return

@@ -30,13 +30,13 @@ script = ExtResource("6_fog")
 settings = ExtResource("8_ll")
 
 [node name="WarningSound" type="AudioStreamPlayer" parent="FogEvent" unique_id=757252830]
-bus = &"SFX"
+bus = &"Ambient"
 
 [node name="ThunderSound" type="AudioStreamPlayer" parent="FogEvent" unique_id=1590258935]
-bus = &"SFX"
+bus = &"Ambient"
 
 [node name="WindSound" type="AudioStreamPlayer" parent="FogEvent" unique_id=1639003564]
-bus = &"SFX"
+bus = &"Ambient"
 
 [node name="FogVisual" parent="." unique_id=976135601 instance=ExtResource("7_fogvis")]
 

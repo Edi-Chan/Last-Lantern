@@ -84,7 +84,7 @@ func _style_amount_label() -> void:
 	amount_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	amount_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	amount_label.add_theme_font_size_override("font_size", 10)
+	amount_label.add_theme_font_size_override("font_size", 9)
 	amount_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	amount_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.92))
 	amount_label.add_theme_constant_override("outline_size", 3)

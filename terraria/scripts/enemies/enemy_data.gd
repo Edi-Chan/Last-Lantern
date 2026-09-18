@@ -42,6 +42,14 @@ extends Resource
 ## Spaeter: Gegner an der Schutzkuppel stoppen. Aktuell ohne Wirkung.
 @export var blocked_by_safe_zone: bool = false
 
+enum Rank {
+	NORMAL,
+	ELITE,
+	BOSS,
+}
+
+@export var rank: Rank = Rank.NORMAL
+
 
 func scaled_darkness_health(cycle: int) -> int:
 	return _scale_int(darkness_max_health, darkness_health_cycle_bonus, cycle)

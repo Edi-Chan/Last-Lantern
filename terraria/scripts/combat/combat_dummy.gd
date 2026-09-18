@@ -28,10 +28,28 @@ func _physics_process(delta: float) -> void:
 
 
 func take_damage(amount: int, _source = null) -> void:
-	health = maxi(health - amount, 0)
+	var event := DamageEvent.outgoing_hit(maxi(amount, 0), _source, self, null)
+	apply_damage_event(event)
+
+
+func apply_damage_event(event: DamageEvent) -> void:
+	if event == null:
+		return
+	var dmg := maxi(int(event.amount), 0)
+	health = maxi(health - dmg, 0)
+	event.amount = dmg
+	event.target_node = self
+	event.killed = health <= 0
+	if event.world_position == Vector2.ZERO:
+		event.world_position = get_combat_text_origin()
 	_update_label()
 	_flash()
-	print("CombatDummy hp=%d (-%d)" % [health, amount])
+	print("CombatDummy hp=%d (-%d)" % [health, event.amount])
+	CombatTextSystem.present(event)
+
+
+func get_combat_text_origin() -> Vector2:
+	return global_position + Vector2(0, -48)
 
 
 func apply_knockback(impulse: Vector2) -> void:

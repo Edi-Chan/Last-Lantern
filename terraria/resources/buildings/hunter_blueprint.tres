@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="BuildingBlueprintResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/buildings/building_blueprint_resource.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+building_id = &"hunter_shop"
+display_name = "Jägerhütte"
+building_type = 9
+layout_preset = &"hunter"
+exterior_scene_path = "res://scenes/buildings/hunter_exterior.tscn"
+interior_scene_path = "res://scenes/buildings/hunter_interior.tscn"
+item_id = 96
+consume_blueprint = true
+entrance_x = 3
+required_item_ids = PackedInt32Array(9, 2, 17, 60)
+required_amounts = PackedInt32Array(50, 24, 16, 6)
+width = 12
+wall_height = 5
+foundation_overhang = 1
+door_height = 3
+support_count = 3
+stone_block_id = 32
+wood_block_id = 33
+beam_block_id = 29
+core_block_id = 59
+roof_block_id = 40
+stone_wall_id = 34
+wood_wall_id = 33
+stone_bg_id = 36
+wood_bg_id = 35
+horiz_beam_id = 41
+window_id = 47
+max_ground_variance = 0
+require_flat_ground = true
+require_foundation_anchor = true
+forbid_lantern_overlap = true
+forbid_tree_overlap = true
+forbid_player_overlap = true
+visual_background_only = true
+indestructible = false

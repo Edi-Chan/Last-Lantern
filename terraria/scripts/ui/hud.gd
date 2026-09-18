@@ -12,6 +12,8 @@ func _ready() -> void:
 	layer = CHROME_LAYER
 	_ensure_stack_layers()
 	_ensure_menus()
+	_ensure_enemy_health_overlay()
+	_ensure_combat_text_overlay()
 	if not SettingsManager.ui_scale_changed.is_connected(_on_ui_scale_changed):
 		SettingsManager.ui_scale_changed.connect(_on_ui_scale_changed)
 	call_deferred("_apply_ui_scale")
@@ -42,6 +44,22 @@ func _reparent_named(node_name: String, host: CanvasLayer) -> void:
 	if node == null or node.get_parent() == host:
 		return
 	node.reparent(host)
+
+
+func _ensure_enemy_health_overlay() -> void:
+	if get_node_or_null("EnemyHealthOverlay") != null:
+		return
+	var overlay := EnemyHealthBarManager.new()
+	overlay.name = "EnemyHealthOverlay"
+	add_child(overlay)
+
+
+func _ensure_combat_text_overlay() -> void:
+	if get_node_or_null("CombatTextOverlay") != null:
+		return
+	var overlay := CombatTextSystem.new()
+	overlay.name = "CombatTextOverlay"
+	add_child(overlay)
 
 
 func _ensure_menus() -> void:

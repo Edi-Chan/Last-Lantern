@@ -46,7 +46,29 @@ func _ready() -> void:
 	_warning_player = get_node_or_null("WarningSound") as AudioStreamPlayer
 	_thunder_player = get_node_or_null("ThunderSound") as AudioStreamPlayer
 	_wind_player = get_node_or_null("WindSound") as AudioStreamPlayer
+	_setup_fog_audio()
 	call_deferred("_bind")
+
+
+func _setup_fog_audio() -> void:
+	if _warning_player != null and _warning_player.stream == null:
+		_warning_player.stream = load("res://audio/ambient/fog_warning.wav")
+		_warning_player.bus = &"Ambient"
+		_warning_player.volume_db = -8.0
+	if _thunder_player != null:
+		_thunder_player.bus = &"Ambient"
+		if _thunder_player.stream == null:
+			_thunder_player.stream = load("res://audio/ambient/thunder_far.wav")
+		_thunder_player.volume_db = -6.0
+	if _wind_player != null:
+		_wind_player.bus = &"Ambient"
+		if _wind_player.stream == null:
+			_wind_player.stream = load("res://audio/ambient/wind_finsternis.wav")
+		_wind_player.volume_db = -18.0
+		if _wind_player.stream is AudioStreamWAV:
+			var wind := (_wind_player.stream as AudioStreamWAV).duplicate() as AudioStreamWAV
+			wind.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			_wind_player.stream = wind
 
 
 func _bind() -> void:
@@ -247,10 +269,17 @@ func ending_progress() -> float:
 	return clampf(_ending_left / settings.fog_ending_duration, 0.0, 1.0)
 
 
-func play_thunder_hook() -> void:
-	if _thunder_player == null or _thunder_player.stream == null:
+func play_thunder_hook(intensity: float = 0.55) -> void:
+	if _thunder_player == null:
 		return
-	_thunder_player.pitch_scale = randf_range(0.86, 1.14)
+	var near := intensity >= 0.72
+	var path := "res://audio/ambient/thunder_near.wav" if near else "res://audio/ambient/thunder_far.wav"
+	if ResourceLoader.exists(path):
+		_thunder_player.stream = load(path)
+	if _thunder_player.stream == null:
+		return
+	_thunder_player.pitch_scale = randf_range(0.96, 1.04)
+	_thunder_player.volume_db = lerpf(-16.0, -4.0, clampf(intensity, 0.0, 1.0))
 	_thunder_player.play()
 
 
@@ -263,9 +292,9 @@ func update_wind_hook(storm: float, player_safe: bool) -> void:
 		return
 	if not _wind_player.playing:
 		_wind_player.play()
-	var db := lerpf(-18.0, -4.0, clampf(storm, 0.0, 1.0))
+	var db := lerpf(-20.0, -7.0, clampf(storm, 0.0, 1.0))
 	if player_safe:
-		db -= 6.0
+		db -= 10.0
 	_wind_player.volume_db = db
 
 

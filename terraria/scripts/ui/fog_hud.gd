@@ -99,7 +99,7 @@ func _update_status() -> void:
 			_status.modulate = Color(1.0, 0.38, 0.32, 1)
 		var left := _fog.fog_time_left()
 		if left > 0.0:
-			var minutes := int(left) / 60
+			var minutes := int(float(int(left)) / 60.0)
 			var seconds := int(left) % 60
 			_status.text += "   %02d:%02d" % [minutes, seconds]
 	elif _fog.state == FogEvent.State.WARNING:

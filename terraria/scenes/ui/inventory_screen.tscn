@@ -57,24 +57,24 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="MainPanel" type="PanelContainer" parent="CenterWrap"]
-custom_minimum_size = Vector2(1040, 624)
+custom_minimum_size = Vector2(832, 500)
 layout_mode = 2
 clip_contents = true
 theme_override_styles/panel = ExtResource("4_outer")
 
 [node name="MainLayout" type="MarginContainer" parent="CenterWrap/MainPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
 
 [node name="Body" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="HeaderRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 theme_override_constants/separation = 8
 
@@ -83,10 +83,10 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="TabInventory" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
-custom_minimum_size = Vector2(120, 28)
+custom_minimum_size = Vector2(96, 22)
 layout_mode = 2
 focus_mode = 0
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("25_mtab_on")
 theme_override_styles/hover = ExtResource("25_mtab_on")
 theme_override_styles/pressed = ExtResource("25_mtab_on")
@@ -94,20 +94,20 @@ text = "Inventar"
 icon = ExtResource("13_bag")
 
 [node name="TabCrafting" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
-custom_minimum_size = Vector2(120, 28)
+custom_minimum_size = Vector2(96, 22)
 layout_mode = 2
 focus_mode = 0
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("24_mtab")
 theme_override_styles/hover = ExtResource("25_mtab_on")
 theme_override_styles/pressed = ExtResource("25_mtab_on")
 text = "Crafting"
 
 [node name="TabQuests" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
-custom_minimum_size = Vector2(110, 28)
+custom_minimum_size = Vector2(88, 22)
 layout_mode = 2
 focus_mode = 0
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("24_mtab")
 theme_override_styles/hover = ExtResource("25_mtab_on")
 theme_override_styles/pressed = ExtResource("25_mtab_on")
@@ -133,10 +133,10 @@ text = "X"
 [node name="Content" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 14
+theme_override_constants/separation = 11
 
 [node name="LeftColumn" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content"]
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
@@ -146,11 +146,11 @@ layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="CharacterSection" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow"]
-custom_minimum_size = Vector2(118, 0)
+custom_minimum_size = Vector2(94, 0)
 layout_mode = 2
 
 [node name="PreviewFrame" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection"]
-custom_minimum_size = Vector2(118, 168)
+custom_minimum_size = Vector2(94, 134)
 layout_mode = 2
 theme_override_styles/panel = ExtResource("5_inner")
 
@@ -194,7 +194,7 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="LabelHead" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead"]
-custom_minimum_size = Vector2(52, 0)
+custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
 theme_override_font_sizes/font_size = 11
@@ -227,7 +227,7 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="LabelChest" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest"]
-custom_minimum_size = Vector2(52, 0)
+custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
 theme_override_font_sizes/font_size = 11
@@ -260,7 +260,7 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="LabelLegs" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs"]
-custom_minimum_size = Vector2(52, 0)
+custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
 theme_override_font_sizes/font_size = 11
@@ -295,7 +295,7 @@ modulate = Color(1, 1, 1, 0.45)
 tooltip_text = "Stiefel sind noch nicht ausrüstbar."
 
 [node name="LabelBoots" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots"]
-custom_minimum_size = Vector2(52, 0)
+custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
 theme_override_font_sizes/font_size = 11
@@ -303,7 +303,7 @@ text = "Stiefel"
 vertical_alignment = 1
 
 [node name="BootsPlaceholder" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots"]
-custom_minimum_size = Vector2(36, 36)
+custom_minimum_size = Vector2(29, 29)
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = ExtResource("11_slot")
@@ -330,7 +330,7 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="LabelAcc1" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1"]
-custom_minimum_size = Vector2(52, 0)
+custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
 theme_override_font_sizes/font_size = 11
@@ -363,7 +363,7 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="LabelAcc2" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2"]
-custom_minimum_size = Vector2(52, 0)
+custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
 theme_override_font_sizes/font_size = 11
@@ -392,7 +392,7 @@ texture_filter = 1
 modulate = Color(1, 1, 1, 0.35)
 
 [node name="InspectPanel" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn"]
-custom_minimum_size = Vector2(300, 240)
+custom_minimum_size = Vector2(240, 192)
 layout_mode = 2
 size_flags_vertical = 3
 clip_contents = true
@@ -413,7 +413,7 @@ theme_override_constants/separation = 4
 [node name="InspectName" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.97, 0.99, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 text = "Kein Gegenstand ausgewählt"
 autowrap_mode = 3
 
@@ -446,13 +446,13 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
 [node name="InspectIconFrame" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_styles/panel = ExtResource("11_slot")
 
 [node name="InspectIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectIconFrame"]
-custom_minimum_size = Vector2(60, 60)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
@@ -518,7 +518,7 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="SearchLineEdit" type="LineEdit" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(168, 22)
+custom_minimum_size = Vector2(134, 18)
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("7_search")
@@ -529,7 +529,7 @@ right_icon = ExtResource("14_search")
 caret_blink = true
 
 [node name="TabAlle" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(48, 22)
+custom_minimum_size = Vector2(38, 18)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
@@ -539,7 +539,7 @@ theme_override_styles/pressed = ExtResource("9_tab_on")
 text = "Alle"
 
 [node name="TabEquip" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(84, 22)
+custom_minimum_size = Vector2(67, 18)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
@@ -549,7 +549,7 @@ theme_override_styles/pressed = ExtResource("9_tab_on")
 text = "Ausrüstung"
 
 [node name="TabConsume" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(96, 22)
+custom_minimum_size = Vector2(77, 18)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
@@ -559,7 +559,7 @@ theme_override_styles/pressed = ExtResource("9_tab_on")
 text = "Verbrauchbar"
 
 [node name="TabMats" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(84, 22)
+custom_minimum_size = Vector2(67, 18)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
@@ -569,7 +569,7 @@ theme_override_styles/pressed = ExtResource("9_tab_on")
 text = "Materialien"
 
 [node name="TabOther" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(72, 22)
+custom_minimum_size = Vector2(58, 18)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
@@ -579,7 +579,7 @@ theme_override_styles/pressed = ExtResource("9_tab_on")
 text = "Sonstiges"
 
 [node name="FilterButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(56, 22)
+custom_minimum_size = Vector2(45, 18)
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 theme_override_styles/normal = ExtResource("8_tab")
@@ -590,7 +590,7 @@ tooltip_text = "Detailfilter"
 flat = false
 
 [node name="SortButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(48, 22)
+custom_minimum_size = Vector2(38, 18)
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 theme_override_styles/normal = ExtResource("8_tab")
@@ -603,19 +603,19 @@ flat = false
 [node name="InventoryGrid" type="GridContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/h_separation = 5
-theme_override_constants/v_separation = 5
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
 columns = 10
 
 [node name="HotbarTitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.84, 0.9, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "Hotbar"
 
 [node name="HotbarGrid" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="CraftingPage" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body"]
 visible = false
@@ -634,7 +634,7 @@ theme_override_styles/panel = ExtResource("5_inner")
 script = ExtResource("23_quests")
 
 [node name="FooterRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
-custom_minimum_size = Vector2(0, 24)
+custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_override_constants/separation = 8
 
@@ -661,7 +661,7 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="DropButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
-custom_minimum_size = Vector2(210, 22)
+custom_minimum_size = Vector2(168, 18)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11

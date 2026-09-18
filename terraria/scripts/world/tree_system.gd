@@ -486,16 +486,16 @@ func _split_wood_piles(amount: int) -> PackedInt32Array:
 		piles = 3
 	if amount >= 13:
 		piles = mini(4, amount)
-	var counts := PackedInt32Array()
+	var pile_counts := PackedInt32Array()
 	var remaining := amount
 	for i in piles:
 		var left := piles - i
-		var take := int(remaining / left)
+		var take := int(float(remaining) / float(left))
 		if i == piles - 1:
 			take = remaining
-		counts.append(maxi(1, take))
+		pile_counts.append(maxi(1, take))
 		remaining -= take
-	return counts
+	return pile_counts
 
 
 func _remove_leaf(inst: TreeInstanceData, tile: Vector2i) -> void:

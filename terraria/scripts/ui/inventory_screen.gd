@@ -9,11 +9,11 @@ extends Control
 const PANEL_PATH := "CenterWrap/MainPanel/MainLayout/Body/Content"
 const INSPECT_ROOT := PANEL_PATH + "/LeftColumn/InspectPanel/InspectMargin/InspectOuter"
 const INSPECT_LAYOUT_PATH := INSPECT_ROOT + "/InspectScroll/InspectScrollPad/InspectLayout"
-const PANEL_SIZE := Vector2(1040, 624)
+const PANEL_SIZE := Vector2(832, 500)
 const CONTENT_SCALE := 1.0
-const BAG_SLOT_SIZE := 62
-const HOTBAR_SLOT_SIZE := 56
-const EQUIP_SLOT_SIZE := 34
+const BAG_SLOT_SIZE := 50
+const HOTBAR_SLOT_SIZE := 45
+const EQUIP_SLOT_SIZE := 27
 const EMPTY_VIEW_SLOT := -1
 const FILTER_ALL_ID := 100
 const FILTER_GROUP_ALL := -1
@@ -232,6 +232,8 @@ func _bind_main_tab(button: Button, tab: int) -> void:
 
 
 func _on_main_tab_pressed(tab: int) -> void:
+	if tab != _main_tab:
+		_play_ui(&"UiTab")
 	if tab != MainTab.CRAFTING and _crafting_page != null:
 		_crafting_page.set_station_context(RecipeData.Station.NONE)
 	_set_main_tab(tab)
@@ -366,6 +368,7 @@ func open_on_tab(tab: int, station_context: int = RecipeData.Station.NONE) -> vo
 		world_map.call("close", false)
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_play_ui(&"UiOpen")
 	_set_hud_hotbar_visible(false)
 	_lock_panel_size()
 	if _player != null:
@@ -384,6 +387,8 @@ func close_inventory() -> void:
 
 
 func close(restore_input: bool = true) -> void:
+	if visible:
+		_play_ui(&"UiClose")
 	_hide_popups()
 	_hide_hover()
 	visible = false
@@ -439,7 +444,7 @@ func _build_slots() -> void:
 		var num := Label.new()
 		num.text = "0" if i == 9 else str(i + 1)
 		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		num.add_theme_font_size_override("font_size", 11)
+		num.add_theme_font_size_override("font_size", 10)
 		num.add_theme_color_override("font_color", Color(0.72, 0.78, 0.84, 1))
 		cell.add_child(slot)
 		cell.add_child(num)
@@ -513,15 +518,15 @@ func _style_toolbar_controls() -> void:
 	var chrome := _toolbar_style()
 	if _search_edit != null:
 		_search_edit.placeholder_text = "Suchen ..."
-		_search_edit.custom_minimum_size = Vector2(140, 22)
-		_search_edit.add_theme_font_size_override("font_size", 11)
+		_search_edit.custom_minimum_size = Vector2(112, 18)
+		_search_edit.add_theme_font_size_override("font_size", 10)
 		_search_edit.add_theme_color_override("font_placeholder_color", Color(0.55, 0.6, 0.66, 0.85))
 	for button in [_filter_button, _sort_button]:
 		if button == null:
 			continue
 		button.flat = false
-		button.custom_minimum_size = Vector2(48, 22)
-		button.add_theme_font_size_override("font_size", 10)
+		button.custom_minimum_size = Vector2(38, 18)
+		button.add_theme_font_size_override("font_size", 9)
 		button.add_theme_stylebox_override("normal", chrome)
 		button.add_theme_stylebox_override("hover", chrome)
 		button.add_theme_stylebox_override("pressed", chrome)
@@ -697,6 +702,7 @@ func _update_toolbar_labels() -> void:
 func _on_slot_clicked(slot: Panel) -> void:
 	if _inventory == null or slot == null:
 		return
+	_play_ui(&"UiClick")
 	var ref: Variant = slot.call("get_slot_ref")
 	if _inventory.get_ref_item(ref) != null:
 		_inspect_ref = ref
@@ -1313,15 +1319,15 @@ func _position_hover() -> void:
 	if _hover_tooltip == null or not _hover_tooltip.visible:
 		return
 	var mouse := get_viewport().get_mouse_position()
-	var size := _hover_tooltip.get_combined_minimum_size()
-	if size.x < 8.0:
-		size = _hover_tooltip.size
+	var tip_size := _hover_tooltip.get_combined_minimum_size()
+	if tip_size.x < 8.0:
+		tip_size = _hover_tooltip.size
 	var pos := mouse + Vector2(12.0, 14.0)
 	var vp := get_viewport_rect().size
-	if pos.x + size.x > vp.x:
-		pos.x = vp.x - size.x
-	if pos.y + size.y > vp.y:
-		pos.y = mouse.y - size.y - 8.0
+	if pos.x + tip_size.x > vp.x:
+		pos.x = vp.x - tip_size.x
+	if pos.y + tip_size.y > vp.y:
+		pos.y = mouse.y - tip_size.y - 8.0
 	pos.x = maxf(pos.x, 0.0)
 	pos.y = maxf(pos.y, 0.0)
 	_hover_tooltip.position = pos
@@ -1518,7 +1524,7 @@ func _on_slot_right_clicked(slot: Panel) -> void:
 	_open_context_menu(ref, item)
 
 
-func _open_context_menu(ref: Variant, item: ItemData) -> void:
+func _open_context_menu(ref: Variant, _item: ItemData) -> void:
 	_hide_popups()
 	_context_ref = ref
 	_context_menu.clear()
@@ -1702,16 +1708,16 @@ func _popup_at_mouse(popup: Window) -> void:
 	popup.reset_size()
 	var mouse := get_viewport().get_mouse_position()
 	var vp := get_viewport_rect().size
-	var size := Vector2(popup.size)
-	if size.x <= 0.0:
-		size.x = 96.0
-	if size.y <= 0.0:
-		size.y = 80.0
+	var popup_size := Vector2(popup.size)
+	if popup_size.x <= 0.0:
+		popup_size.x = 96.0
+	if popup_size.y <= 0.0:
+		popup_size.y = 80.0
 	var pos := mouse
-	if pos.x + size.x > vp.x:
-		pos.x = vp.x - size.x
-	if pos.y + size.y > vp.y:
-		pos.y = vp.y - size.y
+	if pos.x + popup_size.x > vp.x:
+		pos.x = vp.x - popup_size.x
+	if pos.y + popup_size.y > vp.y:
+		pos.y = vp.y - popup_size.y
 	pos.x = maxf(pos.x, 0.0)
 	pos.y = maxf(pos.y, 0.0)
 	popup.position = Vector2i(pos.round())
@@ -1743,3 +1749,8 @@ func _quick_to_hotbar(ref: Variant) -> void:
 		_inventory.set_selected_hotbar_index(int(ref))
 		return
 	_inventory.move_to_hotbar(ref)
+
+
+func _play_ui(event: StringName) -> void:
+	if _player != null:
+		_player.play_sfx(event)

@@ -82,7 +82,7 @@ func _physics_process(delta: float) -> void:
 static func predict_arc(
 		origin: Vector2,
 		p_velocity: Vector2,
-		gravity: float,
+		p_gravity: float,
 		p_max_distance: float,
 		delta: float = 1.0 / 60.0,
 		max_steps: int = 96
@@ -92,8 +92,8 @@ static func predict_arc(
 	var vel := p_velocity
 	points.append(pos)
 	for _i in max_steps:
-		if gravity != 0.0:
-			vel.y += gravity * delta
+		if p_gravity != 0.0:
+			vel.y += p_gravity * delta
 		pos += vel * delta
 		points.append(pos)
 		if p_max_distance > 0.0 and origin.distance_to(pos) >= p_max_distance:
@@ -128,6 +128,8 @@ func _try_hit(node: Node) -> bool:
 		return false
 	already_hit.append(target)
 	var resolved := CombatResolver.resolve_damage(damage, weapon_data, target)
-	CombatResolver.apply_hit(target, resolved, knockback_force, source)
+	CombatResolver.apply_hit(target, resolved, knockback_force, source, weapon_data)
+	if source != null and source.has_method("play_sfx"):
+		source.call("play_sfx", &"ArrowImpact")
 	queue_free()
 	return true

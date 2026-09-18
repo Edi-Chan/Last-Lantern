@@ -540,7 +540,7 @@ func _start_tool_swing(item: ItemData) -> void:
 	elif _hitbox != null and _hitbox.has_method("begin_swing"):
 		_hitbox.call("begin_swing", damage, kb, _player)
 	_play_attack_anim(&"tool_swing")
-	_player.play_sfx(&"Swing")
+	_player.play_weapon_swing(int(ItemData.WeaponKind.NONE))
 	_attack_cooldown_left = item.resolve_attack_cooldown() if item.has_method("resolve_attack_cooldown") else 0.35
 
 
@@ -567,7 +567,7 @@ func _start_melee_attack(item: ItemData, anim: StringName, hit_start: float, hit
 	if _hitbox != null and _hitbox.has_method("begin_attack"):
 		_hitbox.call("begin_attack", damage, kb, _player, item.weapon_data, play_anim, hit_start, hit_end, int(item.weapon_kind), item_range)
 	_play_attack_anim(play_anim)
-	_player.play_sfx(&"Swing")
+	_player.play_weapon_swing(int(item.weapon_kind))
 	_attack_cooldown_left = item.resolve_attack_cooldown()
 	_use_selected_durability()
 
@@ -588,6 +588,7 @@ func _start_bow_attack(item: ItemData) -> void:
 	_bow_weapon = weapon
 	_apply_bow_draw_visual(_bow_charge)
 	_update_bow_trajectory()
+	_player.play_sfx(&"BowDraw", -4.0)
 
 
 func _bow_can_shoot(item: ItemData) -> bool:
@@ -611,7 +612,7 @@ func _fire_bow_quick(item: ItemData) -> void:
 	var weapon := item.weapon_data
 	var anim := &"bow_shot" if _has_anim(&"bow_shot") else &"tool_swing"
 	_play_attack_anim(anim)
-	_player.play_sfx(&"Swing")
+	_player.play_sfx(&"BowRelease")
 	_spawn_arrow(item, weapon, 1.0, true)
 	var cd := 0.28
 	if weapon != null and weapon.has_method("get_quick_shot_cooldown"):
@@ -662,7 +663,7 @@ func _release_bow() -> void:
 		return
 	var anim := &"bow_shot" if _has_anim(&"bow_shot") else &"tool_swing"
 	_play_attack_anim(anim)
-	_player.play_sfx(&"Swing")
+	_player.play_sfx(&"BowRelease")
 	_spawn_arrow(item, weapon, charge, false)
 	_attack_cooldown_left = item.resolve_attack_cooldown()
 
@@ -869,7 +870,7 @@ func _start_lantern_attack(item: ItemData) -> void:
 		_hitbox.call("begin_attack", damage, kb, _player, item.weapon_data, anim, 0.18, 0.32, int(ItemData.WeaponKind.LANTERN), item_range)
 	_play_attack_anim(anim)
 	_flash_lantern_light()
-	_player.play_sfx(&"Swing")
+	_player.play_weapon_swing(int(ItemData.WeaponKind.LANTERN))
 	var cd := item.resolve_attack_cooldown()
 	_attack_cooldown_left = cd
 	_lantern_cooldown_left = cd
@@ -1065,7 +1066,7 @@ func _handle_mining(delta: float, tile: Vector2i, block: BlockData, in_range: bo
 	_update_progress_bar(mining_progress / mining_time)
 	_mine_sound_cooldown -= delta
 	if _mine_sound_cooldown <= 0.0:
-		_player.play_sfx(&"MineHit")
+		_player.play_sfx(&"MineHit", 0.0, _audio_material(block))
 		_mine_sound_cooldown = MINE_SOUND_INTERVAL
 	if mining_progress >= mining_time:
 		_break_block(tile, block)
@@ -1100,7 +1101,7 @@ func _show_break_denied_feedback(result: BlockData.BreakCheck, block: BlockData)
 	if _weak_message_cooldown > 0.0:
 		return
 	_weak_message_cooldown = WEAK_FEEDBACK_INTERVAL
-	_player.play_sfx(&"MineHit", -8.0)
+	_player.play_sfx(&"MineHit", -8.0, _audio_material(block))
 	if _weak_hint == null:
 		return
 	if result == BlockData.BreakCheck.WRONG_TOOL:
@@ -1196,7 +1197,7 @@ func _handle_stair_placement(hover_tile: Vector2i, _in_range: bool, block: Block
 	if placed_now:
 		if _anim != null:
 			_anim.play(&"block_place")
-		_player.play_sfx(&"BlockPlace")
+		_player.play_sfx(&"BlockPlace", 0.0, _audio_material(block))
 
 
 func _stair_cell_can_place(cell: Vector2i, block: BlockData, line_cells: Dictionary) -> bool:
@@ -1258,7 +1259,7 @@ func _handle_placement(tile: Vector2i, place_state: Dictionary) -> void:
 		veg.on_block_placed(tile)
 	if _anim != null:
 		_anim.play(&"block_place")
-	_player.play_sfx(&"BlockPlace")
+	_player.play_sfx(&"BlockPlace", 0.0, _audio_material(block))
 
 
 func _terrain_source_id() -> int:
@@ -1325,7 +1326,7 @@ func _break_block(tile: Vector2i, block: BlockData) -> void:
 		if removed != null:
 			_notify_structure_removed(tile, true)
 			_notify_map_tile(tile)
-			_player.play_sfx(&"BlockBreak")
+			_player.play_sfx(&"BlockBreak", 0.0, _audio_material(removed))
 			_spawn_drop(tile, removed)
 			_reset_mining()
 			_refresh_target_after_break()
@@ -1336,7 +1337,7 @@ func _break_block(tile: Vector2i, block: BlockData) -> void:
 	var veg := _veg()
 	if veg != null:
 		veg.on_block_removed(tile)
-	_player.play_sfx(&"BlockBreak")
+	_player.play_sfx(&"BlockBreak", 0.0, _audio_material(block))
 	_spawn_drop(tile, block)
 	_reset_mining()
 	_refresh_target_after_break()
@@ -1359,7 +1360,7 @@ func _handle_seed_plant(tile: Vector2i, in_range: bool) -> void:
 		_inventory.consume_from_slot(_inventory.selected_hotbar_index, 1)
 	if _anim != null:
 		_anim.play(&"block_place")
-	_player.play_sfx(&"BlockPlace")
+	_player.play_sfx(&"BlockPlace", 0.0, &"wood")
 
 
 func _veg() -> VegetationSystem:
@@ -1440,7 +1441,7 @@ func _handle_plant_place(tile: Vector2i, in_range: bool) -> void:
 		_inventory.consume_from_slot(_inventory.selected_hotbar_index, 1)
 	if _anim != null:
 		_anim.play(&"block_place")
-	_player.play_sfx(&"BlockPlace")
+	_player.play_sfx(&"BlockPlace", 0.0, &"grass")
 
 
 func _handle_plant_harvest(delta: float, tile: Vector2i, in_range: bool) -> bool:
@@ -1773,3 +1774,9 @@ func _world_debug_lines(hover_tile: Vector2i) -> Array[String]:
 		if trunk_h > 0.0:
 			lines.append("Stamm-Haerte %.2f" % trunk_h)
 	return lines
+
+
+func _audio_material(block: BlockData) -> StringName:
+	if block != null:
+		return block.get_audio_material()
+	return &"stone"

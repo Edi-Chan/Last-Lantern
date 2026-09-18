@@ -185,7 +185,7 @@ func stamp_blueprint_part(block: BlockData, origin: Vector2i) -> void:
 	_refresh_neighbors(origin, block)
 
 
-func try_remove(cell: Vector2i, mined: bool = true) -> BlockData:
+func try_remove(cell: Vector2i, _mined: bool = true) -> BlockData:
 	var buildings := get_tree().get_first_node_in_group(&"building_manager")
 	if buildings != null and buildings.has_method("is_protected_cell") and bool(buildings.call("is_protected_cell", cell)):
 		return null

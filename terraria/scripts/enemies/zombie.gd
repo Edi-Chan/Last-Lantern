@@ -6,6 +6,8 @@ extends CharacterBody2D
 
 signal died
 signal form_changed(darkness: bool)
+signal health_changed(current: float, maximum: float)
+signal damage_received(amount: int)
 
 enum State {
 	IDLE,
@@ -52,7 +54,6 @@ var _on_screen: bool = true
 var _flash_tween: Tween
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
-@onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _hurtbox: Hurtbox = $Hurtbox
 @onready var _hitbox: EnemyHitbox = $AttackHitbox
 @onready var _detection: Area2D = $DetectionArea
@@ -71,6 +72,7 @@ var _flash_tween: Tween
 func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("zombies")
+	add_to_group("enemy_health")
 	if data == null:
 		data = load("res://resources/enemies/zombie_data.tres") as EnemyData
 	set_collision_layer_value(1, false)
@@ -83,6 +85,8 @@ func _ready() -> void:
 	_setup_areas()
 	_setup_darkness_fx()
 	_bind_signals()
+	_setup_audio()
+	call_deferred("_register_health_bar")
 	call_deferred("_initialize_form")
 
 
@@ -175,15 +179,71 @@ func is_darkness_form() -> bool:
 	return darkness_active
 
 
+func is_on_screen() -> bool:
+	return _on_screen
+
+
+func is_attacking_player() -> bool:
+	return _state == State.ATTACK
+
+
+func get_health_current() -> float:
+	return float(current_health)
+
+
+func get_health_max() -> float:
+	return float(max_health)
+
+
+func get_health_bar_rank() -> int:
+	if data == null:
+		return EnemyData.Rank.NORMAL
+	return data.rank
+
+
+func get_health_bar_world_position() -> Vector2:
+	var anchor := get_node_or_null("HealthBarAnchor") as Node2D
+	if anchor != null:
+		return anchor.global_position
+	return global_position + Vector2(0, -56)
+
+
+func get_combat_text_origin() -> Vector2:
+	return get_health_bar_world_position() + Vector2(0, -14)
+
+
+func _register_health_bar() -> void:
+	var mgr := get_tree().get_first_node_in_group(EnemyHealthBarManager.GROUP)
+	if mgr != null and mgr.has_method("register_enemy"):
+		mgr.call("register_enemy", self)
+
+
 func take_damage(amount: int, _source = null) -> void:
-	if _state == State.DEAD:
+	var event := DamageEvent.outgoing_hit(maxi(int(round(float(amount))), 0), _source, self, null)
+	apply_damage_event(event)
+
+
+func apply_damage_event(event: DamageEvent) -> void:
+	if _state == State.DEAD or event == null:
 		return
-	var dmg := maxi(int(round(float(amount))), 0)
+	var dmg := maxi(int(event.amount), 0)
 	if dmg <= 0:
 		return
 	current_health = maxi(current_health - dmg, 0)
+	event.amount = dmg
+	event.incoming_amount = maxi(event.incoming_amount, dmg)
+	event.target_node = self
+	event.killed = current_health <= 0
+	if event.world_position == Vector2.ZERO:
+		event.world_position = get_combat_text_origin()
 	_flash_hit()
 	_play_sfx("Hurt")
+	health_changed.emit(float(current_health), float(max_health))
+	damage_received.emit(dmg)
+	var mgr := get_tree().get_first_node_in_group(EnemyHealthBarManager.GROUP)
+	if mgr != null and mgr.has_method("notify_hit"):
+		mgr.call("notify_hit", self)
+	CombatTextSystem.present(event)
 	if current_health <= 0:
 		_die()
 		return
@@ -355,6 +415,7 @@ func _apply_form(dark: bool, animate: bool, refill: bool) -> void:
 		current_health = max_health
 	else:
 		current_health = clampi(int(round(ratio * float(max_health))), 1 if current_health > 0 else 0, max_health)
+	health_changed.emit(float(current_health), float(max_health))
 	_sync_range_shapes()
 	_set_fx_emitting(dark)
 	if _eye_light != null:
@@ -560,16 +621,16 @@ func _anim_name(base: StringName) -> StringName:
 	return base
 
 
-func _play_anim(name: StringName, restart: bool) -> void:
+func _play_anim(anim_name: StringName, restart: bool) -> void:
 	if _sprite == null or _sprite.sprite_frames == null:
 		return
-	if not _sprite.sprite_frames.has_animation(name):
-		name = StringName(String(name).replace("dark_", ""))
-		if not _sprite.sprite_frames.has_animation(name):
+	if not _sprite.sprite_frames.has_animation(anim_name):
+		anim_name = StringName(String(anim_name).replace("dark_", ""))
+		if not _sprite.sprite_frames.has_animation(anim_name):
 			return
-	if not restart and _sprite.animation == name and _sprite.is_playing():
+	if not restart and _sprite.animation == anim_name and _sprite.is_playing():
 		return
-	_sprite.play(name)
+	_sprite.play(anim_name)
 
 
 func _flash_hit() -> void:
@@ -696,7 +757,7 @@ func _tick_audio(delta: float) -> void:
 	_idle_sound_left -= delta
 	if _state in [State.IDLE, State.WANDER] and _idle_sound_left <= 0.0:
 		_play_sfx("Idle")
-		_idle_sound_left = randf_range(3.5, 7.0)
+		_idle_sound_left = randf_range(5.0, 9.0)
 	var dark_player := _audio.get_node_or_null("Darkness") as AudioStreamPlayer2D if _audio != null else null
 	if dark_player == null:
 		return
@@ -707,13 +768,35 @@ func _tick_audio(delta: float) -> void:
 		dark_player.stop()
 
 
-func _play_sfx(name: String) -> void:
+func _setup_audio() -> void:
 	if _audio == null:
 		return
-	var player := _audio.get_node_or_null(name) as AudioStreamPlayer2D
+	var crowd := maxi(get_tree().get_nodes_in_group("zombies").size() - 1, 0)
+	var dark := _audio.get_node_or_null("Darkness") as AudioStreamPlayer2D
+	if dark != null:
+		dark.bus = &"Ambient"
+		dark.volume_db = -22.0 - minf(float(crowd) * 0.8, 6.0)
+		dark.max_distance = 280.0
+		if dark.stream is AudioStreamWAV:
+			var wav := (dark.stream as AudioStreamWAV).duplicate() as AudioStreamWAV
+			wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			dark.stream = wav
+	for child in _audio.get_children():
+		var player := child as AudioStreamPlayer2D
+		if player == null:
+			continue
+		player.max_polyphony = 1
+		if player.name == "Idle":
+			player.volume_db = -12.0 - minf(float(crowd) * 1.4, 8.0)
+
+
+func _play_sfx(sfx_name: String) -> void:
+	if _audio == null:
+		return
+	var player := _audio.get_node_or_null(sfx_name) as AudioStreamPlayer2D
 	if player == null or player.stream == null:
 		return
-	player.pitch_scale = randf_range(0.92, 1.08)
+	player.pitch_scale = randf_range(0.95, 1.05)
 	player.play()
 
 

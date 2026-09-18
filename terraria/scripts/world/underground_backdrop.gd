@@ -16,24 +16,6 @@ var _bottom: float = 0.0
 var _tops: PackedInt32Array
 
 
-func _ready() -> void:
-	if shallow_texture == null:
-		shallow_texture = _load_world_texture("res://assets/world/background/dark_dirt_background.png")
-	if underground_texture == null:
-		underground_texture = _load_world_texture("res://assets/world/background/dark_stone_background.png")
-	if deep_texture == null:
-		deep_texture = _load_world_texture("res://assets/world/background/deep_stone_background.png")
-
-
-func _load_world_texture(path: String) -> Texture2D:
-	if not FileAccess.file_exists(path):
-		return null
-	var image := Image.load_from_file(path)
-	if image == null or image.is_empty():
-		return null
-	return ImageTexture.create_from_image(image)
-
-
 func set_profile(surface_tops: PackedInt32Array, tile_size: int, bottom_y: float) -> void:
 	_tops = surface_tops
 	_tile_size = tile_size

@@ -237,3 +237,26 @@ static func material_display_name(material: BuildingMaterial) -> String:
 			return "Metall"
 		_:
 			return ""
+
+
+func get_audio_material() -> StringName:
+	if ore_data != null:
+		return &"ore"
+	match building_material:
+		BuildingMaterial.WOOD:
+			return &"wood"
+		BuildingMaterial.METAL:
+			return &"metal"
+		BuildingMaterial.STONE, BuildingMaterial.BRICK:
+			return &"stone"
+	match id:
+		1, 8, 17, 18, 19, 20, 21, 22:
+			return &"grass"
+		2:
+			return &"dirt"
+		4:
+			return &"sand"
+		7, 14, 15, 16:
+			return &"wood"
+		_:
+			return &"stone" if solid else &"dirt"

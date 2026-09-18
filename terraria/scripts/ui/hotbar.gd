@@ -63,8 +63,8 @@ func _resolved_slot_size() -> int:
 	var needed := BASE_SLOT_SIZE * float(Inventory.HOTBAR_COUNT) + BASE_SEPARATION * float(Inventory.HOTBAR_COUNT - 1)
 	if needed <= available:
 		return int(BASE_SLOT_SIZE)
-	var scale := available / needed
-	return maxi(int(MIN_SLOT_SIZE), int(floor(BASE_SLOT_SIZE * scale)))
+	var size_scale := available / needed
+	return maxi(int(MIN_SLOT_SIZE), int(floor(BASE_SLOT_SIZE * size_scale)))
 
 
 func _apply_layout() -> void:

@@ -22,6 +22,11 @@ const DEV_SUPPORT_BEAM_AMOUNT := 20
 const DEV_STONE_ID := 2
 const DEV_STONE_AMOUNT := 140
 const DEV_FORGE_BLUEPRINT_ID := 61
+const DEV_SHOP_BLUEPRINT_IDS := [95, 96, 97, 98, 99, 116]
+const DEV_SHOP_SENTINEL_ID := 95
+const DEV_SHOP_TEST_MATERIALS := [
+	[9, 500], [2, 250], [60, 80], [15, 80], [17, 50], [11, 40], [51, 20],
+]
 const DEV_BUILDING_SENTINEL_ID := 62
 ## DEV_BUILDING_TEST_LOADOUT: einmaliger Testvorrat, kein Balancing.
 const DEV_BUILDING_TEST_LOADOUT := [
@@ -83,6 +88,7 @@ func _ready() -> void:
 	_give_lantern_upgrade_materials_once()
 	_give_dev_structural_loadout_once()
 	_give_dev_forge_blueprint_once()
+	_give_dev_shop_blueprints_once()
 	_give_dev_building_test_loadout_once()
 	_give_dev_weapon_test_loadout_once()
 
@@ -670,6 +676,18 @@ func _give_dev_forge_blueprint_once() -> void:
 	if get_total_amount(DEV_FORGE_BLUEPRINT_ID) > 0:
 		return
 	_add_item_to_bag(DEV_FORGE_BLUEPRINT_ID, 1)
+
+
+func _give_dev_shop_blueprints_once() -> void:
+	for item_id in DEV_SHOP_BLUEPRINT_IDS:
+		if get_total_amount(int(item_id)) <= 0:
+			_add_item_to_bag(int(item_id), 1)
+	if get_tree() != null and bool(get_tree().get_meta(&"dev_shop_loadout_given", false)):
+		return
+	for pack in DEV_SHOP_TEST_MATERIALS:
+		_ensure_total_at_least(int(pack[0]), int(pack[1]))
+	if get_tree() != null:
+		get_tree().set_meta(&"dev_shop_loadout_given", true)
 
 
 ## DEV_BUILDING_TEST_LOADOUT: einmaliger Testvorrat, kein Nachfuellen.

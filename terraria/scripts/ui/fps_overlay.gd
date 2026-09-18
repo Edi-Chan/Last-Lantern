@@ -12,9 +12,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	var show := SettingsManager.is_show_fps()
-	visible = show
-	if not show:
+	var show_fps := SettingsManager.is_show_fps()
+	visible = show_fps
+	if not show_fps:
 		return
 	_refresh_left -= delta
 	if _refresh_left > 0.0:
