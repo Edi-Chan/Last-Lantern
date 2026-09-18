@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 46
+display_name = "Steinplattform"
+atlas_coords = Vector2i(7, 10)
+atlas_source_id = 1
+autotile_count = 1
+hardness = 1.3
+drop_item_id = 77
+solid = true
+vision_occlusion = 0.12
+map_color = Color(0.44, 0.46, 0.5, 1)
+required_tool = 1
+required_tool_power = 1
+structural_enabled = true
+structural_role = 2
+structural_weight = 2
+support_strength = 6
+max_horizontal_support = 10
+is_foundation_material = false
+is_support_beam = false
+enemy_break_cost = 4
+structural_importance = 2
+building_material = 2
+building_part_type = 8
+flammable = false
+is_one_way = true

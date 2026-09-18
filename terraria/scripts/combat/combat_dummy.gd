@@ -6,6 +6,8 @@ extends CharacterBody2D
 
 @export var max_health: int = 20
 @export var gravity_strength: float = 1000.0
+@export var darkness_active: bool = false
+
 
 var health: int = 20
 
@@ -34,6 +36,10 @@ func take_damage(amount: int, _source = null) -> void:
 
 func apply_knockback(impulse: Vector2) -> void:
 	velocity += impulse
+
+
+func is_darkness_form() -> bool:
+	return darkness_active
 
 
 func _flash() -> void:

@@ -1,7 +1,7 @@
 class_name InventoryScreen
 extends Control
 
-## Gehoert an: HUD/InventoryScreen. TAB oeffnet und schliesst das Inventar.
+## Gehoert an: HUD/InventoryLayer/InventoryScreen. TAB oeffnet und schliesst das Inventar.
 ## Search/Filter/Sort aendern nur die Beutel-Ansicht, nie die echten Slots 0-39.
 
 @export var slot_scene: PackedScene
@@ -82,6 +82,12 @@ const FILTER_SHORT_NAMES := {
 	ItemData.ItemCategory.QUEST_KEY: "Quest",
 }
 
+enum MainTab {
+	INVENTORY,
+	CRAFTING,
+	QUESTS,
+}
+
 @onready var _inventory_grid: GridContainer = get_node(PANEL_PATH + "/InventorySection/InventoryGrid")
 @onready var _hotbar_grid: HBoxContainer = get_node(PANEL_PATH + "/InventorySection/HotbarGrid")
 @onready var _preview: TextureRect = get_node(PANEL_PATH + "/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame/CharacterPreview")
@@ -113,6 +119,15 @@ const FILTER_SHORT_NAMES := {
 @onready var _search_edit: LineEdit = get_node(PANEL_PATH + "/InventorySection/InventoryToolbar/SearchLineEdit")
 @onready var _filter_button: MenuButton = get_node(PANEL_PATH + "/InventorySection/InventoryToolbar/FilterButton")
 @onready var _sort_button: MenuButton = get_node(PANEL_PATH + "/InventorySection/InventoryToolbar/SortButton")
+@onready var _tab_inventory: Button = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs/TabInventory") as Button
+@onready var _tab_crafting: Button = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs/TabCrafting") as Button
+@onready var _tab_quests: Button = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs/TabQuests") as Button
+@onready var _inventory_page: Control = get_node_or_null(PANEL_PATH) as Control
+@onready var _crafting_page: CraftingPage = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/CraftingPage") as CraftingPage
+@onready var _quests_page: Control = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/QuestsPage") as Control
+
+var _crafting: CraftingSystem = CraftingSystem.new()
+var _main_tab: int = MainTab.INVENTORY
 
 var _inventory: Inventory
 var _player: Player
@@ -159,6 +174,8 @@ func _ready() -> void:
 	_setup_inspect_card()
 	_setup_inspect_scroll()
 	_setup_overlay_input()
+	_setup_main_tabs()
+	_setup_crafting()
 	if _preview != null:
 		_preview.texture = load("res://assets/player/player_idle.png") as Texture2D
 	if _inventory != null:
@@ -189,6 +206,64 @@ func _setup_close_button() -> void:
 	_close_button.add_theme_stylebox_override("pressed", style)
 	if not _close_button.pressed.is_connected(close_inventory):
 		_close_button.pressed.connect(close_inventory)
+
+
+func _setup_crafting() -> void:
+	var catalog := load("res://resources/crafting/recipe_catalog.tres") as RecipeCatalog
+	var items: ItemCatalog = _inventory.item_catalog if _inventory != null else load("res://resources/items/item_catalog.tres") as ItemCatalog
+	_crafting.setup(catalog, items)
+	if _crafting_page != null:
+		_crafting_page.bind(_crafting, _inventory, items)
+
+
+func _setup_main_tabs() -> void:
+	_bind_main_tab(_tab_inventory, MainTab.INVENTORY)
+	_bind_main_tab(_tab_crafting, MainTab.CRAFTING)
+	_bind_main_tab(_tab_quests, MainTab.QUESTS)
+	_set_main_tab(MainTab.INVENTORY)
+
+
+func _bind_main_tab(button: Button, tab: int) -> void:
+	if button == null:
+		return
+	button.focus_mode = Control.FOCUS_NONE
+	if not button.pressed.is_connected(_on_main_tab_pressed):
+		button.pressed.connect(_on_main_tab_pressed.bind(tab))
+
+
+func _on_main_tab_pressed(tab: int) -> void:
+	if tab != MainTab.CRAFTING and _crafting_page != null:
+		_crafting_page.set_station_context(RecipeData.Station.NONE)
+	_set_main_tab(tab)
+
+
+func _set_main_tab(tab: int) -> void:
+	_main_tab = tab
+	if _inventory_page != null:
+		_inventory_page.visible = tab == MainTab.INVENTORY
+	if _crafting_page != null:
+		_crafting_page.visible = tab == MainTab.CRAFTING
+	if _quests_page != null:
+		_quests_page.visible = tab == MainTab.QUESTS
+	if _drop_button != null:
+		_drop_button.visible = tab == MainTab.INVENTORY
+	_apply_main_tab_style(_tab_inventory, tab == MainTab.INVENTORY, "Inventar")
+	_apply_main_tab_style(_tab_crafting, tab == MainTab.CRAFTING, "Crafting")
+	_apply_main_tab_style(_tab_quests, tab == MainTab.QUESTS, "Quests")
+	if tab == MainTab.CRAFTING and _crafting_page != null:
+		_crafting_page.refresh()
+
+
+func _apply_main_tab_style(button: Button, selected: bool, label: String) -> void:
+	if button == null:
+		return
+	var active := preload("res://resources/ui/inv_main_tab_active.tres")
+	var idle := preload("res://resources/ui/inv_main_tab.tres")
+	button.add_theme_stylebox_override("normal", active if selected else idle)
+	button.add_theme_stylebox_override("hover", active)
+	button.add_theme_stylebox_override("pressed", active)
+	button.add_theme_color_override("font_color", Color(1, 0.95, 0.82, 1) if selected else Color(0.82, 0.86, 0.9, 1))
+	button.text = label.to_upper() if selected else label
 
 
 func _setup_inspect_card() -> void:
@@ -275,6 +350,14 @@ func toggle() -> void:
 
 
 func open() -> void:
+	open_on_tab(MainTab.INVENTORY, RecipeData.Station.NONE)
+
+
+func open_crafting(station_context: int = RecipeData.Station.NONE) -> void:
+	open_on_tab(MainTab.CRAFTING, station_context)
+
+
+func open_on_tab(tab: int, station_context: int = RecipeData.Station.NONE) -> void:
 	var lantern_ui := get_tree().get_first_node_in_group("lantern_ui")
 	if lantern_ui != null and lantern_ui.has_method("close_menu"):
 		lantern_ui.call("close_menu")
@@ -289,6 +372,9 @@ func open() -> void:
 		_player.world_input_enabled = false
 	if _inventory != null:
 		_inspect_ref = _inventory.selected_hotbar_index
+	if _crafting_page != null:
+		_crafting_page.set_station_context(station_context)
+	_set_main_tab(tab)
 	refresh()
 	_lock_panel_size()
 
@@ -301,6 +387,9 @@ func close(restore_input: bool = true) -> void:
 	_hide_popups()
 	_hide_hover()
 	visible = false
+	if _crafting_page != null:
+		_crafting_page.set_station_context(RecipeData.Station.NONE)
+	_set_main_tab(MainTab.INVENTORY)
 	_set_hud_hotbar_visible(true)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_restore_world_input_after_close = restore_input
@@ -649,6 +738,8 @@ func refresh() -> void:
 		slot.call("apply_item", item, int(data["amount"]), _is_inspect_ref(str(key)), bool(data.get("favorite", false)))
 	_update_preview()
 	_update_inspect_panel()
+	if _main_tab == MainTab.CRAFTING and _crafting_page != null:
+		_crafting_page.refresh()
 	_lock_panel_size()
 
 
@@ -792,7 +883,9 @@ static func _entry_category_rank(entry: Dictionary) -> int:
 
 static func _entry_damage(entry: Dictionary) -> int:
 	var item := entry["item"] as ItemData
-	return item.damage if item != null else 0
+	if item == null:
+		return 0
+	return item.get_base_damage()
 
 
 func _apply_inventory_slot(slot: Panel) -> void:
@@ -920,7 +1013,7 @@ func _fill_inspect_stats(item: ItemData, inst: ItemInstanceData, amount: int) ->
 	_set_inspect_row("damage", not damage_text.is_empty(), damage_text)
 
 	var speed := 0.0
-	if item.tool_data != null:
+	if item.tool_data != null or item.is_weapon():
 		speed = inst.effective_use_speed(item) if inst != null else item.get_base_use_speed()
 	elif item.attack_cooldown > 0.0 and (item.item_type == ItemData.ItemType.WEAPON or damage > 0):
 		speed = 1.0 / item.attack_cooldown
@@ -1108,6 +1201,10 @@ static func build_inspect_info(item: ItemData) -> String:
 	var cat := ItemData.get_category_display_name(item.category)
 	if not cat.is_empty():
 		lines.append(cat)
+	if item.building_part_type != BlockData.BuildingPartType.NONE:
+		var part := BlockData.part_type_display_name(item.building_part_type)
+		if not part.is_empty():
+			lines.append(part)
 	var tool: ToolData = item.tool_data
 	if tool != null:
 		var sub := ToolData.get_category_display_name(tool.tool_category)
@@ -1544,6 +1641,10 @@ func _build_details_text(item: ItemData, inst: ItemInstanceData, amount: int) ->
 	var cat_name := ItemData.get_category_display_name(item.category)
 	if not cat_name.is_empty():
 		lines.append("Kategorie: %s" % cat_name)
+	if item.building_part_type != BlockData.BuildingPartType.NONE:
+		var part := BlockData.part_type_display_name(item.building_part_type)
+		if not part.is_empty():
+			lines.append("Unterkategorie: %s" % part)
 	if item.tool_data != null:
 		var sub := ToolData.get_category_display_name(item.get_tool_category())
 		if not sub.is_empty():

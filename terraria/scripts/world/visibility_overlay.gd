@@ -449,13 +449,14 @@ func _prefill_open_sky(start: Vector2i, origin: Vector2i, gw: int, gh: int, cell
 func _occlusion_at(cell: Vector2i) -> float:
 	if _tilemap == null or _tilemap.get_cell_source_id(cell) == -1:
 		return 0.0
+	var source := _tilemap.get_cell_source_id(cell)
 	var atlas := _tilemap.get_cell_atlas_coords(cell)
-	var key := atlas.x * 1024 + atlas.y
+	var key := source * 1000000 + atlas.x * 1024 + atlas.y
 	if _occ_by_atlas.has(key):
 		return float(_occ_by_atlas[key])
 	var value := 1.0
 	if _catalog != null:
-		var block := _catalog.get_by_atlas(atlas)
+		var block := _catalog.get_cell_block(_tilemap, cell)
 		value = 0.0 if block == null else block.get_vision_occlusion()
 	_occ_by_atlas[key] = value
 	return value

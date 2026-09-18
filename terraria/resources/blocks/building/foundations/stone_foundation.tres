@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 32
+display_name = "Steinfundament"
+atlas_coords = Vector2i(0, 1)
+atlas_source_id = 1
+autotile_count = 16
+hardness = 1.8
+drop_item_id = 63
+solid = true
+vision_occlusion = 0.85
+map_color = Color(0.42, 0.44, 0.48, 1)
+required_tool = 1
+required_tool_power = 1
+structural_enabled = true
+structural_role = 1
+structural_weight = 4
+support_strength = 14
+max_horizontal_support = 6
+is_foundation_material = true
+is_support_beam = false
+enemy_break_cost = 6
+structural_importance = 6
+building_material = 2
+building_part_type = 1
+flammable = false

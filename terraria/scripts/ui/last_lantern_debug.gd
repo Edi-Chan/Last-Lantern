@@ -29,7 +29,7 @@ func _process(delta: float) -> void:
 		var dps := 0.0
 		if fog.settings != null:
 			dps = fog.settings.fog_damage_per_second(fog.fog_cycle)
-		lines.append("Fog %s  C%d  DPS %.1f" % [state_name, fog.fog_cycle, dps])
+		lines.append("Finsternis %s  C%d  DPS %.1f" % [state_name, fog.fog_cycle, dps])
 		lines.append("Safe %s" % ["YES" if fog.player_is_safe else "NO"])
 	if lantern != null:
 		lines.append("Lantern L%d  R%d" % [lantern.level, int(lantern.get_safe_radius_tiles())])

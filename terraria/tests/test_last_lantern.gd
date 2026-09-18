@@ -6,6 +6,47 @@ func suite_name() -> String:
 	return "last_lantern"
 
 
+func test_timeline_cycle_windows() -> void:
+	var src := _read("res://scripts/systems/last_lantern_settings.gd")
+	assert_true(src.contains("func cycle_start_day"))
+	assert_true(src.contains("func cycle_fog_day"))
+	assert_true(src.contains("func day_phase_at"))
+	var interval := 7
+	var start_1 := int((1 - 1) / interval) * interval + 1
+	var start_8 := int((8 - 1) / interval) * interval + 1
+	var start_27 := int((27 - 1) / interval) * interval + 1
+	assert_eq(start_1, 1)
+	assert_eq(start_8, 8)
+	assert_eq(start_27, 22)
+	assert_eq(start_1 + interval - 1, 7)
+	assert_eq(start_8 + interval - 1, 14)
+	assert_eq(start_27 + interval - 1, 28)
+	var hud := _read("res://scripts/ui/top_timeline.gd")
+	assert_true(hud.contains("cycle_start_day"))
+	assert_true(hud.contains("time_changed"))
+	assert_true(hud.contains("state_changed"))
+	assert_false(hud.contains("current_day ="))
+	var scene := _read("res://scenes/ui/hud.tscn")
+	assert_true(scene.contains("top_timeline.tscn"))
+	assert_true(scene.contains("TEST: TAG 7 22:00"))
+	var hud_src := _read("res://scripts/ui/hud.gd")
+	assert_true(hud_src.contains("INVENTORY_LAYER := 30"))
+	assert_true(hud_src.contains("CHROME_LAYER := 20"))
+
+
+func test_day_phases_use_settings() -> void:
+	var src := _read("res://scripts/systems/last_lantern_settings.gd")
+	assert_true(src.contains("enum DayPhase"))
+	assert_true(src.contains("phase_noon_start"))
+	assert_true(src.contains("phase_evening_start"))
+	assert_true(src.contains("night_start_time"))
+	assert_true(src.contains("func day_phase_at"))
+	var hud := _read("res://scripts/ui/top_timeline.gd")
+	assert_true(hud.contains("day_phase_at"))
+	assert_true(hud.contains("phase_noon_start"))
+	assert_true(hud.contains("night_end_time"))
+
+
 func test_fog_day_formula() -> void:
 	var settings := LastLanternSettings.new()
 	settings.fog_interval_days = 7

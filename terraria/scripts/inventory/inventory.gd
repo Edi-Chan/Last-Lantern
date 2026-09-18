@@ -2,13 +2,13 @@ class_name Inventory
 extends Node
 
 ## Gehoert an: Player/Inventory in res://scenes/player/player.tscn
-## Slots 0-9 sind die Hotbar, Slots 10-39 das Inventar. Eine Datenquelle.
+## Slots 0-9 sind die Hotbar, Slots 10-69 das Inventar. Eine Datenquelle.
 
 signal inventory_changed
 signal selected_slot_changed(index: int)
 signal equipment_changed
 
-const SLOT_COUNT := 40
+const SLOT_COUNT := 70
 const HOTBAR_COUNT := 10
 const START_PICKAXE_ID := 22
 const TEST_HELMET_ID := 4
@@ -16,9 +16,33 @@ const TEST_CHEST_ID := 5
 const TEST_LEGS_ID := 21
 const START_STONE_ID := 2
 const DEV_WOOD_ID := 9
-const DEV_WOOD_AMOUNT := 100
+const DEV_WOOD_AMOUNT := 200
 const DEV_SUPPORT_BEAM_ID := 60
 const DEV_SUPPORT_BEAM_AMOUNT := 20
+const DEV_STONE_ID := 2
+const DEV_STONE_AMOUNT := 140
+const DEV_FORGE_BLUEPRINT_ID := 61
+const DEV_BUILDING_SENTINEL_ID := 62
+## DEV_BUILDING_TEST_LOADOUT: einmaliger Testvorrat, kein Balancing.
+const DEV_BUILDING_TEST_LOADOUT := [
+	[62, 100], [63, 100], [64, 200], [65, 200], [66, 200], [67, 200],
+	[68, 100], [69, 100], [70, 150], [71, 150], [60, 50], [72, 50],
+	[73, 50], [74, 50], [75, 50], [76, 100], [77, 100], [78, 20], [79, 20],
+	[80, 30], [81, 30], [82, 50], [83, 20], [84, 20], [85, 20], [86, 20],
+	[87, 20], [88, 20], [89, 20], [90, 10], [91, 10], [92, 10], [93, 50], [94, 10],
+]
+const STONE_SWORD_ID := 100
+const COPPER_SWORD_ID := 101
+const WOOD_SPEAR_ID := 107
+const COPPER_SPEAR_ID := 108
+const WOOD_BOW_ID := 111
+const WOOD_ARROW_ID := 114
+const OLD_COMBAT_LANTERN_ID := 115
+const DEV_WEAPON_SENTINEL_ID := 100
+## DEV_WEAPON_TEST_LOADOUT: einmaliger Debug-Vorrat, kein Startinventar.
+const DEV_WEAPON_TEST_LOADOUT := [
+	[100, 1], [101, 1], [107, 1], [108, 1], [111, 1], [114, 50], [115, 1],
+]
 const START_TOOL_IDS := [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
 ## Default-Hotbar nur fuer neues Spiel / Testcharakter. Reihenfolge entspricht der Toolbar 1-0.
 ## Sichel vor Angel, wie im bestehenden Werkzeugset vorgesehen. Scanner bleibt im Beutel.
@@ -38,6 +62,8 @@ const EQUIPMENT_TYPES := {
 var slots: Array[Dictionary] = []
 var selected_hotbar_index: int = 0
 var equipment: Dictionary = {}
+var _dev_building_granted: bool = false
+var _dev_weapon_granted: bool = false
 
 func _ready() -> void:
 	slots.resize(SLOT_COUNT)
@@ -56,6 +82,9 @@ func _ready() -> void:
 	_give_demo_stone_once()
 	_give_lantern_upgrade_materials_once()
 	_give_dev_structural_loadout_once()
+	_give_dev_forge_blueprint_once()
+	_give_dev_building_test_loadout_once()
+	_give_dev_weapon_test_loadout_once()
 
 
 func _empty_slot() -> Dictionary:
@@ -135,6 +164,24 @@ func consume_from_slot(index: int, amount: int = 1) -> bool:
 		_clear(slot)
 	inventory_changed.emit()
 	return true
+
+
+func can_add_item(item_id: int, amount: int = 1) -> bool:
+	if item_id < 0 or amount <= 0:
+		return false
+	var item := _get_item(item_id)
+	var max_stack := item.max_stack if item != null else 999
+	var remaining := amount
+	for slot in slots:
+		var sid := int(slot["item_id"])
+		var have := int(slot["amount"])
+		if sid == item_id and have > 0:
+			remaining -= maxi(0, max_stack - have)
+		elif sid < 0 or have <= 0:
+			remaining -= max_stack
+		if remaining <= 0:
+			return true
+	return false
 
 
 func add_item(item_id: int, amount: int = 1) -> bool:
@@ -449,6 +496,26 @@ func find_best_hotbar_tool_for(block: BlockData, preferred_kind: int = 0) -> int
 	return best_slot
 
 
+func use_selected_durability(amount: int = 1) -> void:
+	var slot := get_slot(selected_hotbar_index)
+	if slot.is_empty() or int(slot["amount"]) <= 0:
+		return
+	var item := get_selected_item()
+	if item == null:
+		return
+	var max_dur := item.get_base_max_durability()
+	if max_dur <= 0:
+		return
+	var current := int(slot.get("durability", max_dur))
+	if current < 0:
+		current = max_dur
+	current = maxi(current - amount, 0)
+	slot["durability"] = current
+	if current <= 0:
+		_clear(slot)
+	inventory_changed.emit()
+
+
 func find_first_empty_hotbar_slot() -> int:
 	for i in HOTBAR_COUNT:
 		if int(slots[i]["item_id"]) < 0 or int(slots[i]["amount"]) <= 0:
@@ -591,10 +658,59 @@ func _give_demo_stone_once() -> void:
 	_add_item_to_bag(START_STONE_ID, 20)
 
 
-## Kein Crafting-System vorhanden: 100 Wood + 20 Holzstuetzen, nur wenn der Bestand darunter liegt.
+## DEV TEST: genug Material fuer EINE Schmiede plus bestehende Statik-Tests.
 func _give_dev_structural_loadout_once() -> void:
 	_ensure_total_at_least(DEV_WOOD_ID, DEV_WOOD_AMOUNT)
 	_ensure_total_at_least(DEV_SUPPORT_BEAM_ID, DEV_SUPPORT_BEAM_AMOUNT)
+	_ensure_total_at_least(DEV_STONE_ID, DEV_STONE_AMOUNT)
+
+
+## DEV TEST: genau 1x Schmiede-Bauplan, nicht bei jedem Reload nachfuellen.
+func _give_dev_forge_blueprint_once() -> void:
+	if get_total_amount(DEV_FORGE_BLUEPRINT_ID) > 0:
+		return
+	_add_item_to_bag(DEV_FORGE_BLUEPRINT_ID, 1)
+
+
+## DEV_BUILDING_TEST_LOADOUT: einmaliger Testvorrat, kein Nachfuellen.
+func _give_dev_building_test_loadout_once() -> void:
+	if _dev_building_granted:
+		return
+	if get_tree() != null and bool(get_tree().get_meta(&"dev_building_loadout_given", false)):
+		_dev_building_granted = true
+		return
+	if get_total_amount(DEV_BUILDING_SENTINEL_ID) > 0:
+		_mark_dev_building_granted()
+		return
+	for pack in DEV_BUILDING_TEST_LOADOUT:
+		_ensure_total_at_least(int(pack[0]), int(pack[1]))
+	_mark_dev_building_granted()
+
+
+func _mark_dev_building_granted() -> void:
+	_dev_building_granted = true
+	if get_tree() != null:
+		get_tree().set_meta(&"dev_building_loadout_given", true)
+
+
+func _give_dev_weapon_test_loadout_once() -> void:
+	if _dev_weapon_granted:
+		return
+	if get_tree() != null and bool(get_tree().get_meta(&"dev_weapon_loadout_given", false)):
+		_dev_weapon_granted = true
+		return
+	if get_total_amount(DEV_WEAPON_SENTINEL_ID) > 0:
+		_mark_dev_weapon_granted()
+		return
+	for pack in DEV_WEAPON_TEST_LOADOUT:
+		_ensure_total_at_least(int(pack[0]), int(pack[1]))
+	_mark_dev_weapon_granted()
+
+
+func _mark_dev_weapon_granted() -> void:
+	_dev_weapon_granted = true
+	if get_tree() != null:
+		get_tree().set_meta(&"dev_weapon_loadout_given", true)
 
 
 func _ensure_total_at_least(item_id: int, amount: int) -> void:
@@ -654,3 +770,66 @@ func _add_item_to_bag(item_id: int, amount: int = 1) -> bool:
 			inventory_changed.emit()
 			return true
 	return false
+
+
+func to_save_dict() -> Dictionary:
+	var saved_slots: Array = []
+	for slot in slots:
+		saved_slots.append(_serialize_slot(slot))
+	var saved_equip := {}
+	for key in equipment.keys():
+		saved_equip[key] = _serialize_slot(equipment[key])
+	return {
+		"selected_hotbar_index": selected_hotbar_index,
+		"slots": saved_slots,
+		"equipment": saved_equip,
+		"dev_building_loadout_given": _dev_building_granted,
+		"dev_weapon_loadout_given": _dev_weapon_granted,
+	}
+
+
+func from_save_dict(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	selected_hotbar_index = int(data.get("selected_hotbar_index", 0))
+	var saved_slots: Array = data.get("slots", [])
+	for i in slots.size():
+		if i < saved_slots.size() and saved_slots[i] is Dictionary:
+			_apply_serialized_slot(slots[i], saved_slots[i])
+		else:
+			_clear(slots[i])
+	var saved_equip: Dictionary = data.get("equipment", {})
+	for key in equipment.keys():
+		if saved_equip.has(key) and saved_equip[key] is Dictionary:
+			_apply_serialized_slot(equipment[key], saved_equip[key])
+		else:
+			_clear(equipment[key])
+	if bool(data.get("dev_building_loadout_given", false)) or get_total_amount(DEV_BUILDING_SENTINEL_ID) > 0:
+		_mark_dev_building_granted()
+	if bool(data.get("dev_weapon_loadout_given", false)) or get_total_amount(DEV_WEAPON_SENTINEL_ID) > 0:
+		_mark_dev_weapon_granted()
+	inventory_changed.emit()
+	equipment_changed.emit()
+	selected_slot_changed.emit(selected_hotbar_index)
+
+
+func _serialize_slot(slot: Dictionary) -> Dictionary:
+	return {
+		"item_id": int(slot.get("item_id", -1)),
+		"amount": int(slot.get("amount", 0)),
+		"favorite": bool(slot.get("favorite", false)),
+		"durability": int(slot.get("durability", -1)),
+		"upgrades": (slot.get("upgrades", _empty_upgrades()) as Dictionary).duplicate(true),
+	}
+
+
+func _apply_serialized_slot(target: Dictionary, data: Dictionary) -> void:
+	target["item_id"] = int(data.get("item_id", -1))
+	target["amount"] = int(data.get("amount", 0))
+	target["favorite"] = bool(data.get("favorite", false))
+	target["durability"] = int(data.get("durability", -1))
+	var upgrades: Variant = data.get("upgrades", _empty_upgrades())
+	if upgrades is Dictionary:
+		target["upgrades"] = (upgrades as Dictionary).duplicate(true)
+	else:
+		target["upgrades"] = _empty_upgrades()

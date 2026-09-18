@@ -1,0 +1,304 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/top_timeline.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 8.0
+content_margin_top = 5.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+bg_color = Color(0.05, 0.06, 0.09, 0.62)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.55)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot"]
+content_margin_left = 3.0
+content_margin_top = 2.0
+content_margin_right = 3.0
+content_margin_bottom = 2.0
+bg_color = Color(0.10, 0.11, 0.15, 0.35)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.02, 0.02, 0.03, 0.7)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fogslot"]
+content_margin_left = 3.0
+content_margin_top = 2.0
+content_margin_right = 3.0
+content_margin_bottom = 2.0
+bg_color = Color(0.28, 0.08, 0.08, 0.42)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.10, 0.10, 0.8)
+
+[node name="TopTimeline" type="PanelContainer"]
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -220.0
+offset_top = 6.0
+offset_right = 220.0
+offset_bottom = 82.0
+grow_horizontal = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="Rows" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="DayRow" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 3
+alignment = 1
+
+[node name="Slot0" type="PanelContainer" parent="Margin/Rows/DayRow"]
+custom_minimum_size = Vector2(44, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="DayLabel" type="Label" parent="Margin/Rows/DayRow/Slot0"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.74, 0.8, 0.82)
+theme_override_font_sizes/font_size = 8
+text = "TAG 1"
+horizontal_alignment = 1
+
+[node name="Slot1" type="PanelContainer" parent="Margin/Rows/DayRow"]
+custom_minimum_size = Vector2(44, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="DayLabel" type="Label" parent="Margin/Rows/DayRow/Slot1"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.74, 0.8, 0.82)
+theme_override_font_sizes/font_size = 8
+text = "TAG 2"
+horizontal_alignment = 1
+
+[node name="Slot2" type="PanelContainer" parent="Margin/Rows/DayRow"]
+custom_minimum_size = Vector2(44, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="DayLabel" type="Label" parent="Margin/Rows/DayRow/Slot2"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.74, 0.8, 0.82)
+theme_override_font_sizes/font_size = 8
+text = "TAG 3"
+horizontal_alignment = 1
+
+[node name="Slot3" type="PanelContainer" parent="Margin/Rows/DayRow"]
+custom_minimum_size = Vector2(44, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="DayLabel" type="Label" parent="Margin/Rows/DayRow/Slot3"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.74, 0.8, 0.82)
+theme_override_font_sizes/font_size = 8
+text = "TAG 4"
+horizontal_alignment = 1
+
+[node name="Slot4" type="PanelContainer" parent="Margin/Rows/DayRow"]
+custom_minimum_size = Vector2(44, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="DayLabel" type="Label" parent="Margin/Rows/DayRow/Slot4"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.74, 0.8, 0.82)
+theme_override_font_sizes/font_size = 8
+text = "TAG 5"
+horizontal_alignment = 1
+
+[node name="Slot5" type="PanelContainer" parent="Margin/Rows/DayRow"]
+custom_minimum_size = Vector2(44, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="DayLabel" type="Label" parent="Margin/Rows/DayRow/Slot5"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.74, 0.8, 0.82)
+theme_override_font_sizes/font_size = 8
+text = "TAG 6"
+horizontal_alignment = 1
+
+[node name="Slot6" type="PanelContainer" parent="Margin/Rows/DayRow"]
+custom_minimum_size = Vector2(54, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_fogslot")
+
+[node name="DayLabel" type="Label" parent="Margin/Rows/DayRow/Slot6"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.38, 0.34, 1)
+theme_override_font_sizes/font_size = 8
+text = "⚠ TAG 7"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="Margin/Rows"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.7, 0.74, 0.8, 0.9)
+theme_override_font_sizes/font_size = 8
+text = "Finsternis in 6 Tagen"
+horizontal_alignment = 1
+
+[node name="PhaseRow" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="Morning" type="Label" parent="Margin/Rows/PhaseRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/font_size = 8
+text = "☀ FRÜH"
+horizontal_alignment = 1
+
+[node name="Noon" type="Label" parent="Margin/Rows/PhaseRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/font_size = 8
+text = "● MITTAG"
+horizontal_alignment = 1
+
+[node name="Evening" type="Label" parent="Margin/Rows/PhaseRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/font_size = 8
+text = "◐ ABEND"
+horizontal_alignment = 1
+
+[node name="Night" type="Label" parent="Margin/Rows/PhaseRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/font_size = 8
+text = "☾ NACHT"
+horizontal_alignment = 1
+
+[node name="Track" type="ColorRect" parent="Margin/Rows"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.18, 0.22, 0.32, 0.85)
+
+[node name="SegNightL" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 8.0
+mouse_filter = 2
+color = Color(0.10, 0.14, 0.28, 0.95)
+
+[node name="SegMorning" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_left = 80.0
+offset_right = 180.0
+offset_bottom = 8.0
+mouse_filter = 2
+color = Color(0.42, 0.62, 0.78, 0.85)
+
+[node name="SegNoon" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_left = 180.0
+offset_right = 300.0
+offset_bottom = 8.0
+mouse_filter = 2
+color = Color(0.78, 0.72, 0.38, 0.8)
+
+[node name="SegEvening" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_left = 300.0
+offset_right = 360.0
+offset_bottom = 8.0
+mouse_filter = 2
+color = Color(0.72, 0.38, 0.28, 0.85)
+
+[node name="SegNightR" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_left = 360.0
+offset_right = 440.0
+offset_bottom = 8.0
+mouse_filter = 2
+color = Color(0.10, 0.14, 0.28, 0.95)
+
+[node name="SunriseTick" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_left = 80.0
+offset_right = 82.0
+offset_bottom = 8.0
+mouse_filter = 2
+color = Color(0.95, 0.82, 0.45, 0.95)
+
+[node name="SunsetTick" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_left = 330.0
+offset_right = 332.0
+offset_bottom = 8.0
+mouse_filter = 2
+color = Color(0.95, 0.48, 0.28, 0.95)
+
+[node name="Marker" type="ColorRect" parent="Margin/Rows/Track"]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 1.0
+offset_right = 86.0
+offset_bottom = 7.0
+mouse_filter = 2
+color = Color(0.98, 0.96, 0.88, 1)
+
+[node name="ClockLabel" type="Label" parent="Margin/Rows"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.93, 0.9, 0.78, 1)
+theme_override_font_sizes/font_size = 10
+text = "☀ 06:00"
+horizontal_alignment = 1

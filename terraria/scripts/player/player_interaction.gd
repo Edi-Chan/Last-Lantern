@@ -11,6 +11,7 @@ extends Node
 @export var block_catalog: BlockCatalog
 @export var item_catalog: ItemCatalog
 @export var item_drop_scene: PackedScene
+@export var projectile_scene: PackedScene
 @export var debug_targeting: bool = false
 
 var current_mining_tile := Vector2i(9999, 9999)
@@ -21,6 +22,18 @@ var current_target_cell := Vector2i(9999, 9999)
 @onready var _inventory: Inventory = $"../Inventory"
 @onready var _anim: AnimationPlayer = $"../AnimationPlayer"
 @onready var _hitbox: Area2D = $"../ToolPivot/ToolArm/ToolHitbox"
+
+const ATTACK_ANIMS := [&"tool_swing", &"sword_swing", &"spear_thrust", &"bow_shot", &"lantern_burst"]
+const WOOD_ARROW_ID := 114
+const BOW_TRAJECTORY_STEPS := 300
+const BOW_TRAJECTORY_DT := 1.0 / 60.0
+
+var _lantern_cooldown_left: float = 0.0
+var _bow_drawing: bool = false
+var _bow_charge: float = 0.0
+var _bow_item: ItemData
+var _bow_weapon: Resource
+var _bow_trajectory: Line2D
 
 var _tile_map: TileMapLayer
 var _highlight: Node2D
@@ -54,15 +67,22 @@ var _auto_tool_saved_slot: int = -1
 var _frame_poly: Polygon2D
 var _progress_poly: Polygon2D
 var _last_vp_mouse := Vector2.ZERO
-var _vegetation: VegetationSystem
+var _place_orientation: int = 0
+var _building_parts: BuildingPartSystem
 var _plant_progress: float = 0.0
 var _plant_tile := Vector2i(9999, 9999)
+var _vegetation: VegetationSystem
+var _stair_drag_active: bool = false
+var _stair_drag_start := Vector2i(9999, 9999)
+var _stair_drag_placed: Dictionary = {}
 
 func _ready() -> void:
 	_tile_map = get_tree().get_first_node_in_group("terrain") as TileMapLayer
 	if _tile_map != null and _tile_map.tile_set != null:
 		# Das TileSet ist die einzige Quelle der Rastergroesse.
 		tile_size = _tile_map.tile_set.tile_size.x
+	if _inventory != null and not _inventory.selected_slot_changed.is_connected(_on_hotbar_changed):
+		_inventory.selected_slot_changed.connect(_on_hotbar_changed)
 	_highlight = get_tree().get_first_node_in_group("block_highlight") as Node2D
 	_drops_parent = get_tree().get_first_node_in_group("item_drops") as Node2D
 	_debug_label = get_tree().get_first_node_in_group("mining_debug") as Label
@@ -83,17 +103,24 @@ func _process(delta: float) -> void:
 	if not _can_interact_with_world():
 		_autolock_active = false
 		_world_use_held = false
+		_cancel_bow_draw()
 		_clear_auto_tool(true)
 		_reset_mining()
 		_attack_cooldown_left = maxf(0.0, _attack_cooldown_left - delta)
 		if _highlight != null:
 			_highlight.visible = false
 		_hide_targeting_markers()
+		_clear_stair_drag()
+		var buildings := get_tree().get_first_node_in_group("building_manager")
+		if buildings != null and buildings.has_method("update_hotbar_preview"):
+			buildings.call("update_hotbar_preview", null, INVALID_TILE, false)
 		return
 	if Input.is_action_just_pressed("use_item"):
 		_world_use_held = true
 	if not Input.is_action_pressed("use_item"):
 		_world_use_held = false
+	if InputMap.has_action("rotate_place") and Input.is_action_just_pressed("rotate_place"):
+		_place_orientation = 1 - _place_orientation
 	var hover_tile := _get_hovered_tile()
 	_mouse_cell = hover_tile
 	var tile := _resolve_target_tile(hover_tile)
@@ -102,36 +129,65 @@ func _process(delta: float) -> void:
 	var block := get_block_data(tile)
 	var in_range := _is_in_range(tile)
 	var hover_in_range := _is_in_range(hover_tile)
+	var holding_blueprint := _holding_blueprint()
+	_handle_building_blueprint(hover_tile, hover_in_range)
+	if holding_blueprint:
+		if _highlight != null:
+			_highlight.visible = false
+	var stair_item := _selected_stair_block()
 	var place_state := _get_place_state(hover_tile, hover_in_range)
 	var plant_cell := _resolve_plant_cell(hover_tile)
 	if plant_cell == INVALID_TILE:
 		plant_cell = _resolve_plant_cell(tile)
-	_update_highlight(tile, block, in_range, place_state, plant_cell)
+	if not holding_blueprint:
+		_update_highlight(tile, block, in_range, place_state, plant_cell)
 	_handle_tool_use(delta)
 	var plant_in_range := plant_cell != INVALID_TILE and _is_in_range(plant_cell)
 	var harvesting_plant := _handle_plant_harvest(delta, plant_cell, plant_in_range)
 	if not harvesting_plant:
 		_handle_mining(delta, tile, block, in_range)
-	_handle_placement(hover_tile, place_state)
-	_handle_seed_plant(hover_tile, hover_in_range)
-	_handle_plant_place(hover_tile, hover_in_range)
+	if not holding_blueprint:
+		if _is_bow_equipped() or _bow_drawing:
+			_clear_stair_drag()
+		elif stair_item != null:
+			_handle_stair_placement(hover_tile, hover_in_range, stair_item)
+		else:
+			_clear_stair_drag()
+			_handle_placement(hover_tile, place_state)
+	if not _is_bow_equipped() and not _bow_drawing:
+		_handle_seed_plant(hover_tile, hover_in_range)
+		_handle_plant_place(hover_tile, hover_in_range)
 	_update_targeting_markers(hover_tile, tile)
 	_debug_refresh_left -= delta
 	_update_debug(tile, block, in_range, place_state)
 
 
+func _on_hotbar_changed(_index: int) -> void:
+	cancel_attack()
+
+
 func get_block_data(tile_position: Vector2i) -> BlockData:
-	if _tile_map == null or block_catalog == null or tile_position == INVALID_TILE:
+	if tile_position == INVALID_TILE:
+		return null
+	var parts := _parts()
+	if parts != null:
+		var part_block := parts.get_block_at(tile_position)
+		if part_block != null:
+			return part_block
+	if _tile_map == null or block_catalog == null:
 		return null
 	if _tile_map.get_cell_source_id(tile_position) == -1:
 		return null
-	return block_catalog.get_by_atlas(_tile_map.get_cell_atlas_coords(tile_position))
+	return block_catalog.get_cell_block(_tile_map, tile_position)
 
 
 func _can_interact_with_world() -> bool:
 	if UIManager.is_blocking_gameplay():
 		return false
 	if _player == null or not _player.world_input_enabled:
+		return false
+	var buildings := get_tree().get_first_node_in_group("building_manager")
+	if buildings != null and buildings.has_method("is_player_inside") and bool(buildings.call("is_player_inside")):
 		return false
 	return not _is_pointer_over_blocking_ui()
 
@@ -187,15 +243,15 @@ func _viewport_mouse() -> Vector2:
 func _get_hovered_tile() -> Vector2i:
 	if _tile_map == null:
 		return INVALID_TILE
-	# Viewport-Maus in TileMap-Lokalraum: dasselbe Raster, das gerendert wird.
-	return _tile_map.local_to_map(_tile_map.make_canvas_position_local(_viewport_mouse()))
+	# TileMap-eigene Maus: beruecksichtigt Kamera, Zoom und Stretch 1:1.
+	return _tile_map.local_to_map(_tile_map.get_local_mouse_position())
 
 
 func _get_world_mouse() -> Vector2:
 	if _tile_map != null:
-		return _tile_map.to_global(_tile_map.make_canvas_position_local(_viewport_mouse()))
+		return _tile_map.get_global_mouse_position()
 	if _player != null:
-		return _player.get_world_mouse_position()
+		return _player.get_global_mouse_position()
 	var vp := get_viewport()
 	if vp == null:
 		return Vector2.ZERO
@@ -429,51 +485,489 @@ func _first_solid_in_dir(start: Vector2i, dir: Vector2i) -> Vector2i:
 
 func _handle_tool_use(delta: float) -> void:
 	_attack_cooldown_left = maxf(0.0, _attack_cooldown_left - delta)
+	_lantern_cooldown_left = maxf(0.0, _lantern_cooldown_left - delta)
+	if _bow_drawing:
+		_tick_bow_draw(delta)
+		return
+	var item := _inventory.get_selected_item() if _inventory != null else null
+	if _is_bow_item(item):
+		_handle_bow_use(item)
+		return
+	if _is_attack_anim_playing():
+		return
 	if not _world_use_held:
 		return
 	if _attack_cooldown_left > 0.0:
 		return
-	if _anim != null and _anim.is_playing() and _anim.current_animation == &"tool_swing":
-		return
-	var item := _inventory.get_selected_item() if _inventory != null else null
 	if not _item_can_swing(item):
 		return
-	var cooldown := item.attack_cooldown if item.attack_cooldown > 0.0 else 0.35
-	if _hitbox != null and _hitbox.has_method("begin_swing"):
-		_hitbox.call("begin_swing", item.damage, item.knockback, _player)
-	if _anim != null:
-		_anim.play(&"tool_swing")
-	_player.play_sfx(&"Swing")
-	_attack_cooldown_left = cooldown
+	if item.is_weapon():
+		_start_weapon_attack(item)
+		return
+	_start_tool_swing(item)
+
+
+func _handle_bow_use(item: ItemData) -> void:
+	if _attack_cooldown_left > 0.0:
+		return
+	if _is_bow_aim_held():
+		_start_bow_attack(item)
+		return
+	if _world_use_held:
+		_fire_bow_quick(item)
 
 
 func _item_can_swing(item: ItemData) -> bool:
 	if item == null:
 		return false
-	return item.item_type == ItemData.ItemType.TOOL or item.item_type == ItemData.ItemType.WEAPON or item.tool_kind != ItemData.ToolKind.NONE
+	if item.is_weapon():
+		return true
+	return item.item_type == ItemData.ItemType.TOOL or item.tool_kind != ItemData.ToolKind.NONE
+
+
+func _is_attack_anim_playing() -> bool:
+	if _anim == null or not _anim.is_playing():
+		return false
+	return ATTACK_ANIMS.has(_anim.current_animation)
+
+
+func _start_tool_swing(item: ItemData) -> void:
+	var inst := _inventory.get_selected_instance() if _inventory != null else null
+	var damage := inst.effective_damage(item) if inst != null else item.get_base_damage()
+	var kb := item.get_weapon_knockback() if item.has_method("get_weapon_knockback") else item.knockback
+	if _hitbox != null and _hitbox.has_method("begin_attack"):
+		_hitbox.call("begin_attack", damage, kb, _player, null, &"tool_swing", 0.08, 0.18, int(ItemData.WeaponKind.NONE), 2.5)
+	elif _hitbox != null and _hitbox.has_method("begin_swing"):
+		_hitbox.call("begin_swing", damage, kb, _player)
+	_play_attack_anim(&"tool_swing")
+	_player.play_sfx(&"Swing")
+	_attack_cooldown_left = item.resolve_attack_cooldown() if item.has_method("resolve_attack_cooldown") else 0.35
+
+
+func _start_weapon_attack(item: ItemData) -> void:
+	match int(item.weapon_kind):
+		ItemData.WeaponKind.BOW:
+			return
+		ItemData.WeaponKind.LANTERN:
+			_start_lantern_attack(item)
+		ItemData.WeaponKind.SPEAR:
+			_start_melee_attack(item, &"spear_thrust", 0.16, 0.28)
+		_:
+			_start_melee_attack(item, &"sword_swing", 0.08, 0.18)
+
+
+func _start_melee_attack(item: ItemData, anim: StringName, hit_start: float, hit_end: float) -> void:
+	var inst := _inventory.get_selected_instance() if _inventory != null else null
+	if inst != null and inst.durability == 0:
+		return
+	var damage := inst.effective_damage(item) if inst != null else item.get_base_damage()
+	var kb := item.get_weapon_knockback()
+	var item_range := inst.effective_range(item) if inst != null else item.get_base_range()
+	var play_anim := anim if _has_anim(anim) else &"tool_swing"
+	if _hitbox != null and _hitbox.has_method("begin_attack"):
+		_hitbox.call("begin_attack", damage, kb, _player, item.weapon_data, play_anim, hit_start, hit_end, int(item.weapon_kind), item_range)
+	_play_attack_anim(play_anim)
+	_player.play_sfx(&"Swing")
+	_attack_cooldown_left = item.resolve_attack_cooldown()
+	_use_selected_durability()
+
+
+func is_drawing_bow() -> bool:
+	return _bow_drawing
+
+
+func _start_bow_attack(item: ItemData) -> void:
+	if _bow_drawing:
+		return
+	if not _bow_can_shoot(item):
+		return
+	var weapon := item.weapon_data
+	_bow_drawing = true
+	_bow_charge = 0.0
+	_bow_item = item
+	_bow_weapon = weapon
+	_apply_bow_draw_visual(_bow_charge)
+	_update_bow_trajectory()
+
+
+func _bow_can_shoot(item: ItemData) -> bool:
+	if item == null:
+		return false
+	var weapon := item.weapon_data
+	var ammo_id := int(weapon.get("ammo_item_id")) if weapon != null else WOOD_ARROW_ID
+	if ammo_id < 0:
+		ammo_id = WOOD_ARROW_ID
+	if _inventory == null or _inventory.get_total_amount(ammo_id) <= 0:
+		return false
+	var inst := _inventory.get_selected_instance()
+	if inst != null and inst.durability == 0:
+		return false
+	return true
+
+
+func _fire_bow_quick(item: ItemData) -> void:
+	if not _bow_can_shoot(item):
+		return
+	var weapon := item.weapon_data
+	var anim := &"bow_shot" if _has_anim(&"bow_shot") else &"tool_swing"
+	_play_attack_anim(anim)
+	_player.play_sfx(&"Swing")
+	_spawn_arrow(item, weapon, 1.0, true)
+	var cd := 0.28
+	if weapon != null and weapon.has_method("get_quick_shot_cooldown"):
+		cd = float(weapon.call("get_quick_shot_cooldown"))
+	_attack_cooldown_left = cd
+
+
+func _tick_bow_draw(delta: float) -> void:
+	if not _bow_drawing:
+		return
+	var selected := _inventory.get_selected_item() if _inventory != null else null
+	if selected != _bow_item:
+		_cancel_bow_draw()
+		return
+	var ammo_id := int(_bow_weapon.get("ammo_item_id")) if _bow_weapon != null else WOOD_ARROW_ID
+	if ammo_id < 0:
+		ammo_id = WOOD_ARROW_ID
+	if _inventory == null or _inventory.get_total_amount(ammo_id) <= 0:
+		_cancel_bow_draw()
+		return
+	var draw_time := 0.55
+	if _bow_weapon != null and _bow_weapon.has_method("get_draw_time"):
+		draw_time = maxf(0.2, float(_bow_weapon.call("get_draw_time")))
+	_bow_charge = minf(1.0, _bow_charge + delta / draw_time)
+	_apply_bow_draw_visual(_bow_charge)
+	_update_bow_trajectory()
+	if _is_bow_aim_held():
+		return
+	_release_bow()
+
+
+func _apply_bow_draw_visual(charge: float) -> void:
+	_aim_held_at_mouse()
+	if _player == null:
+		return
+	var arm := _player.get_node_or_null("ToolPivot/ToolArm") as Node2D
+	if arm == null:
+		return
+	arm.position = Vector2(roundf(-7.0 * charge), 0.0)
+
+
+func _release_bow() -> void:
+	var item := _bow_item
+	var weapon := _bow_weapon
+	var charge := _bow_charge
+	_clear_bow_draw_state()
+	if item == null:
+		return
+	var anim := &"bow_shot" if _has_anim(&"bow_shot") else &"tool_swing"
+	_play_attack_anim(anim)
+	_player.play_sfx(&"Swing")
+	_spawn_arrow(item, weapon, charge, false)
+	_attack_cooldown_left = item.resolve_attack_cooldown()
+
+
+func _cancel_bow_draw() -> void:
+	_clear_bow_draw_state()
+	if _player == null:
+		return
+	var arm := _player.get_node_or_null("ToolPivot/ToolArm") as Node2D
+	if arm != null:
+		arm.position = Vector2.ZERO
+
+
+func _clear_bow_draw_state() -> void:
+	_bow_drawing = false
+	_bow_charge = 0.0
+	_bow_item = null
+	_bow_weapon = null
+	_hide_bow_trajectory()
+
+
+func _is_bow_item(item: ItemData) -> bool:
+	return item != null and item.is_weapon() and int(item.weapon_kind) == ItemData.WeaponKind.BOW
+
+
+func _is_bow_equipped() -> bool:
+	if _inventory == null:
+		return false
+	return _is_bow_item(_inventory.get_selected_item())
+
+
+func _is_bow_aim_held() -> bool:
+	return Input.is_action_pressed("interact_secondary")
+
+
+func _compute_bow_shot(item: ItemData, weapon: Resource, charge: float, quick: bool = false) -> Dictionary:
+	var origin := _player.global_position + Vector2(10.0 * _player.facing_sign, -24.0)
+	var mouse := _get_world_mouse()
+	var dir := (mouse - origin).normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2(_player.facing_sign, 0.0)
+	var t := clampf(charge, 0.0, 1.0)
+	var speed := float(weapon.get("projectile_speed")) if weapon != null else 297.0
+	var gravity := 820.0
+	var max_distance := item.get_base_range() * float(tile_size) if item != null else 864.0
+	if weapon != null and weapon.has_method("get_projectile_gravity"):
+		gravity = float(weapon.call("get_projectile_gravity"))
+	if weapon != null and weapon.has_method("get_flight_distance"):
+		max_distance = float(weapon.call("get_flight_distance", float(tile_size)))
+	if not quick:
+		speed *= lerpf(0.7, 1.0, t)
+		max_distance *= lerpf(0.7, 1.0, t)
+	return {
+		"origin": origin,
+		"velocity": dir * speed,
+		"gravity": gravity,
+		"max_distance": max_distance,
+		"charge": t,
+		"quick": quick,
+	}
+
+
+func _ensure_bow_trajectory() -> Line2D:
+	if _bow_trajectory != null and is_instance_valid(_bow_trajectory):
+		return _bow_trajectory
+	var line := Line2D.new()
+	line.name = "BowTrajectory"
+	line.width = 2.0
+	line.default_color = Color(1.0, 0.82, 0.32, 0.92)
+	line.antialiased = false
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.z_index = 80
+	line.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	line.top_level = false
+	var grad := Gradient.new()
+	grad.offsets = PackedFloat32Array([0.0, 1.0])
+	grad.colors = PackedColorArray([
+		Color(1.0, 0.9, 0.42, 0.95),
+		Color(1.0, 0.45, 0.16, 0.12),
+	])
+	line.gradient = grad
+	var host: Node = _player.get_parent() if _player != null else _player
+	if host == null:
+		host = _player
+	host.add_child(line)
+	line.position = Vector2.ZERO
+	_bow_trajectory = line
+	return line
+
+
+func _update_bow_trajectory() -> void:
+	if not _bow_drawing or _bow_item == null or _player == null:
+		_hide_bow_trajectory()
+		return
+	var shot := _compute_bow_shot(_bow_item, _bow_weapon, _bow_charge, false)
+	var points := Projectile.predict_arc(
+		shot["origin"],
+		shot["velocity"],
+		shot["gravity"],
+		shot["max_distance"],
+		BOW_TRAJECTORY_DT,
+		BOW_TRAJECTORY_STEPS
+	)
+	points = _clip_trajectory_to_world(points)
+	var line := _ensure_bow_trajectory()
+	line.position = Vector2.ZERO
+	var host := line.get_parent()
+	if host is Node2D:
+		var local_points := PackedVector2Array()
+		var node := host as Node2D
+		for point in points:
+			local_points.append(node.to_local(point))
+		line.points = local_points
+	else:
+		line.points = points
+	line.visible = points.size() >= 2
+
+
+func _clip_trajectory_to_world(points: PackedVector2Array) -> PackedVector2Array:
+	if points.is_empty():
+		return points
+	var clipped := PackedVector2Array()
+	for i in points.size():
+		var point: Vector2 = points[i]
+		clipped.append(point)
+		if i < 2:
+			continue
+		if get_block_data(_world_to_cell(point)) != null:
+			break
+	return clipped
+
+
+func _hide_bow_trajectory() -> void:
+	if _bow_trajectory != null and is_instance_valid(_bow_trajectory):
+		_bow_trajectory.visible = false
+		_bow_trajectory.points = PackedVector2Array()
+
+
+func _aim_held_at_mouse() -> void:
+	if _player == null:
+		return
+	var arm := _player.get_node_or_null("ToolPivot/ToolArm") as Node2D
+	if arm == null:
+		return
+	var mouse := _get_world_mouse()
+	var origin := _player.global_position + Vector2(0, -24)
+	var angle := (mouse - origin).angle()
+	if _player.facing_sign < 0.0:
+		arm.rotation = PI - angle
+	else:
+		arm.rotation = angle
+
+
+func _spawn_arrow(item: ItemData, weapon: Resource, charge: float = 1.0, quick: bool = false) -> void:
+	if item == null or _player == null:
+		return
+	var ammo_id := int(weapon.get("ammo_item_id")) if weapon != null else WOOD_ARROW_ID
+	if ammo_id < 0:
+		ammo_id = WOOD_ARROW_ID
+	if _inventory == null or not _inventory.try_consume_items([{"item_id": ammo_id, "amount": 1}]):
+		return
+	var scene := projectile_scene
+	if scene == null and ResourceLoader.exists("res://scenes/combat/projectile.tscn"):
+		scene = load("res://scenes/combat/projectile.tscn") as PackedScene
+	if scene == null:
+		return
+	var projectile := scene.instantiate() as Node2D
+	if projectile == null:
+		return
+	var shot := _compute_bow_shot(item, weapon, charge, quick)
+	var t := float(shot["charge"])
+	var ammo := _inventory.item_catalog.get_item(ammo_id) if _inventory.item_catalog != null else null
+	var damage := 1
+	if quick:
+		damage = CombatResolver.quick_ranged_damage(weapon, ammo)
+	else:
+		damage = CombatResolver.charged_ranged_damage(weapon, ammo, t)
+	var kb := item.get_weapon_knockback()
+	if quick:
+		kb *= 0.55
+	else:
+		kb *= lerpf(0.7, 1.15, t)
+	_player.get_parent().add_child(projectile)
+	projectile.global_position = shot["origin"]
+	if projectile.has_method("setup"):
+		var tex: Texture2D = ammo.icon if ammo != null else item.icon
+		projectile.call("setup", shot["velocity"], damage, kb, _player, weapon, tex, 6.0, shot["gravity"], shot["max_distance"])
+	_use_selected_durability()
+
+
+func _start_lantern_attack(item: ItemData) -> void:
+	if _lantern_cooldown_left > 0.0:
+		return
+	var inst := _inventory.get_selected_instance() if _inventory != null else null
+	if inst != null and inst.durability == 0:
+		return
+	var damage := inst.effective_damage(item) if inst != null else item.get_base_damage()
+	var kb := item.get_weapon_knockback()
+	var item_range := inst.effective_range(item) if inst != null else item.get_base_range()
+	var anim := &"lantern_burst" if _has_anim(&"lantern_burst") else &"tool_swing"
+	if _hitbox != null and _hitbox.has_method("begin_attack"):
+		_hitbox.call("begin_attack", damage, kb, _player, item.weapon_data, anim, 0.18, 0.32, int(ItemData.WeaponKind.LANTERN), item_range)
+	_play_attack_anim(anim)
+	_flash_lantern_light()
+	_player.play_sfx(&"Swing")
+	var cd := item.resolve_attack_cooldown()
+	_attack_cooldown_left = cd
+	_lantern_cooldown_left = cd
+	_use_selected_durability()
+
+
+func _flash_lantern_light() -> void:
+	var light := _player.get_node_or_null("ToolPivot/ToolArm/CombatLight") as PointLight2D
+	if light == null:
+		return
+	if light.texture == null:
+		light.texture = _make_combat_light_texture()
+	light.enabled = true
+	light.energy = 1.35
+	light.color = Color(1.0, 0.72, 0.28, 1.0)
+	var tween := create_tween()
+	tween.tween_property(light, "energy", 0.0, 0.42)
+	tween.tween_callback(func() -> void:
+		if light != null:
+			light.enabled = false
+	)
+
+
+func _make_combat_light_texture() -> Texture2D:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var center := Vector2(32, 32)
+	for y in 64:
+		for x in 64:
+			var d := Vector2(float(x) + 0.5, float(y) + 0.5).distance_to(center) / 32.0
+			var a := clampf(1.0 - d, 0.0, 1.0)
+			img.set_pixel(x, y, Color(1, 0.92, 0.7, a * a))
+	return ImageTexture.create_from_image(img)
+
+
+func _play_attack_anim(anim: StringName) -> void:
+	if _anim == null:
+		return
+	if _anim.has_animation(anim):
+		_anim.play(anim)
+	elif _anim.has_animation(&"tool_swing"):
+		_anim.play(&"tool_swing")
+
+
+func _has_anim(anim: StringName) -> bool:
+	return _anim != null and _anim.has_animation(anim)
+
+
+func _use_selected_durability() -> void:
+	if _inventory != null and _inventory.has_method("use_selected_durability"):
+		_inventory.call("use_selected_durability", 1)
+
+
+func cancel_attack() -> void:
+	_cancel_bow_draw()
+	if _hitbox != null and _hitbox.has_method("cancel_attack"):
+		_hitbox.call("cancel_attack")
+	if _is_attack_anim_playing() and _anim != null:
+		_anim.stop()
 
 
 func _get_place_state(tile: Vector2i, in_range: bool) -> Dictionary:
 	var item := _inventory.get_selected_item() if _inventory != null else null
 	var holding_placeable := item != null and item.is_placeable()
-	var empty := get_block_data(tile) == null
+	var placing := block_catalog.get_by_id(item.placeable_block_id) if item != null and block_catalog != null else null
+	var empty := true
+	if placing != null and placing.occupies_background_layer():
+		var parts := _parts()
+		empty = parts == null or not parts.is_background_cell(tile)
+	else:
+		empty = get_block_data(tile) == null or (placing != null and placing.occupies_background_layer())
+		if _parts() != null and _parts().is_entity_cell(tile):
+			empty = false
+		if _tile_map != null and _tile_map.get_cell_source_id(tile) != -1 and (placing == null or not placing.occupies_background_layer()):
+			empty = false
 	var can_place := false
 	var reason := ""
 	if not holding_placeable:
 		reason = "no_item"
-	elif not empty:
-		reason = "occupied"
 	elif not in_range:
 		reason = "range"
 	elif _tile_overlaps_player(tile):
 		reason = "player"
-	elif require_adjacent_block and not _has_solid_neighbor(tile):
+	elif require_adjacent_block and placing != null and not placing.occupies_background_layer() and not placing.is_climbable and not _has_place_neighbor(tile, placing) and placing.building_part_type != BlockData.BuildingPartType.LIGHT:
 		reason = "neighbor"
-	elif block_catalog == null or block_catalog.get_by_id(item.placeable_block_id) == null:
+	elif placing == null:
 		reason = "unknown_block"
 	else:
-		can_place = true
-		reason = "ok"
+		var parts := _parts()
+		if parts != null and placing.is_building_part():
+			var report := parts.can_place(placing, tile, _place_orientation, _player)
+			can_place = bool(report.get("ok", false))
+			reason = str(report.get("reason", "ok"))
+		elif not empty:
+			reason = "occupied"
+		else:
+			can_place = true
+			reason = "ok"
 	return {
 		"holding": holding_placeable,
 		"empty": empty,
@@ -522,7 +1016,7 @@ func _update_highlight(tile: Vector2i, block: BlockData, in_range: bool, place_s
 		_set_highlight_color(Color(0.35, 0.9, 0.4, 0.45) if _can_plant_item(tile, in_range) else Color(0.9, 0.25, 0.2, 0.45))
 	elif _holding_seed():
 		_set_highlight_color(Color(0.35, 0.9, 0.4, 0.45) if _can_plant_seed(tile, in_range) else Color(0.9, 0.25, 0.2, 0.45))
-	elif bool(place_state["holding"]) and bool(place_state["empty"]):
+	elif bool(place_state["holding"]):
 		_set_highlight_color(_placement_preview_color(place_state, tile))
 	elif plant_cell != INVALID_TILE:
 		_set_highlight_color(Color(0.95, 0.95, 0.4, 0.45) if _is_in_range(plant_cell) else Color(0.9, 0.25, 0.2, 0.4))
@@ -543,6 +1037,13 @@ func _handle_mining(delta: float, tile: Vector2i, block: BlockData, in_range: bo
 		_reset_mining()
 		return
 	var item: ItemData = _inventory.get_selected_item() if _inventory != null else null
+	if item != null and item.is_weapon():
+		_reset_mining()
+		return
+	var buildings := get_tree().get_first_node_in_group("building_manager")
+	if buildings != null and buildings.has_method("is_protected_cell") and bool(buildings.call("is_protected_cell", tile)):
+		_reset_mining()
+		return
 	var inst: ItemInstanceData = _inventory.get_selected_instance() if _inventory != null else ItemInstanceData.new()
 	var break_check := block.evaluate_break(item, inst)
 	if break_check != BlockData.BreakCheck.CAN_BREAK:
@@ -615,8 +1116,123 @@ func _hide_weak_hint() -> void:
 		_weak_hint.visible = false
 
 
+func _selected_stair_block() -> BlockData:
+	if _inventory == null or block_catalog == null:
+		return null
+	var item := _inventory.get_selected_item()
+	if item == null or not item.is_placeable():
+		return null
+	var block := block_catalog.get_by_id(item.placeable_block_id)
+	return block if StairSystem.is_stair(block) else null
+
+
+func _stair_orientation_hint(tile: Vector2i) -> int:
+	var hint := StairSystem.hint_from_mouse(tile, _get_world_mouse(), _tile_map)
+	var parts := _parts()
+	if parts == null:
+		return hint
+	return parts.resolve_stair_orientation(tile, hint)
+
+
+func _handle_stair_placement(hover_tile: Vector2i, _in_range: bool, block: BlockData) -> void:
+	var parts := _parts()
+	if parts == null or block == null:
+		_clear_stair_drag()
+		return
+	if not Input.is_action_pressed("interact_secondary"):
+		_clear_stair_drag()
+		return
+	if hover_tile == INVALID_TILE:
+		return
+	if Input.is_action_just_pressed("interact_secondary"):
+		_stair_drag_active = true
+		_stair_drag_start = hover_tile
+		_stair_drag_placed.clear()
+	if not _stair_drag_active:
+		_stair_drag_start = hover_tile
+		_stair_drag_active = true
+	if _stair_drag_start == INVALID_TILE:
+		_stair_drag_start = hover_tile
+	var cells := StairSystem.diagonal_line(_stair_drag_start, hover_tile)
+	var ori := StairSystem.hint_from_drag(_stair_drag_start, hover_tile)
+	if cells.size() <= 1:
+		ori = _stair_orientation_hint(hover_tile)
+	var preview_ok: Array[bool] = []
+	var preview_grade: Array[int] = []
+	var simulated: Dictionary = {}
+	for cell in cells:
+		simulated[cell] = true
+		preview_ok.append(_stair_cell_can_place(cell, block, simulated))
+		var grade := 0
+		var mgr := _structural()
+		if mgr != null and block.structural_enabled:
+			grade = int(mgr.call("preview_grade", cell, block))
+		preview_grade.append(grade)
+	parts.set_stair_preview(cells, preview_ok, preview_grade)
+	var slot := _inventory.get_slot(_inventory.selected_hotbar_index) if _inventory != null else {}
+	var remaining := int(slot.get("amount", 0))
+	var placed_now := false
+	for i in cells.size():
+		if remaining <= 0:
+			break
+		var cell: Vector2i = cells[i]
+		if _stair_drag_placed.has(cell):
+			continue
+		if not _is_in_range(cell):
+			continue
+		if not _stair_cell_can_place(cell, block, _stair_drag_placed):
+			continue
+		if not parts.try_place(block, cell, ori, _player):
+			continue
+		_stair_drag_placed[cell] = true
+		remaining -= 1
+		placed_now = true
+		_notify_map_tile(cell)
+		if _inventory != null:
+			_inventory.consume_from_slot(_inventory.selected_hotbar_index, 1)
+		var veg := _veg()
+		if veg != null:
+			veg.on_block_placed(cell)
+	if placed_now:
+		if _anim != null:
+			_anim.play(&"block_place")
+		_player.play_sfx(&"BlockPlace")
+
+
+func _stair_cell_can_place(cell: Vector2i, block: BlockData, line_cells: Dictionary) -> bool:
+	if not _is_in_range(cell):
+		return false
+	var state := _get_place_state(cell, true)
+	if bool(state.get("can_place", false)):
+		return true
+	if str(state.get("reason", "")) != "neighbor":
+		return false
+	if not _has_place_neighbor(cell, block) and not _stair_line_supports(cell, line_cells):
+		return false
+	var parts := _parts()
+	if parts == null:
+		return false
+	return bool(parts.can_place(block, cell, 0, _player).get("ok", false))
+
+
+func _stair_line_supports(cell: Vector2i, line_cells: Dictionary) -> bool:
+	for dir in StairSystem.NEIGHBOR_DIRS:
+		if line_cells.has(cell + dir) and cell + dir != cell:
+			return true
+	return false
+
+
+func _clear_stair_drag() -> void:
+	_stair_drag_active = false
+	_stair_drag_start = INVALID_TILE
+	_stair_drag_placed.clear()
+	var parts := _parts()
+	if parts != null:
+		parts.clear_stair_preview()
+
+
 func _handle_placement(tile: Vector2i, place_state: Dictionary) -> void:
-	if not Input.is_action_just_pressed("interact_secondary"):
+	if not Input.is_action_pressed("interact_secondary"):
 		return
 	if not bool(place_state["can_place"]):
 		return
@@ -624,11 +1240,16 @@ func _handle_placement(tile: Vector2i, place_state: Dictionary) -> void:
 	var block := block_catalog.get_by_id(item.placeable_block_id)
 	if block == null:
 		return
-	if block_catalog != null:
-		block_catalog.set_block_cell(_tile_map, tile, block)
+	var parts := _parts()
+	if parts != null and block.is_building_part():
+		if not parts.try_place(block, tile, _place_orientation, _player):
+			return
 	else:
-		_tile_map.set_cell(tile, _terrain_source_id(), block.atlas_coords)
-	_notify_structure_placed(tile)
+		if block_catalog != null:
+			block_catalog.set_block_cell(_tile_map, tile, block)
+		else:
+			_tile_map.set_cell(tile, _terrain_source_id(), block.atlas_coords)
+		_notify_structure_placed(tile)
 	_notify_map_tile(tile)
 	if _inventory != null:
 		_inventory.consume_from_slot(_inventory.selected_hotbar_index, 1)
@@ -667,25 +1288,48 @@ func _tile_overlaps_player(tile: Vector2i) -> bool:
 	return player_rect.intersects(tile_rect)
 
 
-func _has_solid_neighbor(tile: Vector2i) -> bool:
+func _has_place_neighbor(tile: Vector2i, placing: BlockData) -> bool:
 	var dirs: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+	if StairSystem.is_stair(placing):
+		dirs = StairSystem.NEIGHBOR_DIRS
 	for dir in dirs:
 		var neighbor: Vector2i = tile + dir
-		if _tile_map.get_cell_source_id(neighbor) == -1:
-			continue
 		var neighbor_block := get_block_data(neighbor)
-		if neighbor_block == null or neighbor_block.solid or neighbor_block.structural_enabled:
+		if neighbor_block == null:
+			continue
+		if neighbor_block.solid or neighbor_block.structural_enabled or neighbor_block.occupies_background_layer():
+			return true
+		if StairSystem.is_stair(placing) and StairSystem.is_stair(neighbor_block):
 			return true
 	return false
 
 
+func _has_solid_neighbor(tile: Vector2i) -> bool:
+	return _has_place_neighbor(tile, null)
+
+
 func _break_block(tile: Vector2i, block: BlockData) -> void:
+	var buildings := get_tree().get_first_node_in_group("building_manager")
+	if buildings != null and buildings.has_method("is_protected_cell") and bool(buildings.call("is_protected_cell", tile)):
+		_reset_mining()
+		return
 	var trees := get_tree().get_first_node_in_group("tree_system") as TreeSystem
 	var item: ItemData = _inventory.get_selected_item() if _inventory != null else null
 	if trees != null and trees.handle_break(tile, _player, item):
 		_reset_mining()
 		_refresh_target_after_break()
 		return
+	var parts := _parts()
+	if parts != null and block != null and block.is_building_part():
+		var removed := parts.try_remove(tile, true)
+		if removed != null:
+			_notify_structure_removed(tile, true)
+			_notify_map_tile(tile)
+			_player.play_sfx(&"BlockBreak")
+			_spawn_drop(tile, removed)
+			_reset_mining()
+			_refresh_target_after_break()
+			return
 	_tile_map.erase_cell(tile)
 	_notify_structure_removed(tile, true)
 	_notify_map_tile(tile)
@@ -817,6 +1461,22 @@ func _handle_plant_harvest(delta: float, tile: Vector2i, in_range: bool) -> bool
 		_plant_progress = 0.0
 		_reset_mining()
 	return true
+
+
+func _holding_blueprint() -> bool:
+	var item := _inventory.get_selected_item() if _inventory != null else null
+	return item != null and item.is_building_blueprint()
+
+
+func _handle_building_blueprint(tile: Vector2i, _in_range: bool) -> void:
+	var mgr := get_tree().get_first_node_in_group("building_manager")
+	if mgr == null:
+		return
+	mgr.call("update_hotbar_preview", _inventory, tile, true)
+	if not _holding_blueprint():
+		return
+	if Input.is_action_just_pressed("interact_secondary"):
+		mgr.call("try_place_from_hotbar", _inventory, tile, true)
 
 
 func _holding_seed() -> bool:
@@ -978,6 +1638,13 @@ func _placement_preview_color(place_state: Dictionary, tile: Vector2i) -> Color:
 
 func _structural() -> Node:
 	return get_tree().get_first_node_in_group(&"structural_manager")
+
+
+func _parts() -> BuildingPartSystem:
+	if _building_parts != null:
+		return _building_parts
+	_building_parts = get_tree().get_first_node_in_group(&"building_part_system") as BuildingPartSystem
+	return _building_parts
 
 
 func _notify_structure_placed(tile: Vector2i) -> void:

@@ -22,3 +22,6 @@ is_foundation_material = false
 is_support_beam = true
 enemy_break_cost = 3
 structural_importance = 5
+building_material = 1
+building_part_type = 6
+flammable = true

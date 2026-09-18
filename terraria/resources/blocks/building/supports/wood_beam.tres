@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 41
+display_name = "Holzbalken"
+atlas_coords = Vector2i(0, 10)
+atlas_source_id = 1
+autotile_count = 1
+hardness = 1.0
+drop_item_id = 72
+solid = false
+vision_occlusion = 0.15
+map_color = Color(0.4, 0.24, 0.12, 1)
+required_tool = 2
+required_tool_power = 1
+structural_enabled = true
+structural_role = 4
+structural_weight = 1
+support_strength = 8
+max_horizontal_support = 10
+is_foundation_material = false
+is_support_beam = false
+enemy_break_cost = 3
+structural_importance = 5
+building_material = 1
+building_part_type = 7
+flammable = true

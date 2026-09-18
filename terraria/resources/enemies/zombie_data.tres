@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "Zombie"
+max_health = 50
+move_speed = 42.0
+wander_speed = 18.0
+attack_damage = 10.0
+attack_cooldown = 1.0
+detection_range = 192.0
+attack_range = 30.0
+lose_target_multiplier = 1.35
+darkness_max_health = 150
+darkness_move_speed = 72.0
+darkness_attack_damage = 20.0
+darkness_attack_cooldown = 0.75
+darkness_detection_range = 288.0
+darkness_health_cycle_bonus = 0.0
+darkness_damage_cycle_bonus = 0.0
+darkness_speed_cycle_bonus = 0.0
+gravity = 1000.0
+max_fall_speed = 600.0
+ground_acceleration = 220.0
+darkness_acceleration = 420.0
+knockback_force = 90.0
+hurt_lock_time = 0.16
+blocked_by_safe_zone = false

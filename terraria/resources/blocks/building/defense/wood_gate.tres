@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 58
+display_name = "Holztor"
+atlas_coords = Vector2i(5, 11)
+atlas_source_id = 1
+autotile_count = 1
+hardness = 1.8
+drop_item_id = 94
+solid = false
+vision_occlusion = 0.3
+map_color = Color(0.32, 0.2, 0.1, 1)
+required_tool = 2
+required_tool_power = 1
+structural_enabled = false
+structural_role = 0
+structural_weight = 0
+support_strength = 0
+max_horizontal_support = 0
+is_foundation_material = false
+is_support_beam = false
+enemy_break_cost = 14
+structural_importance = 0
+building_material = 1
+building_part_type = 16
+flammable = true
+footprint = Vector2i(2, 3)

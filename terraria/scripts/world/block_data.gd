@@ -16,11 +16,47 @@ enum StructuralRole {
 	FOUNDATION,
 	STRUCTURAL_BLOCK,
 	SUPPORT_BEAM,
+	BEAM,
+	ROOF,
+}
+
+## Materialskins spaeter (Eiche/Birke/Ziegel) ohne neue Mechanik je Variante.
+enum BuildingMaterial {
+	NONE,
+	WOOD,
+	STONE,
+	BRICK,
+	METAL,
+}
+
+enum BuildingPartType {
+	NONE,
+	FOUNDATION,
+	WALL,
+	BACKGROUND_WALL,
+	FLOOR,
+	ROOF,
+	SUPPORT,
+	BEAM,
+	PLATFORM,
+	STAIRS,
+	LADDER,
+	DOOR,
+	WINDOW,
+	LIGHT,
+	STORAGE,
+	CRAFTING_STATION,
+	DEFENSE,
+	DECORATION,
 }
 
 @export var id: int = 0
 @export var display_name: String = ""
 @export var atlas_coords: Vector2i = Vector2i.ZERO
+## 0 = Terrain-Atlas, 1 = Building-Atlas.
+@export var atlas_source_id: int = 0
+## Anzahl Nachbar-Varianten in einer Atlas-Zeile. 1 = festes Tile, 16 = 4-Wege-Autotile.
+@export var autotile_count: int = 1
 @export var hardness: float = 1.0
 @export var drop_item_id: int = -1
 @export var solid: bool = true
@@ -39,6 +75,19 @@ enum StructuralRole {
 @export var is_support_beam: bool = false
 @export var enemy_break_cost: int = 0
 @export var structural_importance: int = 0
+@export var building_material: BuildingMaterial = BuildingMaterial.NONE
+@export var building_part_type: BuildingPartType = BuildingPartType.NONE
+## Reserviert fuer spaetere Holzarten/Material-Skins. Leer = Standard.
+@export var material_variant: StringName = &""
+@export var flammable: bool = false
+@export var is_background: bool = false
+@export var is_one_way: bool = false
+@export var is_climbable: bool = false
+@export var uses_orientation: bool = false
+@export var footprint: Vector2i = Vector2i.ONE
+## Optional: interaktive Szene statt reinem Tile (Tuer, Station, Licht).
+@export var entity_scene: PackedScene
+@export var light_energy: float = 0.0
 
 func get_required_tool() -> int:
 	if ore_data != null:
@@ -89,6 +138,10 @@ func get_map_color() -> Color:
 func get_vision_occlusion() -> float:
 	if vision_occlusion >= 0.0:
 		return vision_occlusion
+	if is_background or building_part_type == BuildingPartType.BACKGROUND_WALL:
+		return 0.12
+	if building_part_type == BuildingPartType.WINDOW:
+		return 0.18
 	match id:
 		0:
 			return 0.0
@@ -102,3 +155,85 @@ func get_vision_occlusion() -> float:
 			return 0.9
 		_:
 			return 1.0 if solid else 0.0
+
+
+func is_stair() -> bool:
+	return building_part_type == BuildingPartType.STAIRS
+
+
+func is_building_part() -> bool:
+	return building_part_type != BuildingPartType.NONE
+
+
+func is_player_passable() -> bool:
+	return not solid
+
+
+func connects_visually() -> bool:
+	return autotile_count > 1
+
+
+func variant_atlas(mask: int) -> Vector2i:
+	if autotile_count <= 1:
+		return atlas_coords
+	return Vector2i(atlas_coords.x + clampi(mask, 0, autotile_count - 1), atlas_coords.y)
+
+
+func occupies_background_layer() -> bool:
+	return is_background \
+		or building_part_type == BuildingPartType.BACKGROUND_WALL \
+		or building_part_type == BuildingPartType.WINDOW
+
+
+static func part_type_display_name(part: BuildingPartType) -> String:
+	match part:
+		BuildingPartType.FOUNDATION:
+			return "Fundament"
+		BuildingPartType.WALL:
+			return "Wand"
+		BuildingPartType.BACKGROUND_WALL:
+			return "Hintergrundwand"
+		BuildingPartType.FLOOR:
+			return "Boden"
+		BuildingPartType.ROOF:
+			return "Dach"
+		BuildingPartType.SUPPORT:
+			return "Stütze"
+		BuildingPartType.BEAM:
+			return "Balken"
+		BuildingPartType.PLATFORM:
+			return "Plattform"
+		BuildingPartType.STAIRS:
+			return "Treppe"
+		BuildingPartType.LADDER:
+			return "Leiter"
+		BuildingPartType.DOOR:
+			return "Tür"
+		BuildingPartType.WINDOW:
+			return "Fenster"
+		BuildingPartType.LIGHT:
+			return "Beleuchtung"
+		BuildingPartType.STORAGE:
+			return "Einrichtung"
+		BuildingPartType.CRAFTING_STATION:
+			return "Station"
+		BuildingPartType.DEFENSE:
+			return "Verteidigung"
+		BuildingPartType.DECORATION:
+			return "Einrichtung"
+		_:
+			return ""
+
+
+static func material_display_name(material: BuildingMaterial) -> String:
+	match material:
+		BuildingMaterial.WOOD:
+			return "Holz"
+		BuildingMaterial.STONE:
+			return "Stein"
+		BuildingMaterial.BRICK:
+			return "Ziegel"
+		BuildingMaterial.METAL:
+			return "Metall"
+		_:
+			return ""

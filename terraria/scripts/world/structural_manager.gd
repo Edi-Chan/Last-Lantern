@@ -17,6 +17,9 @@ const COLLAPSE_BUDGET := 24
 const WARN_MIN := 0.5
 const WARN_MAX := 1.5
 const DIRS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+const DIAGONALS: Array[Vector2i] = [
+	Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1),
+]
 
 @export var block_catalog: BlockCatalog
 @export var item_catalog: ItemCatalog
@@ -135,7 +138,7 @@ func preview_grade(cell: Vector2i, block: BlockData) -> PreviewGrade:
 	if _touches_natural(cell):
 		return PreviewGrade.STABLE
 	var best := 0.0
-	for dir in DIRS:
+	for dir in _dirs_from(cell, block):
 		var n: Vector2i = cell + dir
 		if _is_natural_anchor(n):
 			return PreviewGrade.STABLE
@@ -292,18 +295,20 @@ func _recalculate_region(rect: Rect2i, preview: bool) -> void:
 		var from_h := int(horiz.get(cell, 0))
 		var from_comp := int(_component.get(cell, 0))
 		var max_h := from_block.max_horizontal_support
-		for dir in DIRS:
+		for dir in _dirs_from(cell, from_block):
 			var next: Vector2i = cell + dir
 			if not _placed.has(next):
 				continue
 			var next_block := _block_at(next)
 			if next_block == null or not next_block.structural_enabled:
 				continue
-			var next_h := 0 if dir.x == 0 else from_h + 1
-			if dir.x != 0 and next_h > max_h:
+			var diagonal := dir.x != 0 and dir.y != 0
+			var stair_chain := diagonal and (StairSystem.is_stair(from_block) or StairSystem.is_stair(next_block))
+			var next_h := 0 if dir.x == 0 or stair_chain else from_h + 1
+			if dir.x != 0 and not stair_chain and next_h > max_h:
 				continue
 			var next_val := float(next_block.support_strength)
-			if dir.x == 0:
+			if dir.x == 0 or stair_chain:
 				next_val = minf(from_support, float(next_block.support_strength))
 			else:
 				next_val = minf(from_support - 1.0, float(next_block.support_strength))
@@ -345,7 +350,8 @@ func _grade_from_support(block: BlockData, support: float) -> PreviewGrade:
 
 
 func _touches_natural(cell: Vector2i) -> bool:
-	for dir in DIRS:
+	var block := _block_at(cell)
+	for dir in _dirs_from(cell, block):
 		if _is_natural_anchor(cell + dir):
 			return true
 	return false
@@ -359,10 +365,26 @@ func _is_natural_anchor(cell: Vector2i) -> bool:
 
 
 func _has_placed_neighbor(cell: Vector2i) -> bool:
+	var block := _block_at(cell)
+	for dir in _dirs_from(cell, block):
+		if _placed.has(cell + dir):
+			return true
 	for dir in DIRS:
 		if _placed.has(cell + dir):
 			return true
 	return false
+
+
+func _dirs_from(cell: Vector2i, block: BlockData) -> Array[Vector2i]:
+	var dirs: Array[Vector2i] = []
+	dirs.append_array(DIRS)
+	if StairSystem.is_stair(block):
+		dirs.append_array(DIAGONALS)
+		return dirs
+	for diag in DIAGONALS:
+		if StairSystem.is_stair(_block_at(cell + diag)):
+			dirs.append(diag)
+	return dirs
 
 
 func _block_at(cell: Vector2i) -> BlockData:
@@ -370,17 +392,31 @@ func _block_at(cell: Vector2i) -> BlockData:
 		return null
 	if _tilemap.get_cell_source_id(cell) == -1:
 		return null
-	return block_catalog.get_by_atlas(_tilemap.get_cell_atlas_coords(cell))
+	return block_catalog.get_cell_block(_tilemap, cell)
 
 
 func _role_name(block: BlockData) -> String:
-	if block.is_support_beam:
-		return "SUPPORT_BEAM"
-	if block.is_foundation_material:
-		return "FOUNDATION"
-	if block.structural_enabled:
-		return "STRUCTURAL_BLOCK"
-	return "NONE"
+	if block == null:
+		return "NONE"
+	match block.structural_role:
+		BlockData.StructuralRole.FOUNDATION:
+			return "FOUNDATION"
+		BlockData.StructuralRole.SUPPORT_BEAM:
+			return "SUPPORT_BEAM"
+		BlockData.StructuralRole.BEAM:
+			return "BEAM"
+		BlockData.StructuralRole.ROOF:
+			return "ROOF"
+		BlockData.StructuralRole.STRUCTURAL_BLOCK:
+			return "STRUCTURAL_BLOCK"
+		_:
+			if block.is_support_beam:
+				return "SUPPORT_BEAM"
+			if block.is_foundation_material:
+				return "FOUNDATION"
+			if block.structural_enabled:
+				return "STRUCTURAL_BLOCK"
+			return "NONE"
 
 
 func _collapse_cells(cells: Array[Vector2i]) -> void:

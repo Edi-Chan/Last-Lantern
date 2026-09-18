@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/items/ammunition/wood_arrow.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = 114
+display_name = "Holzpfeil"
+description = "Einfache Munition für Bögen. Billig herstellbar."
+icon = ExtResource("2_icon")
+max_stack = 999
+item_type = 5
+category = 5
+damage = 4

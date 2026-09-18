@@ -14,8 +14,10 @@ var range_bonus: float = 0.0
 
 static func from_item(item: ItemData) -> ItemInstanceData:
 	var inst := ItemInstanceData.new()
-	if item != null and item.tool_data != null and item.tool_data.base_max_durability > 0:
-		inst.durability = item.tool_data.base_max_durability
+	if item != null:
+		var max_dur := item.get_base_max_durability()
+		if max_dur > 0:
+			inst.durability = max_dur
 	return inst
 
 

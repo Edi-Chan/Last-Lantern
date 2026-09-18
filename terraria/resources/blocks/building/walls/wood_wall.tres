@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 33
+display_name = "Holzwand"
+atlas_coords = Vector2i(0, 2)
+atlas_source_id = 1
+autotile_count = 16
+hardness = 1.0
+drop_item_id = 64
+solid = true
+vision_occlusion = 0.75
+map_color = Color(0.52, 0.32, 0.16, 1)
+required_tool = 2
+required_tool_power = 1
+structural_enabled = true
+structural_role = 2
+structural_weight = 1
+support_strength = 5
+max_horizontal_support = 5
+is_foundation_material = false
+is_support_beam = false
+enemy_break_cost = 2
+structural_importance = 2
+building_material = 1
+building_part_type = 2
+flammable = true

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="BlockData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/block_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = 37
+display_name = "Holzboden"
+atlas_coords = Vector2i(0, 6)
+atlas_source_id = 1
+autotile_count = 16
+hardness = 0.9
+drop_item_id = 68
+solid = true
+vision_occlusion = 0.55
+map_color = Color(0.48, 0.3, 0.16, 1)
+required_tool = 2
+required_tool_power = 1
+structural_enabled = true
+structural_role = 2
+structural_weight = 1
+support_strength = 4
+max_horizontal_support = 6
+is_foundation_material = false
+is_support_beam = false
+enemy_break_cost = 2
+structural_importance = 1
+building_material = 1
+building_part_type = 4
+flammable = true

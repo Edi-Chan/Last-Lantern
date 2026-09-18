@@ -110,7 +110,7 @@ func _block_id_at(cell: Vector2i) -> int:
 		return 0
 	if _world == null or _world.block_catalog == null:
 		return 0
-	var block := _world.block_catalog.get_by_atlas(_tilemap.get_cell_atlas_coords(cell))
+	var block := _world.block_catalog.get_cell_block(_tilemap, cell)
 	return block.id if block != null else 0
 
 

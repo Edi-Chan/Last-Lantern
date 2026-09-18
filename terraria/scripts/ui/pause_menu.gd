@@ -6,6 +6,8 @@ extends Control
 @onready var _dimmer: ColorRect = $Dimmer
 @onready var _continue_button: Button = $CenterWrap/Panel/Margin/Layout/ContinueButton
 @onready var _options_button: Button = $CenterWrap/Panel/Margin/Layout/OptionsButton
+@onready var _save_button: Button = $CenterWrap/Panel/Margin/Layout/SaveButton
+@onready var _load_button: Button = $CenterWrap/Panel/Margin/Layout/LoadButton
 @onready var _quit_button: Button = $CenterWrap/Panel/Margin/Layout/QuitButton
 
 var _open: bool = false
@@ -20,12 +22,25 @@ func _ready() -> void:
 	z_index = 120
 	_continue_button.pressed.connect(resume_game)
 	_options_button.pressed.connect(_on_options_pressed)
+	if _save_button != null:
+		_save_button.pressed.connect(_on_save_pressed)
+	if _load_button != null:
+		_load_button.pressed.connect(_on_load_pressed)
 	_quit_button.pressed.connect(_on_quit_pressed)
 	_continue_button.focus_neighbor_top = _quit_button.get_path()
 	_continue_button.focus_neighbor_bottom = _options_button.get_path()
 	_options_button.focus_neighbor_top = _continue_button.get_path()
-	_options_button.focus_neighbor_bottom = _quit_button.get_path()
-	_quit_button.focus_neighbor_top = _options_button.get_path()
+	if _save_button != null:
+		_options_button.focus_neighbor_bottom = _save_button.get_path()
+		_save_button.focus_neighbor_top = _options_button.get_path()
+		_save_button.focus_neighbor_bottom = _load_button.get_path() if _load_button != null else _quit_button.get_path()
+	if _load_button != null:
+		_load_button.focus_neighbor_top = _save_button.get_path() if _save_button != null else _options_button.get_path()
+		_load_button.focus_neighbor_bottom = _quit_button.get_path()
+		_quit_button.focus_neighbor_top = _load_button.get_path()
+	else:
+		_options_button.focus_neighbor_bottom = _quit_button.get_path()
+		_quit_button.focus_neighbor_top = _options_button.get_path()
 	_quit_button.focus_neighbor_bottom = _continue_button.get_path()
 	UIManager.register_pause_menu(self)
 
@@ -88,6 +103,19 @@ func focus_default() -> void:
 
 func _on_options_pressed() -> void:
 	UIManager.open_options_from_pause()
+
+
+func _on_save_pressed() -> void:
+	var saver := get_tree().get_first_node_in_group("save_manager")
+	if saver != null and saver.has_method("save_game") and bool(saver.call("save_game")):
+		resume_game()
+
+
+func _on_load_pressed() -> void:
+	var saver := get_tree().get_first_node_in_group("save_manager")
+	if saver != null and saver.has_method("load_game"):
+		saver.call("load_game")
+		resume_game()
 
 
 func _on_quit_pressed() -> void:

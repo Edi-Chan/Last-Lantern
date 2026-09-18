@@ -195,7 +195,7 @@ func _try_place_generated(world: WorldGenerator, rng: RandomNumberGenerator, til
 		return false
 	if tile_x < world.world_edge_width + 1 or tile_x >= world.world_width - world.world_edge_width - 1:
 		return false
-	if absi(tile_x - world.spawn_tile.x) <= 1:
+	if world.is_spawn_pad_column(tile_x):
 		return false
 	var ground_y := world.get_surface_y(tile_x)
 	var ground_id := world.get_block_id(tile_x, ground_y)
@@ -315,7 +315,7 @@ func _ground_id(cell: Vector2i) -> int:
 
 
 func _cell_center(cell: Vector2i) -> Vector2:
-	if _tilemap == null:
+	if _tilemap == null or _tilemap.tile_set == null:
 		return Vector2(cell * TILE_SIZE) + Vector2(TILE_SIZE, TILE_SIZE) * 0.5
 	return _tilemap.to_global(_tilemap.map_to_local(cell))
 

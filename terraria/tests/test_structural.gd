@@ -61,7 +61,7 @@ func test_world_highest_block_unchanged() -> void:
 
 func test_dev_loadout_constants() -> void:
 	var src := FileAccess.get_file_as_string("res://scripts/inventory/inventory.gd")
-	assert_true(src.contains("DEV_WOOD_AMOUNT := 100"))
+	assert_true(src.contains("DEV_WOOD_AMOUNT := 120"))
 	assert_true(src.contains("DEV_SUPPORT_BEAM_ID := 60"))
 	assert_true(src.contains("DEV_SUPPORT_BEAM_AMOUNT := 20"))
 	assert_true(src.contains("_give_dev_structural_loadout_once"))

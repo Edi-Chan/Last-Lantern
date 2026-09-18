@@ -62,6 +62,8 @@ const REBINDABLE_ACTIONS: Array[StringName] = [
 	&"zoom_in",
 	&"zoom_out",
 	&"map_center",
+	&"rotate_place",
+	&"move_down",
 ]
 
 const ACTION_LABELS := {
@@ -91,6 +93,8 @@ const ACTION_LABELS := {
 	&"zoom_in": "Zoom In",
 	&"zoom_out": "Zoom Out",
 	&"map_center": "Karte zentrieren",
+	&"rotate_place": "Bauteil drehen",
+	&"move_down": "Runter / Durchfallen",
 }
 
 var graphics: Dictionary = {}
@@ -105,6 +109,7 @@ var _display_confirm_left: float = 0.0
 var _display_confirm_active: bool = false
 var _paused_by_focus: bool = false
 var _menu_pause_active: bool = false
+var _stretch_refreshing: bool = false
 
 
 func _enter_tree() -> void:
@@ -112,7 +117,11 @@ func _enter_tree() -> void:
 	_factory_controls = _capture_input_map()
 	_reset_to_defaults()
 	_load_from_disk()
-	_apply_all(false)
+	# Fenster-Clientgroesse steht in _enter_tree oft noch nicht fest.
+	# Sofortiges win.size = 1920x1080 wird unter Windows still kleiner geklemmt,
+	# ohne size_changed - dann ist die Maus gegen die Stretch-Transform versetzt.
+	call_deferred("_apply_all")
+	call_deferred("_connect_window_signals")
 
 
 func _process(delta: float) -> void:
@@ -455,6 +464,7 @@ func _apply_graphics() -> void:
 	var mode := int(graphics.get("window_mode", WindowMode.WINDOWED))
 	var requested: Vector2i = graphics.get("resolution", Vector2i(1920, 1080))
 	var screen := DisplayServer.screen_get_size()
+	var usable := _screen_usable_size()
 	if screen.x <= 0 or screen.y <= 0:
 		screen = requested
 	DisplayServer.window_set_vsync_mode(
@@ -477,9 +487,52 @@ func _apply_graphics() -> void:
 		_:
 			win.mode = Window.MODE_WINDOWED
 			win.borderless = false
-			var windowed := _safe_resolution(requested, screen)
+			var windowed := Vector2i(mini(requested.x, usable.x), mini(requested.y, usable.y))
+			if windowed.x < 640 or windowed.y < 360:
+				windowed = _safe_resolution(requested, usable)
 			win.size = windowed
-			_center_window(win, windowed, screen)
+			_center_window(win, windowed)
+	call_deferred("_force_stretch_refresh")
+
+
+func _screen_usable_size() -> Vector2i:
+	var rect := DisplayServer.screen_get_usable_rect()
+	if rect.size.x > 0 and rect.size.y > 0:
+		return rect.size
+	return DisplayServer.screen_get_size()
+
+
+func _connect_window_signals() -> void:
+	var win := get_window()
+	if win == null:
+		return
+	if not win.size_changed.is_connected(_on_window_size_changed):
+		win.size_changed.connect(_on_window_size_changed)
+
+
+func _on_window_size_changed() -> void:
+	if _stretch_refreshing:
+		return
+	var win := get_window()
+	if win != null:
+		win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+
+
+## Baut die Canvas-Stretch-Transform neu, sobald die echte Clientgroesse feststeht.
+func _force_stretch_refresh() -> void:
+	if _stretch_refreshing:
+		return
+	var win := get_window()
+	if win == null:
+		return
+	_stretch_refreshing = true
+	var mode := win.content_scale_mode
+	if mode == Window.CONTENT_SCALE_MODE_DISABLED:
+		mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	win.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	win.content_scale_mode = mode
+	_stretch_refreshing = false
 
 
 func _safe_resolution(requested: Vector2i, screen: Vector2i) -> Vector2i:
@@ -496,11 +549,16 @@ func _safe_resolution(requested: Vector2i, screen: Vector2i) -> Vector2i:
 	return allowed[allowed.size() - 1]
 
 
-func _center_window(win: Window, size: Vector2i, screen: Vector2i) -> void:
-	var origin := DisplayServer.screen_get_position()
+func _center_window(win: Window, size: Vector2i, _screen: Vector2i = Vector2i.ZERO) -> void:
+	var usable := DisplayServer.screen_get_usable_rect()
+	var origin := usable.position
+	var area := usable.size
+	if area.x <= 0 or area.y <= 0:
+		origin = DisplayServer.screen_get_position()
+		area = DisplayServer.screen_get_size()
 	win.position = origin + Vector2i(
-		maxi(0, int((screen.x - size.x) * 0.5)),
-		maxi(0, int((screen.y - size.y) * 0.5))
+		maxi(0, int((area.x - size.x) * 0.5)),
+		maxi(0, int((area.y - size.y) * 0.5))
 	)
 
 

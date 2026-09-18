@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dyfkyrp0x4exb" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
+[ext_resource type="Texture2D" path="res://assets/items/weapons/spears/wood_spear.png" id="3_icon"]
+
+[sub_resource type="Resource" id="WeaponData_1"]
+script = ExtResource("2_weapon")
+tier = 1
+base_damage = 10
+attack_speed = 0.9
+base_range = 3.4
+knockback = 145.0
+base_max_durability = 80
+
+[resource]
+script = ExtResource("1_script")
+id = 107
+display_name = "Holzspeer"
+description = "Langer Stichangriff. Mehr Distanz als ein Schwert, etwas langsamer."
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 2
+category = 1
+weapon_kind = 2
+weapon_data = SubResource("WeaponData_1")
+held_rotation_degrees = 0.0
+damage = 10
+knockback = 145.0

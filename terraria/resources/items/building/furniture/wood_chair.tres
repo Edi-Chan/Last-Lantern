@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/building/furniture/wood_chair_icon.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = 87
+display_name = "Holzstuhl"
+description = "Möbel / Einrichtung."
+icon = ExtResource("2_icon")
+max_stack = 999
+item_type = 0
+category = 6
+equipment_slot = 0
+placeable_block_id = 53
+building_material = 1
+building_part_type = 17
+can_rotate = true
+held_scale = 1.0

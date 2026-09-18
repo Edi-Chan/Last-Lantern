@@ -1,9 +1,9 @@
 # Aktueller Katalog: Items, Erze, Blöcke
 
-Stand: 16.09.2026. Werte aus den Katalog-`.tres`-Dateien.
+Stand: 17.09.2026. Werte aus den Katalog-`.tres`-Dateien.
 
-- Items: `resources/items/item_catalog.tres` (57 Einträge)
-- Blöcke: `resources/blocks/block_catalog.tres` (28 Einträge)
+- Items: `resources/items/item_catalog.tres` (108 Einträge, davon 16 Waffen/Munition und 33 Bauteile)
+- Blöcke: `resources/blocks/block_catalog.tres` (63 Einträge, davon 33 neue Bauteile)
 - Erze: `resources/ores/ore_catalog.tres` (10 Einträge)
 - Pflanzen: `resources/plants/plant_catalog.tres` (10 Einträge)
 
@@ -138,6 +138,22 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 | 57 | Farn | PLANT | RESOURCE | 999 | -1 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/plants/fern.tres` |
 | 58 | Kleiner Busch | PLANT | RESOURCE | 999 | -1 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/plants/bush.tres` |
 | 59 | Trockengras | PLANT | RESOURCE | 999 | -1 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/plants/dry_grass.tres` |
+| 100 | Steinschwert | WEAPON | WEAPON | 1 | -1 | NONE | 12 | 0 | 100 | 0 | 1.1 | 2.5 | 0 | 0 | COMMON | `resources/items/weapons/swords/stone_sword.tres` |
+| 101 | Kupferschwert | WEAPON | WEAPON | 1 | -1 | NONE | 16 | 0 | 140 | 0 | 1.15 | 2.5 | 0 | 0 | UNCOMMON | `resources/items/weapons/swords/copper_sword.tres` |
+| 102 | Ferritschwert | WEAPON | WEAPON | 1 | -1 | NONE | 23 | 0 | 180 | 0 | 1.2 | 2.6 | 0 | 0 | UNCOMMON | `resources/items/weapons/swords/ferrite_sword.tres` |
+| 103 | Kobaltschwert | WEAPON | WEAPON | 1 | -1 | NONE | 34 | 0 | 240 | 0 | 1.25 | 2.7 | 0 | 0 | RARE | `resources/items/weapons/swords/cobalt_sword.tres` |
+| 104 | Cryonitschwert | WEAPON | WEAPON | 1 | -1 | NONE | 48 | 0 | 300 | 0 | 1.3 | 2.8 | 0 | 0 | RARE | `resources/items/weapons/swords/cryonite_sword.tres` |
+| 105 | Voidiumschwert | WEAPON | WEAPON | 1 | -1 | NONE | 68 | 0 | 360 | 0 | 1.35 | 3.0 | 0 | 0 | EPIC | `resources/items/weapons/swords/voidium_sword.tres` |
+| 106 | Astralithschwert | WEAPON | WEAPON | 1 | -1 | NONE | 85 | 0 | 420 | 0 | 1.4 | 3.0 | 0 | 0 | LEGENDARY | `resources/items/weapons/swords/astralith_sword.tres` |
+| 107 | Holzspeer | WEAPON | WEAPON | 1 | -1 | NONE | 10 | 0 | 80 | 0 | 0.9 | 3.4 | 0 | 0 | COMMON | `resources/items/weapons/spears/wood_spear.tres` |
+| 108 | Kupferspeer | WEAPON | WEAPON | 1 | -1 | NONE | 14 | 0 | 120 | 0 | 0.95 | 3.5 | 0 | 0 | UNCOMMON | `resources/items/weapons/spears/copper_spear.tres` |
+| 109 | Kobaltspeer | WEAPON | WEAPON | 1 | -1 | NONE | 28 | 0 | 200 | 0 | 1.05 | 3.8 | 0 | 0 | RARE | `resources/items/weapons/spears/cobalt_spear.tres` |
+| 110 | Voidiumspeer | WEAPON | WEAPON | 1 | -1 | NONE | 56 | 0 | 300 | 0 | 1.15 | 4.1 | 0 | 0 | EPIC | `resources/items/weapons/spears/voidium_spear.tres` |
+| 111 | Holzbogen | WEAPON | WEAPON | 1 | -1 | NONE | 8 | 0 | 80 | 0 | 0.7 | 54.0 | 0 | 0 | COMMON | `resources/items/weapons/bows/wood_bow.tres` |
+| 112 | Kobaltbogen | WEAPON | WEAPON | 1 | -1 | NONE | 22 | 0 | 180 | 0 | 0.8 | 66.0 | 0 | 0 | RARE | `resources/items/weapons/bows/cobalt_bow.tres` |
+| 113 | Astralithbogen | WEAPON | WEAPON | 1 | -1 | NONE | 48 | 0 | 280 | 0 | 0.9 | 78.0 | 0 | 0 | LEGENDARY | `resources/items/weapons/bows/astralith_bow.tres` |
+| 114 | Holzpfeil | MATERIAL | AMMUNITION | 999 | -1 | NONE | 4 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/ammunition/wood_arrow.tres` |
+| 115 | Alte Kampflaterne | WEAPON | WEAPON | 1 | -1 | NONE | 15 | 0 | 120 | 0 | 0.85 | 2.2 | 0 | 0 | UNCOMMON | `resources/items/weapons/lanterns/old_combat_lantern.tres` |
 
 ## Werkzeuge (Detail)
 
@@ -172,6 +188,32 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 | 4 | Test Helmet | HEAD | 1 | 1 |
 | 5 | Test Chestplate | CHEST | 2 | 1 |
 | 21 | Test Leggings | LEGS | 1 | 1 |
+
+## Waffen (Detail)
+
+Kategorie `WEAPON`, Farbe `#E53935`. `WeaponKind` liegt auf `ItemData`. Kampfwerte in `WeaponData`.
+Keine Barren: Metallwaffen nutzen vorhandene Erze, analog zu Spitzhacken.
+Kampflaterne (Item 115) ist getrennt von der Basis-Laterne / Last-Lantern-Kuppel.
+Bögen: Linksklick schießt sofort mit voller Reichweite und halbem Schaden. Rechtsklick hält und spannt, Loslassen schießt den Ladeschuss mit mehr Schaden. Beim Spannen wird die Pfeilflugbahn als Linie angezeigt. Platzieren ist mit ausgewähltem Bogen deaktiviert.
+
+| ID | Name | Kind | Tier | Schaden | Tempo /s | Range | Knockback | Haltbarkeit | Station | Datei |
+| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| 100 | Steinschwert | SWORD | 1 | 12 | 1.1 | 2.5 | 110 | 100 | Werkbank | `resources/items/weapons/swords/stone_sword.tres` |
+| 101 | Kupferschwert | SWORD | 2 | 16 | 1.15 | 2.5 | 118 | 140 | Amboss | `resources/items/weapons/swords/copper_sword.tres` |
+| 102 | Ferritschwert | SWORD | 4 | 23 | 1.2 | 2.6 | 128 | 180 | Amboss | `resources/items/weapons/swords/ferrite_sword.tres` |
+| 103 | Kobaltschwert | SWORD | 6 | 34 | 1.25 | 2.7 | 145 | 240 | Amboss | `resources/items/weapons/swords/cobalt_sword.tres` |
+| 104 | Cryonitschwert | SWORD | 8 | 48 | 1.3 | 2.8 | 158 | 300 | Amboss | `resources/items/weapons/swords/cryonite_sword.tres` |
+| 105 | Voidiumschwert | SWORD | 10 | 68 | 1.35 | 3.0 | 175 | 360 | Amboss | `resources/items/weapons/swords/voidium_sword.tres` |
+| 106 | Astralithschwert | SWORD | 11 | 85 | 1.4 | 3.0 | 190 | 420 | Amboss | `resources/items/weapons/swords/astralith_sword.tres` |
+| 107 | Holzspeer | SPEAR | 1 | 10 | 0.9 | 3.4 | 145 | 80 | Werkbank | `resources/items/weapons/spears/wood_spear.tres` |
+| 108 | Kupferspeer | SPEAR | 2 | 14 | 0.95 | 3.5 | 155 | 120 | Amboss | `resources/items/weapons/spears/copper_spear.tres` |
+| 109 | Kobaltspeer | SPEAR | 6 | 28 | 1.05 | 3.8 | 185 | 200 | Amboss | `resources/items/weapons/spears/cobalt_spear.tres` |
+| 110 | Voidiumspeer | SPEAR | 10 | 56 | 1.15 | 4.1 | 215 | 300 | Amboss | `resources/items/weapons/spears/voidium_spear.tres` |
+| 111 | Holzbogen | BOW | 1 | 8+4 Pfeil | 0.7 | 54.0 | 35 | 80 | Werkbank | `resources/items/weapons/bows/wood_bow.tres` |
+| 112 | Kobaltbogen | BOW | 6 | 22+4 Pfeil | 0.8 | 66.0 | 50 | 180 | Amboss | `resources/items/weapons/bows/cobalt_bow.tres` |
+| 113 | Astralithbogen | BOW | 11 | 48+4 Pfeil | 0.9 | 78.0 | 70 | 280 | Amboss | `resources/items/weapons/bows/astralith_bow.tres` |
+| 114 | Holzpfeil | AMMUNITION | — | 4 | — | — | — | — | Werkbank (8 Stück) | `resources/items/ammunition/wood_arrow.tres` |
+| 115 | Alte Kampflaterne | LANTERN | 1 | 15 (×1.5 Finsternis) | Cooldown 1.2 s | 2.2 | 70 | 120 | Werkbank | `resources/items/weapons/lanterns/old_combat_lantern.tres` |
 
 ## Bäume
 
@@ -208,3 +250,51 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 ## Nicht im Katalog (inaktiv)
 
 Alte Einzeldateien wie `pickaxe.tres`, `gold_ore.tres`, `iron_ore.tres`, `silver_ore.tres` können noch im Ordner liegen, stehen aber **nicht** in den Katalogen.
+
+## Gebäude-Baukasten (Stand 17.09.2026)
+
+Datengetrieben: `BuildingMaterial` (WOOD/STONE, vorbereitet BRICK/METAL) + `BuildingPartType`.
+Weltgen `HIGHEST_BLOCK_ID` bleibt 28. Wiederverwendet: Holzstütze (Block 29 / Item 60), Fackel (Item 30), Laterne (Item 31).
+
+Tiles (Atlas source 1, `assets/building/building_atlas.png`): Fundamente, Wände, Hintergrundwände, Böden, Dächer, Balken, Treppen (diagonale Varianten in Atlas-Zeile 12/13), Leiter, Plattformen, Fenster, Barrikade, Deko.
+Gemeinsame Treppenmechanik: `scripts/building_parts/stair_system.gd`. Holz- und Steintreppe bleiben dieselben Items (73/74). Orientierung und Verbindung entstehen automatisch.
+Entities (eigene Nodes): Türen, Tor, Kiste, Werkbank, Amboss, Schmelzofen, Wandfackel.
+
+| Block | Item | Name | Material | Typ | Tool |
+| ---: | ---: | --- | --- | --- | --- |
+| 31 | 62 | Holzfundament | WOOD | FOUNDATION | AXE |
+| 32 | 63 | Steinfundament | STONE | FOUNDATION | PICKAXE |
+| 33 | 64 | Holzwand | WOOD | WALL | AXE |
+| 34 | 65 | Steinwand | STONE | WALL | PICKAXE |
+| 35 | 66 | Holz-Hintergrundwand | WOOD | BACKGROUND_WALL | AXE |
+| 36 | 67 | Stein-Hintergrundwand | STONE | BACKGROUND_WALL | PICKAXE |
+| 37 | 68 | Holzboden | WOOD | FLOOR | AXE |
+| 38 | 69 | Steinboden | STONE | FLOOR | PICKAXE |
+| 39 | 70 | Holzdach | WOOD | ROOF | AXE |
+| 40 | 71 | Strohdach | WOOD+straw | ROOF | AXE |
+| 41 | 72 | Holzbalken | WOOD | BEAM | AXE |
+| 42 | 73 | Holztreppe | WOOD | STAIRS | AXE |
+| 43 | 74 | Steintreppe | STONE | STAIRS | PICKAXE |
+| 44 | 75 | Holzleiter | WOOD | LADDER | AXE |
+| 45 | 76 | Holzplattform | WOOD | PLATFORM | AXE |
+| 46 | 77 | Steinplattform | STONE | PLATFORM | PICKAXE |
+| 47 | 80 | Holzfenster | WOOD | WINDOW | AXE |
+| 48 | 81 | Glasfenster | STONE/Glas | WINDOW | PICKAXE |
+| 49 | 93 | Holzbarrikade | WOOD | DEFENSE | AXE |
+| 50 | 84 | Holzfass | WOOD | DECORATION | AXE |
+| 51 | 85 | Holzregal | WOOD | DECORATION | AXE |
+| 52 | 86 | Holztisch | WOOD | DECORATION | AXE |
+| 53 | 87 | Holzstuhl | WOOD | DECORATION | AXE |
+| 54 | 88 | Holzschild | WOOD | DECORATION | AXE |
+| 55 | 89 | Waffenhalter | WOOD | DECORATION | AXE |
+| 56 | 78 | Holztür | WOOD | DOOR | AXE |
+| 57 | 79 | Verstärkte Holztür | WOOD | DOOR | AXE |
+| 58 | 94 | Holztor | WOOD | DEFENSE | AXE |
+| 59 | 83 | Holzkiste | WOOD | STORAGE | AXE |
+| 60 | 90 | Werkbank | WOOD | CRAFTING_STATION | AXE |
+| 61 | 91 | Amboss | METAL | CRAFTING_STATION | PICKAXE |
+| 62 | 92 | Schmelzofen | STONE | CRAFTING_STATION | PICKAXE |
+| 63 | 82 | Wandfackel | WOOD | LIGHT | AXE |
+
+DEV_BUILDING_TEST_LOADOUT in `inventory.gd`, Sentinel Item 62, einmalig (Save-Flag + Tree-Meta).
+

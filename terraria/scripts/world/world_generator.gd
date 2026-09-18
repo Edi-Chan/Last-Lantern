@@ -90,7 +90,8 @@ const NEIGHBORS_8: Array[Vector2i] = [
 @export var hut_min_spacing: int = 70
 
 @export_group("Spawn und Rand")
-@export var spawn_clear_radius: int = 20
+## Breite der leeren Testflaeche links und rechts der Laterne, in Tiles.
+@export var spawn_clear_radius: int = 80
 @export var world_edge_width: int = 3
 @export var bedrock_rows: int = 5
 
@@ -146,6 +147,7 @@ func generate_world() -> void:
 	generate_rock_variation()
 	generate_world_bounds()
 	cleanup_surface()
+	_flatten_spawn_pad()
 	find_spawn_position()
 	_reserve_test_house()
 	generate_ores()
@@ -318,7 +320,7 @@ func generate_cave_entrances() -> void:
 	var made := 0
 	for i in count:
 		var x := rng.randi_range(world_edge_width + 5, world_width - world_edge_width - 5)
-		if absi(x - spawn_tile.x) < spawn_clear_radius:
+		if is_spawn_pad_column(x):
 			continue
 		# Der Schacht endet, sobald er die Noise-Hoehlenschicht erreicht.
 		var y := _surface[x]
@@ -409,7 +411,7 @@ func _find_ore_start_for(ore: OreData, rng: RandomNumberGenerator) -> Vector2i:
 	var attempts := 40 if ore.special_spawn else 16
 	for attempt in attempts:
 		var x := rng.randi_range(world_edge_width, world_width - world_edge_width - 1)
-		if absi(x - spawn_tile.x) < spawn_clear_radius:
+		if is_spawn_pad_column(x):
 			continue
 		var bounds := _ore_depth_bounds(x, ore)
 		if bounds.x >= bounds.y:
@@ -554,23 +556,43 @@ func _find_top_solid(x: int) -> int:
 
 # ----------------------------------------------------------------------- Spawn
 
+func lantern_column_x() -> int:
+	return world_width / 2
+
+
+func is_spawn_pad_column(tile_x: int) -> bool:
+	return absi(tile_x - lantern_column_x()) <= spawn_clear_radius
+
+
+func _flatten_spawn_pad() -> void:
+	var center := lantern_column_x()
+	var pad_y := base_surface_y
+	var dirt_depth := dirt_depth_min
+	var x0 := clampi(center - spawn_clear_radius, world_edge_width, world_width - world_edge_width - 1)
+	var x1 := clampi(center + spawn_clear_radius, world_edge_width, world_width - world_edge_width - 1)
+	for x in range(x0, x1 + 1):
+		_is_sand_column[x] = 0
+		for y in range(0, pad_y):
+			_set_tile(x, y, AIR)
+		_set_tile(x, pad_y, DIRT)
+		for y in range(pad_y + 1, world_height - bedrock_rows):
+			var id := _get_tile(x, y)
+			if id == AIR or id == GRASS or id == SAND:
+				_set_tile(x, y, DIRT if y <= pad_y + dirt_depth else STONE)
+			elif y > pad_y + dirt_depth:
+				break
+		_surface[x] = pad_y
+	stats["spawn_pad"] = {"center": center, "radius": spawn_clear_radius, "y": pad_y}
+
+
 func find_spawn_position() -> void:
-	var middle := world_width / 2
-	var found := -1
-	for offset in range(0, world_width / 2):
-		if _is_flat_grass(middle + offset, 8):
-			found = middle + offset
-			break
-		if _is_flat_grass(middle - offset, 8):
-			found = middle - offset
-			break
-	if found < 0:
-		found = middle
+	var center := lantern_column_x()
+	var found := clampi(center - 8, world_edge_width + 2, world_width - world_edge_width - 2)
 	spawn_tile = Vector2i(found, _surface[found] - 1)
-	# Fuesse stehen auf der Oberkante des Bodenblocks.
 	player_spawn_position = _ground_position(found)
 	stats["spawn_tile"] = spawn_tile
 	stats["spawn_position"] = player_spawn_position
+	stats["lantern_column"] = center
 
 
 func _is_flat_grass(x: int, radius: int) -> bool:
@@ -653,7 +675,7 @@ func generate_vegetation() -> void:
 func _plant_tree(rng: RandomNumberGenerator, x: int, species: TreeData, trees: TreeSystem) -> bool:
 	if species == null:
 		return false
-	if absi(x - spawn_tile.x) < spawn_clear_radius:
+	if is_spawn_pad_column(x):
 		return false
 	if _hut_blocked[x] != 0:
 		return false
@@ -675,7 +697,7 @@ func generate_huts() -> void:
 		attempts += 1
 		var width := rng.randi_range(7, 12)
 		var x := rng.randi_range(world_edge_width + 12, world_width - world_edge_width - width - 12)
-		if absi(x - spawn_tile.x) < spawn_clear_radius + width:
+		if is_spawn_pad_column(x) or is_spawn_pad_column(x + width - 1):
 			continue
 		var too_close := false
 		for other in placed:

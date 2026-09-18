@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dyfkyrp0x4exb" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
+[ext_resource type="Texture2D" path="res://assets/items/weapons/spears/cobalt_spear.png" id="3_icon"]
+
+[sub_resource type="Resource" id="WeaponData_1"]
+script = ExtResource("2_weapon")
+tier = 6
+base_damage = 28
+attack_speed = 1.05
+base_range = 3.8
+knockback = 185.0
+base_max_durability = 200
+
+[resource]
+script = ExtResource("1_script")
+id = 109
+display_name = "Kobaltspeer"
+description = "Langer Kobaltstich. Mehr Kontrolle als das Schwert, weniger DPS."
+rarity = 2
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 2
+category = 1
+weapon_kind = 2
+weapon_data = SubResource("WeaponData_1")
+held_rotation_degrees = 0.0
+damage = 28
+knockback = 185.0

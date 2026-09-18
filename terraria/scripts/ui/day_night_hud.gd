@@ -1,7 +1,7 @@
 class_name DayNightHud
 extends PanelContainer
 
-## Gehoert an: HUD/DayNightHud. Kompakte Tag-/Uhr-/Nebel-Anzeige, signalbasiert.
+## Gehoert an: HUD/DayNightHud. Kompakte Tag-/Uhr-/Finsternis-Anzeige, signalbasiert.
 
 @onready var _day_label: Label = $Rows/DayLabel
 @onready var _time_label: Label = $Rows/TimeLabel
@@ -52,10 +52,10 @@ func _refresh() -> void:
 	if _fog_label == null:
 		return
 	if _fog != null and _fog.state == FogEvent.State.FOG_ACTIVE:
-		_fog_label.text = "Nebel aktiv"
+		_fog_label.text = "Finsternis aktiv"
 		return
 	if _fog != null and _fog.state == FogEvent.State.WARNING:
-		_fog_label.text = "Nebel: HEUTE NACHT"
+		_fog_label.text = "Finsternis: HEUTE NACHT"
 		return
 	var settings := _day.settings
 	if settings == null:
@@ -64,7 +64,7 @@ func _refresh() -> void:
 	var done := _fog.fog_done_today() if _fog != null else false
 	var next_day := settings.next_fog_day(_day.current_day, done)
 	if next_day == _day.current_day:
-		_fog_label.text = "Nebel: HEUTE NACHT"
+		_fog_label.text = "Finsternis: HEUTE NACHT"
 	else:
 		var left := next_day - _day.current_day
-		_fog_label.text = "Nebel in %d T." % left
+		_fog_label.text = "Finsternis in %d T." % left

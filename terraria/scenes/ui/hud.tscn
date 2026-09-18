@@ -19,6 +19,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/lantern_upgrade_menu.tscn" id="17_lanternui"]
 [ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="18_llset"]
 [ext_resource type="StyleBox" path="res://resources/ui/menu_button_style.tres" id="19_btn"]
+[ext_resource type="PackedScene" path="res://scenes/ui/top_timeline.tscn" id="20_timeline"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_day"]
 content_margin_left = 4.0
@@ -38,7 +39,10 @@ script = ExtResource("8_hud")
 
 [node name="PlayerStatsPanel" parent="." unique_id=20132823 instance=ExtResource("1_8qguk")]
 
+[node name="TopTimeline" parent="." instance=ExtResource("20_timeline")]
+
 [node name="DayNightHud" type="PanelContainer" parent="."]
+visible = false
 offset_left = 12.0
 offset_top = 68.0
 offset_right = 166.0
@@ -70,15 +74,15 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.78, 0.82, 0.88, 0.9)
 theme_override_font_sizes/font_size = 9
-text = "Nebel in 6 T."
+text = "Finsternis in 6 T."
 
 [node name="FogDebug" type="VBoxContainer" parent="."]
 process_mode = 3
-z_index = 200
+z_index = 0
 offset_left = 12.0
 offset_top = 124.0
 offset_right = 188.0
-offset_bottom = 220.0
+offset_bottom = 292.0
 mouse_filter = 0
 theme_override_constants/separation = 4
 script = ExtResource("15_fogdbg")
@@ -104,7 +108,7 @@ mouse_filter = 0
 action_mode = 0
 theme_override_font_sizes/font_size = 10
 theme_override_styles/normal = ExtResource("19_btn")
-text = "Nebel beenden"
+text = "Finsternis beenden"
 
 [node name="LightningButton" type="Button" parent="FogDebug"]
 process_mode = 3
@@ -116,6 +120,28 @@ action_mode = 0
 theme_override_font_sizes/font_size = 10
 theme_override_styles/normal = ExtResource("19_btn")
 text = "TEST: BLITZ"
+
+[node name="SpawnNormalZombie" type="Button" parent="FogDebug"]
+process_mode = 3
+custom_minimum_size = Vector2(176, 24)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 0
+action_mode = 0
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("19_btn")
+text = "Spawn Zombie"
+
+[node name="SpawnDarkZombie" type="Button" parent="FogDebug"]
+process_mode = 3
+custom_minimum_size = Vector2(176, 24)
+layout_mode = 2
+focus_mode = 0
+mouse_filter = 0
+action_mode = 0
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("19_btn")
+text = "Spawn Finsternis-Zombie"
 
 [node name="FogHud" type="Control" parent="."]
 layout_mode = 3
@@ -141,22 +167,22 @@ color = Color(0.45, 0.05, 0.08, 0)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 28.0
-offset_bottom = 52.0
+offset_top = 90.0
+offset_bottom = 114.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.78, 0.38, 1)
 theme_override_colors/font_outline_color = Color(0.05, 0.02, 0, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 16
-text = "⚠ DER NEBEL KOMMT ..."
+text = "⚠ DIE FINSTERNIS KOMMT ..."
 horizontal_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="FogHud"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 52.0
-offset_bottom = 70.0
+offset_top = 114.0
+offset_bottom = 132.0
 mouse_filter = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
 theme_override_constants/outline_size = 3

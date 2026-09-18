@@ -3,6 +3,7 @@ class_name LastLanternSettings
 extends Resource
 
 ## Zentrale Last-Lantern-Werte. Keine Magic Numbers in den Gameplay-Scripts.
+## HUD-Phasen und 7-Tage-Fenster liegen hier, nicht in der Timeline-UI.
 
 @export_group("Zeit")
 @export var tile_size: int = 16
@@ -14,7 +15,20 @@ extends Resource
 ## Nacht endet hier (0.25 = 06:00). 00:00 bleibt Nacht.
 @export var night_end_time: float = 0.25
 
-@export_group("Nebel")
+@export_group("Tagesphasen HUD")
+## 11:00. FRUEH endet hier, MITTAG beginnt.
+@export var phase_noon_start: float = 0.458333
+## 17:00. MITTAG endet hier, ABEND beginnt. NACHT nutzt night_start_time.
+@export var phase_evening_start: float = 0.708333
+
+enum DayPhase {
+	MORNING,
+	NOON,
+	EVENING,
+	NIGHT,
+}
+
+@export_group("Finsternis")
 @export var fog_interval_days: int = 7
 @export var fog_start_time: float = 0.75
 @export var warning_duration: float = 8.0
@@ -79,6 +93,30 @@ func next_fog_day(current_day: int, fog_done_today: bool) -> int:
 	if is_fog_day(current_day) and fog_done_today:
 		return current_day + fog_interval_days
 	return int((current_day - 1) / fog_interval_days + 1) * fog_interval_days
+
+
+func cycle_start_day(day: int) -> int:
+	var interval := maxi(fog_interval_days, 1)
+	return int((maxi(day, 1) - 1) / interval) * interval + 1
+
+
+func cycle_fog_day(day: int) -> int:
+	return cycle_start_day(day) + maxi(fog_interval_days, 1) - 1
+
+
+func days_until_fog(day: int, fog_done_today: bool) -> int:
+	return next_fog_day(day, fog_done_today) - maxi(day, 1)
+
+
+func day_phase_at(time_of_day: float) -> DayPhase:
+	var t := clampf(time_of_day, 0.0, 0.999)
+	if t >= night_start_time or t < night_end_time:
+		return DayPhase.NIGHT
+	if t >= phase_evening_start:
+		return DayPhase.EVENING
+	if t >= phase_noon_start:
+		return DayPhase.NOON
+	return DayPhase.MORNING
 
 
 func get_level_data(level: int) -> LanternLevelData:

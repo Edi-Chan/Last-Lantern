@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RecipeCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/crafting/recipe_catalog.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/items/item_catalog.tres" id="2_items"]
+[ext_resource type="Resource" path="res://resources/blocks/block_catalog.tres" id="3_blocks"]
+
+[resource]
+script = ExtResource("1_script")
+item_catalog = ExtResource("2_items")
+block_catalog = ExtResource("3_blocks")

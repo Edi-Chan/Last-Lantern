@@ -60,7 +60,7 @@ func _process(delta: float) -> void:
 func _on_warning(_day: int, _cycle: int) -> void:
 	if _warning == null:
 		return
-	_warning.text = "⚠ DER NEBEL KOMMT ..."
+	_warning.text = "⚠ DIE FINSTERNIS KOMMT ..."
 	_warning.visible = true
 	var tween := create_tween()
 	_warning.modulate.a = 0.0
@@ -92,10 +92,10 @@ func _update_status() -> void:
 	if _fog.state == FogEvent.State.FOG_ACTIVE:
 		_status.visible = true
 		if _fog.player_is_safe:
-			_status.text = "☠ TÖDLICHER NEBEL   GESCHÜTZT"
+			_status.text = "☠ TÖDLICHE FINSTERNIS   GESCHÜTZT"
 			_status.modulate = Color(0.95, 0.86, 0.45, 1)
 		else:
-			_status.text = "☠ TÖDLICHER NEBEL   NEBELGEFAHR"
+			_status.text = "☠ TÖDLICHE FINSTERNIS   GEFAHR"
 			_status.modulate = Color(1.0, 0.38, 0.32, 1)
 		var left := _fog.fog_time_left()
 		if left > 0.0:
@@ -105,6 +105,6 @@ func _update_status() -> void:
 	elif _fog.state == FogEvent.State.WARNING:
 		_status.visible = true
 		_status.modulate = Color(1.0, 0.72, 0.35, 1)
-		_status.text = "⚠ DER NEBEL KOMMT ..."
+		_status.text = "⚠ DIE FINSTERNIS KOMMT ..."
 	else:
 		_status.visible = false

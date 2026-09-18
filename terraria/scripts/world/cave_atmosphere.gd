@@ -44,7 +44,7 @@ func _target_from_player() -> Vector3:
 	if _player == null or _world == null:
 		return Vector3(1.0, 0.0, 0.0)
 	var tilemap := get_tree().get_first_node_in_group("terrain") as TileMapLayer
-	if tilemap == null:
+	if tilemap == null or tilemap.tile_set == null:
 		return Vector3(1.0, 0.0, 0.0)
 	var tile := tilemap.local_to_map(tilemap.to_local(_player.global_position))
 	var depth := tile.y - _world.get_surface_y(tile.x)

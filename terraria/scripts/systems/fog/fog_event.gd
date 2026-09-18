@@ -1,7 +1,7 @@
 class_name FogEvent
 extends Node
 
-## Gehoert an: Main/FogEvent. 7-Tage-Nebel, Schaden nur ausserhalb aktiver SafeZones.
+## Gehoert an: Main/FogEvent. 7-Tage-Finsternis, Schaden nur ausserhalb aktiver SafeZones.
 
 signal fog_warning_started(day: int, cycle: int)
 signal fog_started(day: int, cycle: int)
@@ -164,6 +164,10 @@ func _play_warning_hook() -> void:
 
 func _tick_damage(delta: float) -> void:
 	if state != State.FOG_ACTIVE:
+		_unsafe_time = 0.0
+		return
+	var buildings := get_tree().get_first_node_in_group("building_manager")
+	if buildings != null and buildings.has_method("is_player_inside") and bool(buildings.call("is_player_inside")):
 		_unsafe_time = 0.0
 		return
 	_refresh_player()

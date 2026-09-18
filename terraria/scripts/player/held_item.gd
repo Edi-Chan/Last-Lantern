@@ -29,7 +29,7 @@ func _on_selected_changed(_index: int) -> void:
 func _process(_delta: float) -> void:
 	if _sprite == null or not _sprite.visible:
 		return
-	if _is_use_animation_playing():
+	if _is_use_animation_playing() or _is_bow_drawing():
 		return
 	_apply_pose()
 
@@ -59,21 +59,32 @@ func refresh() -> void:
 	_sprite.scale = Vector2(held_scale, held_scale)
 	_base_rotation_deg = item.held_rotation_degrees
 	_sprite.rotation_degrees = _base_rotation_deg
-	_sprite.flip_h = item.held_flip_h
+	var flip_h := item.held_flip_h
+	if item.is_tool() or item.is_weapon():
+		flip_h = true
+	_sprite.flip_h = flip_h
 	_sprite.flip_v = item.held_flip_v
 	_base_offset = item.get_held_offset()
 	_base_pivot = item.get_held_pivot_offset()
+	if flip_h:
+		_base_offset.x = -_base_offset.x
+		_base_pivot.x = -_base_pivot.x
 	_sprite.position = _base_offset
 	_sprite.offset = _base_pivot
-	if not _is_use_animation_playing():
+	if not _is_use_animation_playing() and not _is_bow_drawing():
 		_apply_pose()
+
+
+func _is_bow_drawing() -> bool:
+	var interaction := get_node_or_null("../Interaction")
+	return interaction != null and interaction.has_method("is_drawing_bow") and bool(interaction.call("is_drawing_bow"))
 
 
 func _is_use_animation_playing() -> bool:
 	if _anim == null or not _anim.is_playing():
 		return false
 	var current := _anim.current_animation
-	return current == &"tool_swing" or current == &"block_place"
+	return current == &"tool_swing" or current == &"block_place" or current == &"sword_swing" or current == &"spear_thrust" or current == &"bow_shot" or current == &"lantern_burst"
 
 
 func _apply_pose() -> void:

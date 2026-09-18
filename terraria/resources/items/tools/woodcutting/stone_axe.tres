@@ -26,6 +26,5 @@ tool_kind = 2
 tool_data = SubResource("ToolData_1")
 plant_id = null
 held_rotation_degrees = 45.0
-held_flip_h = true
 damage = 10
 mining_speed = 0.9

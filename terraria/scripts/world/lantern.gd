@@ -77,8 +77,9 @@ func place_near_spawn() -> void:
 	var world := get_tree().get_first_node_in_group("world_generator") as WorldGenerator
 	if world == null or settings == null:
 		return
-	var offset := settings.lantern_spawn_offset_tiles
-	var tile_x := world.spawn_tile.x + offset
+	var tile_x := world.spawn_tile.x + settings.lantern_spawn_offset_tiles
+	if world.has_method("lantern_column_x"):
+		tile_x = int(world.call("lantern_column_x"))
 	if world.has_method("ground_world_position"):
 		global_position = world.call("ground_world_position", tile_x)
 	else:

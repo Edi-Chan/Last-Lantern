@@ -14,4 +14,7 @@ item_type = 0
 category = 6
 equipment_slot = 0
 placeable_block_id = 29
+building_material = 1
+building_part_type = 6
+can_rotate = false
 held_scale = 1.0

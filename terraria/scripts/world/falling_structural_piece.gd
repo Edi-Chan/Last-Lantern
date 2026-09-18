@@ -43,7 +43,12 @@ func _process(delta: float) -> void:
 func _apply_texture(p_block: BlockData, tilemap: TileMapLayer) -> void:
 	if _sprite == null or p_block == null or tilemap == null or tilemap.tile_set == null:
 		return
-	var source := tilemap.tile_set.get_source(tilemap.tile_set.get_source_id(0)) as TileSetAtlasSource
+	var source_id := 0
+	if p_block.atlas_source_id > 0:
+		source_id = p_block.atlas_source_id
+	if not tilemap.tile_set.has_source(source_id):
+		source_id = tilemap.tile_set.get_source_id(0)
+	var source := tilemap.tile_set.get_source(source_id) as TileSetAtlasSource
 	if source == null:
 		return
 	var atlas := source.texture

@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" path="res://scenes/world/fog_visual.tscn" id="7_fogvis"]
 [ext_resource type="Resource" path="res://resources/systems/last_lantern_settings.tres" id="8_ll"]
 [ext_resource type="Script" uid="uid://bsgjrlch8e7av" path="res://scripts/systems/fog/lightning_fx.gd" id="9_bolt"]
+[ext_resource type="Script" path="res://scripts/buildings/scene_transition.gd" id="10_fade"]
+[ext_resource type="Script" path="res://scripts/save/save_manager.gd" id="11_save"]
 
 [node name="Main" type="Node" unique_id=562751607]
 script = ExtResource("4_main")
@@ -37,6 +39,16 @@ bus = &"SFX"
 bus = &"SFX"
 
 [node name="FogVisual" parent="." unique_id=976135601 instance=ExtResource("7_fogvis")]
+
+[node name="InteriorHost" type="Node2D" parent="."]
+position = Vector2(96, -4200)
+
+[node name="SceneTransition" type="CanvasLayer" parent="."]
+layer = 80
+script = ExtResource("10_fade")
+
+[node name="SaveManager" type="Node" parent="."]
+script = ExtResource("11_save")
 
 [node name="Player" parent="." unique_id=1843147423 instance=ExtResource("2_l3cfh")]
 

@@ -9,13 +9,15 @@ extends VBoxContainer
 @onready var _test_button: Button = $TestFogButton
 @onready var _end_button: Button = $EndFogButton
 @onready var _lightning_button: Button = get_node_or_null("LightningButton")
+@onready var _spawn_normal_button: Button = get_node_or_null("SpawnNormalZombie")
+@onready var _spawn_dark_button: Button = get_node_or_null("SpawnDarkZombie")
 
 
 func _ready() -> void:
 	add_to_group("fog_debug_ui")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	z_index = 200
+	z_index = 0
 	if settings == null:
 		settings = load("res://resources/systems/last_lantern_settings.tres") as LastLanternSettings
 	visible = settings == null or settings.show_debug_fog_button
@@ -23,6 +25,8 @@ func _ready() -> void:
 	_wire_button(_test_button, _on_test_pressed)
 	_wire_button(_end_button, _on_end_pressed)
 	_wire_button(_lightning_button, _on_lightning_pressed)
+	_wire_button(_spawn_normal_button, _on_spawn_normal)
+	_wire_button(_spawn_dark_button, _on_spawn_dark)
 
 
 func _process(_delta: float) -> void:
@@ -87,3 +91,31 @@ func _on_lightning_pressed() -> void:
 	var fog := get_tree().get_first_node_in_group("fog_event") as FogEvent
 	if fog != null:
 		fog.debug_strike_lightning()
+
+
+func _on_spawn_normal() -> void:
+	_unpause_for_debug()
+	_spawn_zombie(false)
+
+
+func _on_spawn_dark() -> void:
+	_unpause_for_debug()
+	_spawn_zombie(true)
+
+
+func _spawn_zombie(darkness: bool) -> void:
+	var spawner := get_tree().get_first_node_in_group("enemy_spawner") as EnemySpawner
+	if spawner != null:
+		spawner.debug_spawn_zombie(darkness)
+		return
+	var scene := load("res://scenes/enemies/zombie.tscn") as PackedScene
+	var player := get_tree().get_first_node_in_group("player") as Player
+	if scene == null or player == null:
+		return
+	var zombie := scene.instantiate() as Zombie
+	if zombie == null:
+		return
+	zombie.start_in_darkness = darkness
+	zombie.lock_form = true
+	player.get_parent().add_child(zombie)
+	zombie.global_position = player.global_position + Vector2(player.facing_sign * 80.0, 0.0)

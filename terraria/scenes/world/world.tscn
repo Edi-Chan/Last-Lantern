@@ -5,6 +5,9 @@
 [ext_resource type="Resource" path="res://resources/blocks/block_catalog.tres" id="2_catalog"]
 [ext_resource type="Resource" path="res://resources/ores/ore_catalog.tres" id="2_orecat"]
 [ext_resource type="PackedScene" uid="uid://b6elyf6jgq50" path="res://scenes/test/combat_dummy.tscn" id="2_sl2e5"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/zombie.tscn" id="28_zombie"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_spawner.gd" id="29_spawner"]
+[ext_resource type="Resource" path="res://resources/enemies/zombie_data.tres" id="30_zdata"]
 [ext_resource type="Texture2D" uid="uid://3maxqyvcolv2" path="res://assets/world/background/small_cloud.png" id="3_cloud_s"]
 [ext_resource type="Texture2D" uid="uid://qdqkcucx1qsa" path="res://assets/world/background/medium_cloud.png" id="4_cloud_m"]
 [ext_resource type="Texture2D" uid="uid://bkbh5y2dmr5cx" path="res://assets/world/background/large_cloud.png" id="5_cloud_l"]
@@ -27,6 +30,9 @@
 [ext_resource type="Texture2D" path="res://assets/world/background/cloud_wispy.png" id="22_wispy"]
 [ext_resource type="Texture2D" path="res://assets/world/background/cloud_puff.png" id="23_puff"]
 [ext_resource type="Script" path="res://scripts/world/structural_manager.gd" id="24_struct"]
+[ext_resource type="Script" path="res://scripts/buildings/building_manager.gd" id="25_build"]
+[ext_resource type="Resource" path="res://resources/buildings/forge_blueprint.tres" id="26_forge_bp"]
+[ext_resource type="Script" path="res://scripts/building_parts/building_part_system.gd" id="27_parts"]
 
 [node name="World" type="Node2D" unique_id=762429514]
 script = ExtResource("1_worldgen")
@@ -146,6 +152,11 @@ z_index = -9
 
 [node name="Terrain" type="Node2D" parent="." unique_id=1595946301]
 
+[node name="BackgroundTiles" type="TileMapLayer" parent="Terrain" groups=["building_background"]]
+z_index = -1
+tile_set = ExtResource("1_dphjl")
+collision_enabled = false
+
 [node name="TileMapLayer" type="TileMapLayer" parent="Terrain" unique_id=374040131 groups=["terrain"]]
 tile_set = ExtResource("1_dphjl")
 
@@ -186,7 +197,23 @@ block_catalog = ExtResource("2_catalog")
 item_catalog = ExtResource("11_items")
 item_drop_scene = ExtResource("12_drop")
 
+[node name="BuildingManager" type="Node2D" parent="." groups=["building_manager"]]
+script = ExtResource("25_build")
+block_catalog = ExtResource("2_catalog")
+item_catalog = ExtResource("11_items")
+default_blueprint = ExtResource("26_forge_bp")
+
+[node name="BuildingPartSystem" type="Node2D" parent="." groups=["building_part_system"]]
+script = ExtResource("27_parts")
+block_catalog = ExtResource("2_catalog")
+item_catalog = ExtResource("11_items")
+
 [node name="Enemies" type="Node2D" parent="." unique_id=368881272]
+
+[node name="EnemySpawner" type="Node2D" parent="Enemies" groups=["enemy_spawner"]]
+script = ExtResource("29_spawner")
+zombie_scene = ExtResource("28_zombie")
+data = ExtResource("30_zdata")
 
 [node name="CombatDummy" parent="Enemies" unique_id=1473583841 instance=ExtResource("2_sl2e5")]
 position = Vector2(176, 128)

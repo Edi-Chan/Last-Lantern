@@ -21,6 +21,10 @@
 [ext_resource type="Texture2D" path="res://assets/ui/slot_boots.png" id="19_boots"]
 [ext_resource type="Texture2D" path="res://assets/ui/slot_acc.png" id="20_acc"]
 [ext_resource type="Script" path="res://scripts/ui/inspect_card.gd" id="21_inspect"]
+[ext_resource type="Script" path="res://scripts/ui/crafting_page.gd" id="22_craft"]
+[ext_resource type="Script" path="res://scripts/ui/quests_page.gd" id="23_quests"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_main_tab.tres" id="24_mtab"]
+[ext_resource type="StyleBox" path="res://resources/ui/inv_main_tab_active.tres" id="25_mtab_on"]
 
 [node name="InventoryScreen" type="Control"]
 layout_mode = 3
@@ -70,26 +74,44 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="HeaderRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
-custom_minimum_size = Vector2(0, 28)
+custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BagIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
-custom_minimum_size = Vector2(20, 20)
+[node name="MainTabs" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
 layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-texture = ExtResource("13_bag")
-expand_mode = 1
-stretch_mode = 5
-texture_filter = 1
+theme_override_constants/separation = 4
 
-[node name="TitleLabel" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+[node name="TabInventory" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
+custom_minimum_size = Vector2(120, 28)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.97, 0.99, 1)
-theme_override_font_sizes/font_size = 22
-text = "INVENTAR"
-vertical_alignment = 1
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = ExtResource("25_mtab_on")
+theme_override_styles/hover = ExtResource("25_mtab_on")
+theme_override_styles/pressed = ExtResource("25_mtab_on")
+text = "Inventar"
+icon = ExtResource("13_bag")
+
+[node name="TabCrafting" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
+custom_minimum_size = Vector2(120, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = ExtResource("24_mtab")
+theme_override_styles/hover = ExtResource("25_mtab_on")
+theme_override_styles/pressed = ExtResource("25_mtab_on")
+text = "Crafting"
+
+[node name="TabQuests" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
+custom_minimum_size = Vector2(110, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = ExtResource("24_mtab")
+theme_override_styles/hover = ExtResource("25_mtab_on")
+theme_override_styles/pressed = ExtResource("25_mtab_on")
+text = "Quests"
 
 [node name="HeaderSpacer" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
 layout_mode = 2
@@ -594,6 +616,22 @@ text = "Hotbar"
 [node name="HotbarGrid" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
 layout_mode = 2
 theme_override_constants/separation = 12
+
+[node name="CraftingPage" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 0
+script = ExtResource("22_craft")
+
+[node name="QuestsPage" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = ExtResource("5_inner")
+script = ExtResource("23_quests")
 
 [node name="FooterRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
 custom_minimum_size = Vector2(0, 24)

@@ -226,7 +226,7 @@ func _update_biome(delta: float) -> void:
 	var target_forest := 0.0
 	if _player != null and _world != null:
 		var tilemap := get_tree().get_first_node_in_group("terrain") as TileMapLayer
-		if tilemap != null:
+		if tilemap != null and tilemap.tile_set != null:
 			var tile := tilemap.local_to_map(tilemap.to_local(_player.global_position))
 			var biome := _world.get_surface_biome(tile.x)
 			if biome == &"sand":

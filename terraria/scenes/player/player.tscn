@@ -19,6 +19,8 @@
 [ext_resource type="AudioStream" uid="uid://c8mw5audr20s4" path="res://audio/sfx/block_break.wav" id="17_ioxgp"]
 [ext_resource type="AudioStream" uid="uid://nbg8k4s0l5iv" path="res://audio/sfx/block_place.wav" id="18_cnsyf"]
 [ext_resource type="AudioStream" uid="uid://b4fovfxcl0h1o" path="res://audio/sfx/pickup.wav" id="19_007i1"]
+[ext_resource type="PackedScene" path="res://scenes/combat/projectile.tscn" id="20_proj"]
+[ext_resource type="Texture2D" path="res://assets/items/weapons/lanterns/combat_light.png" id="21_light"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_h17s1"]
 size = Vector2(20, 42)
@@ -80,16 +82,131 @@ tracks/1/keys = {
 "values": [-0.95, 1.05, 0.75, -0.12]
 }
 
+[sub_resource type="Animation" id="Animation_sword"]
+length = 0.32
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.18, 0.32),
+"transitions": PackedFloat32Array(0.4, 1.8, 1, 0.7),
+"update": 0,
+"values": [-1.05, 1.15, 0.82, -0.1]
+}
+
+[sub_resource type="Animation" id="Animation_spear"]
+length = 0.42
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.14, 0.22, 0.42),
+"transitions": PackedFloat32Array(1, 1.6, 1, 0.8),
+"update": 0,
+"values": [-0.08, -0.22, 0.04, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm:position")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.14, 0.22, 0.42),
+"transitions": PackedFloat32Array(1, 1.8, 1, 0.8),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(-8, 1), Vector2(16, 0), Vector2(0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_bow"]
+length = 0.45
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.24, 0.45),
+"transitions": PackedFloat32Array(1, 1.4, 1, 0.8),
+"update": 0,
+"values": [0.0, -0.45, 0.12, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm:position")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.24, 0.45),
+"transitions": PackedFloat32Array(1, 1.2, 1, 0.8),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(-4, 0), Vector2(3, 0), Vector2(0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_lantern"]
+length = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.14, 0.24, 0.5),
+"transitions": PackedFloat32Array(1, 1.3, 1, 0.8),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(1, -3), Vector2(6, 0), Vector2(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm/CombatLight:energy")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.14, 0.24, 0.5),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.0, 0.45, 1.4, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("ToolPivot/ToolArm/CombatLight:enabled")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.5),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [false, true, false]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_fm80t"]
 _data = {
 &"block_place": SubResource("Animation_gx1jg"),
+&"bow_shot": SubResource("Animation_bow"),
+&"lantern_burst": SubResource("Animation_lantern"),
+&"spear_thrust": SubResource("Animation_spear"),
+&"sword_swing": SubResource("Animation_sword"),
 &"tool_swing": SubResource("Animation_ugbui")
 }
 
 [node name="Player" type="CharacterBody2D" unique_id=1843147423]
 z_index = 20
 collision_layer = 2
+collision_mask = 33
 floor_snap_length = 8.0
+floor_max_angle = 0.872665
+floor_constant_speed = true
 script = ExtResource("1_player")
 
 [node name="Visuals" type="Node2D" parent="." unique_id=1701954950]
@@ -162,6 +279,14 @@ script = ExtResource("5_h17s1")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ToolPivot/ToolArm/ToolHitbox" unique_id=156744803]
 shape = SubResource("RectangleShape2D_je7p5")
 
+[node name="CombatLight" type="PointLight2D" parent="ToolPivot/ToolArm"]
+enabled = false
+color = Color(1, 0.72, 0.28, 1)
+energy = 0.0
+texture = ExtResource("21_light")
+texture_scale = 1.8
+shadow_enabled = false
+
 [node name="InteractionPoint" type="Marker2D" parent="." unique_id=1671906842]
 position = Vector2(9, -32)
 
@@ -177,6 +302,7 @@ script = ExtResource("6_h17s1")
 block_catalog = ExtResource("7_je7p5")
 item_catalog = ExtResource("5_5gtgg")
 item_drop_scene = ExtResource("8_fm80t")
+projectile_scene = ExtResource("20_proj")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=323382196]
 libraries/ = SubResource("AnimationLibrary_fm80t")

@@ -1,0 +1,308 @@
+[gd_resource type="SpriteFrames" load_steps=100 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/idle_0.png" id="1_idle0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/idle_1.png" id="2_idle1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/idle_2.png" id="3_idle2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/idle_3.png" id="4_idle3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/walk_0.png" id="5_walk0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/walk_1.png" id="6_walk1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/walk_2.png" id="7_walk2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/walk_3.png" id="8_walk3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/walk_4.png" id="9_walk4"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/walk_5.png" id="10_walk5"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/attack_0.png" id="11_attack0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/attack_1.png" id="12_attack1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/attack_2.png" id="13_attack2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/attack_3.png" id="14_attack3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/attack_4.png" id="15_attack4"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/attack_5.png" id="16_attack5"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/hurt_0.png" id="17_hurt0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/hurt_1.png" id="18_hurt1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/hurt_2.png" id="19_hurt2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_0.png" id="20_death0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_1.png" id="21_death1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_2.png" id="22_death2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_3.png" id="23_death3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_4.png" id="24_death4"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_5.png" id="25_death5"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_6.png" id="26_death6"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/death_7.png" id="27_death7"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/transform_0.png" id="28_transform0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/transform_1.png" id="29_transform1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/transform_2.png" id="30_transform2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/transform_3.png" id="31_transform3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/transform_4.png" id="32_transform4"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_idle_0.png" id="33_darkidle0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_idle_1.png" id="34_darkidle1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_idle_2.png" id="35_darkidle2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_idle_3.png" id="36_darkidle3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_walk_0.png" id="37_darkwalk0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_walk_1.png" id="38_darkwalk1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_walk_2.png" id="39_darkwalk2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_walk_3.png" id="40_darkwalk3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_walk_4.png" id="41_darkwalk4"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_walk_5.png" id="42_darkwalk5"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_attack_0.png" id="43_darkattack0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_attack_1.png" id="44_darkattack1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_attack_2.png" id="45_darkattack2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_attack_3.png" id="46_darkattack3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_attack_4.png" id="47_darkattack4"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_attack_5.png" id="48_darkattack5"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_hurt_0.png" id="49_darkhurt0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_hurt_1.png" id="50_darkhurt1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_hurt_2.png" id="51_darkhurt2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_0.png" id="52_darkdeath0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_1.png" id="53_darkdeath1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_2.png" id="54_darkdeath2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_3.png" id="55_darkdeath3"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_4.png" id="56_darkdeath4"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_5.png" id="57_darkdeath5"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_6.png" id="58_darkdeath6"]
+[ext_resource type="Texture2D" path="res://assets/enemies/zombie/dark_death_7.png" id="59_darkdeath7"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_idle0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_idle1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_idle2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_idle3")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 4.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_walk0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_walk1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_walk2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_walk3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_walk4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_walk5")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 5.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_attack0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_attack1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_attack2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_attack3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_attack4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_attack5")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 10.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("17_hurt0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_hurt1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_hurt2")
+}],
+"loop": false,
+"name": &"hurt",
+"speed": 14.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("20_death0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_death1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_death2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_death3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_death4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_death5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_death6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("27_death7")
+}],
+"loop": false,
+"name": &"death",
+"speed": 8.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("28_transform0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_transform1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_transform2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_transform3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_transform4")
+}],
+"loop": false,
+"name": &"transform",
+"speed": 8.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("33_darkidle0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("34_darkidle1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("35_darkidle2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("36_darkidle3")
+}],
+"loop": true,
+"name": &"dark_idle",
+"speed": 5.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("37_darkwalk0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("38_darkwalk1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("39_darkwalk2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("40_darkwalk3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("41_darkwalk4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("42_darkwalk5")
+}],
+"loop": true,
+"name": &"dark_walk",
+"speed": 8.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("43_darkattack0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("44_darkattack1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("45_darkattack2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("46_darkattack3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("47_darkattack4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("48_darkattack5")
+}],
+"loop": false,
+"name": &"dark_attack",
+"speed": 13.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("49_darkhurt0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("50_darkhurt1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("51_darkhurt2")
+}],
+"loop": false,
+"name": &"dark_hurt",
+"speed": 14.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("52_darkdeath0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("53_darkdeath1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("54_darkdeath2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("55_darkdeath3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("56_darkdeath4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("57_darkdeath5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("58_darkdeath6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("59_darkdeath7")
+}],
+"loop": false,
+"name": &"dark_death",
+"speed": 8.0
+}
+]

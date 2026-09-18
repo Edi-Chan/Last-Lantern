@@ -13,6 +13,7 @@ enum ItemType {
 	MATERIAL,
 	SEED,
 	PLANT,
+	BLUEPRINT,
 }
 
 enum EquipmentSlot {
@@ -36,6 +37,15 @@ enum ToolKind {
 }
 ## SHOVEL kann spaeter an dieses Enum angehaengt werden. Dirt/Sand bleiben vorerst NONE.
 
+## Weitere Waffenarten (DAGGER, CROSSBOW, ...) koennen hier angehaengt werden.
+enum WeaponKind {
+	NONE,
+	SWORD,
+	SPEAR,
+	BOW,
+	LANTERN,
+}
+
 ## Visuelle Hauptkategorie. Genau eine Farbe je Item, zentral aufgeloest.
 enum ItemCategory {
 	UNASSIGNED,
@@ -55,6 +65,7 @@ enum ItemCategory {
 	MACHINE_TECH,
 	VALUABLE,
 	QUEST_KEY,
+	BLUEPRINT,
 }
 
 enum Rarity {
@@ -76,11 +87,20 @@ enum Rarity {
 @export var category: ItemCategory = ItemCategory.UNASSIGNED
 @export var equipment_slot: EquipmentSlot = EquipmentSlot.NONE
 @export var tool_kind: ToolKind = ToolKind.NONE
+@export var weapon_kind: WeaponKind = WeaponKind.NONE
 ## Optionale Werkzeug-Basiswerte. Leer = kein ToolData.
 @export var tool_data: ToolData
+## Optionale Waffen-Basiswerte. Leer = keine Waffe. Typ: WeaponData.
+@export var weapon_data: Resource
 @export var ore_data: OreData
 @export var ore_metal_category: OreData.OreMetalCategory = OreData.OreMetalCategory.NONE
 @export var placeable_block_id: int = -1
+@export var building_material: BlockData.BuildingMaterial = BlockData.BuildingMaterial.NONE
+@export var building_part_type: BlockData.BuildingPartType = BlockData.BuildingPartType.NONE
+@export var material_variant: StringName = &""
+@export var can_rotate: bool = false
+## Optionaler Gebaeude-Bauplan. Leer = normales Item.
+@export var blueprint: BuildingBlueprintResource
 ## Nur fuer Samen: welche Baumart spaeter / jetzt gepflanzt wird.
 @export var tree_type: StringName = &""
 ## Nur fuer Pflanzen: Verweis auf PlantData.plant_id.
@@ -90,7 +110,8 @@ enum Rarity {
 ## Zusatzdrehung nur fuer das Held-Item-Sprite, nicht fuer Pivot oder Hitbox.
 @export var held_rotation_degrees: float = 0.0
 ## Basis-Spiegelung der Held-Textur. Facing kommt vom ToolPivot (scale.x).
-## Weltansicht: facing_flip XOR held_flip_h, ohne zweite Facing-Spiegelung hier.
+## Werkzeuge und Waffen werden in der Hand zusaetzlich horizontal gespiegelt,
+## weil die Icons den Griff links haben. held_flip_h bleibt fuer Spezialfaelle.
 @export var held_flip_h: bool = false
 @export var held_flip_v: bool = false
 ## Optionale Held-Textur. Leer = Inventory-Icon.
@@ -117,6 +138,10 @@ func is_placeable() -> bool:
 	return placeable_block_id >= 0
 
 
+func is_building_blueprint() -> bool:
+	return item_type == ItemType.BLUEPRINT or blueprint != null
+
+
 func is_seed() -> bool:
 	return item_type == ItemType.SEED or tree_type != &""
 
@@ -125,7 +150,13 @@ func is_plant() -> bool:
 	return item_type == ItemType.PLANT or plant_id != &""
 
 
+func is_weapon() -> bool:
+	return item_type == ItemType.WEAPON or weapon_kind != WeaponKind.NONE
+
+
 func is_tool() -> bool:
+	if is_weapon():
+		return false
 	return item_type == ItemType.TOOL or get_tool_kind() != ToolKind.NONE or tool_data != null
 
 
@@ -161,9 +192,10 @@ func get_kind_display_name() -> String:
 	var tool_name := get_tool_kind_display_name(int(get_tool_kind()))
 	if not tool_name.is_empty():
 		return tool_name
+	var weapon_name := get_weapon_kind_display_name(int(weapon_kind))
+	if not weapon_name.is_empty():
+		return weapon_name
 	match item_type:
-		ItemType.WEAPON:
-			return "Schwert"
 		ItemType.ARMOR:
 			match equipment_slot:
 				EquipmentSlot.HEAD:
@@ -177,11 +209,14 @@ func get_kind_display_name() -> String:
 		ItemType.ACCESSORY:
 			return "Accessoire"
 		ItemType.BLOCK:
-			return "Block"
+			var part := BlockData.part_type_display_name(building_part_type)
+			return part if not part.is_empty() else "Block"
 		ItemType.SEED:
 			return "Samen"
 		ItemType.PLANT:
 			return "Pflanze"
+		ItemType.BLUEPRINT:
+			return "Bauplan"
 		ItemType.TOOL:
 			return "Werkzeug"
 		_:
@@ -217,6 +252,8 @@ func get_damage_max() -> int:
 
 
 func get_base_damage() -> int:
+	if weapon_data != null:
+		return int(weapon_data.get("base_damage"))
 	return tool_data.base_damage if tool_data != null else damage
 
 
@@ -225,21 +262,46 @@ func get_base_tool_power() -> int:
 
 
 func get_base_use_speed() -> float:
+	if weapon_data != null:
+		return float(weapon_data.get("attack_speed"))
 	if tool_data != null:
 		return tool_data.base_use_speed
 	return mining_speed if mining_speed > 0.0 else 1.0
 
 
 func get_base_max_durability() -> int:
+	if weapon_data != null:
+		return int(weapon_data.get("base_max_durability"))
 	return tool_data.base_max_durability if tool_data != null else 0
 
 
 func get_base_range() -> float:
+	if weapon_data != null:
+		return float(weapon_data.get("base_range"))
 	return tool_data.base_range if tool_data != null else 0.0
 
 
 func get_special() -> String:
+	var weapon_special := str(weapon_data.get("special")) if weapon_data != null else ""
+	if not weapon_special.is_empty():
+		return weapon_special
 	return tool_data.special if tool_data != null else ""
+
+
+func get_weapon_tier() -> int:
+	return int(weapon_data.get("tier")) if weapon_data != null else 0
+
+
+func get_weapon_knockback() -> float:
+	if weapon_data != null:
+		return float(weapon_data.get("knockback"))
+	return knockback
+
+
+func resolve_attack_cooldown() -> float:
+	if weapon_data != null and weapon_data.has_method("get_attack_cooldown"):
+		return float(weapon_data.call("get_attack_cooldown"))
+	return attack_cooldown if attack_cooldown > 0.0 else 0.35
 
 
 func get_tool_category() -> ToolData.ToolCategory:
@@ -285,9 +347,21 @@ func _default_held_pivot() -> Vector2:
 		ToolKind.NET:
 			return Vector2(1, -4)
 		_:
+			if is_weapon():
+				match weapon_kind:
+					WeaponKind.SWORD:
+						return Vector2(2, -5)
+					WeaponKind.SPEAR:
+						return Vector2(1, -2)
+					WeaponKind.BOW:
+						return Vector2(1, -3)
+					WeaponKind.LANTERN:
+						return Vector2(0, -3)
+					_:
+						return Vector2(0, -4)
 			if is_placeable():
 				return Vector2(0, 1)
-			if is_tool() or item_type == ItemType.WEAPON:
+			if is_tool():
 				return Vector2(0, -4)
 			return Vector2(0, 1)
 
@@ -310,6 +384,20 @@ static func get_tool_kind_display_name(kind: int) -> String:
 			return "Angel"
 		ToolKind.NET:
 			return "Kescher"
+		_:
+			return ""
+
+
+static func get_weapon_kind_display_name(kind: int) -> String:
+	match kind:
+		WeaponKind.SWORD:
+			return "Schwert"
+		WeaponKind.SPEAR:
+			return "Speer"
+		WeaponKind.BOW:
+			return "Bogen"
+		WeaponKind.LANTERN:
+			return "Kampflaterne"
 		_:
 			return ""
 
@@ -358,6 +446,8 @@ static func get_category_color(item_category: ItemCategory) -> Color:
 			return Color("#E6B422")
 		ItemCategory.QUEST_KEY:
 			return Color("#E8E8E8")
+		ItemCategory.BLUEPRINT:
+			return Color("#C4A35A")
 		_:
 			return Color(0, 0, 0, 0)
 
@@ -396,6 +486,8 @@ static func get_category_display_name(item_category: ItemCategory) -> String:
 			return "Wertgegenstände"
 		ItemCategory.QUEST_KEY:
 			return "Quest / Schlüsselitems"
+		ItemCategory.BLUEPRINT:
+			return "Baupläne / Gebäude"
 		_:
 			return ""
 

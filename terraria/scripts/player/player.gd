@@ -39,6 +39,7 @@ var _stamina_regen_left: float = 0.0
 ## Gesetzt, sobald die Ausdauer auf 0 faellt. Blockiert den Sprint, bis
 ## sprint_min_stamina wieder erreicht ist.
 var _sprint_exhausted: bool = false
+var _drop_through_left: float = 0.0
 ## Wird nur beim Aufstehversuch gebraucht, deshalb einmalig angelegt statt
 ## pro Frame neu erzeugt.
 var _headroom_shape := RectangleShape2D.new()
@@ -90,6 +91,11 @@ func _ready() -> void:
 	# schreibt und andere Instanzen mitzieht.
 	_collision.shape = _collision.shape.duplicate()
 	_apply_collider(false)
+	set_collision_mask_value(1, true)
+	set_collision_mask_value(6, true)
+	# 45°-Treppen sind bei Default 45° kein Floor (Winkel muss kleiner als max sein).
+	floor_max_angle = deg_to_rad(50.0)
+	floor_constant_speed = true
 	_headroom_query.collision_mask = WORLD_LAYER_MASK
 	_headroom_query.collide_with_bodies = true
 	_headroom_query.collide_with_areas = false
@@ -105,6 +111,7 @@ func _physics_process(delta: float) -> void:
 	_handle_inventory_toggle()
 	_update_crouch()
 	_update_sprint(delta)
+	_update_drop_through(delta)
 	_handle_gravity(delta)
 	if world_input_enabled:
 		_handle_jump()
@@ -124,7 +131,7 @@ func play_sfx(sound: StringName, volume_offset_db: float = 0.0) -> void:
 		_audio.play(sound, volume_offset_db)
 
 
-## Einstiegspunkt fuer Tool-Hitboxen, Nebel und spaetere Gegner.
+## Einstiegspunkt fuer Tool-Hitboxen, Finsternis und spaetere Gegner.
 func take_damage(amount: float, _source: Node = null, damage_type: StringName = &"") -> void:
 	if stats == null:
 		return
@@ -215,11 +222,23 @@ func _current_move_speed() -> float:
 
 
 func _handle_gravity(delta: float) -> void:
+	if _try_ladder(delta):
+		return
 	if not is_on_floor():
 		velocity.y = minf(velocity.y + gravity * delta, max_fall_speed)
 
 
 func _handle_jump() -> void:
+	if _drop_through_left > 0.0:
+		return
+	var wants_drop := Input.is_action_pressed("crouch")
+	if InputMap.has_action("move_down") and Input.is_action_pressed("move_down"):
+		wants_drop = true
+	if is_on_floor() and wants_drop and Input.is_action_just_pressed("jump"):
+		_drop_through_left = 0.28
+		set_collision_mask_value(6, false)
+		velocity.y = 60.0
+		return
 	if is_on_floor() and Input.is_action_just_pressed("jump"):
 		velocity.y = jump_velocity
 		play_sfx(&"Jump")
@@ -263,6 +282,9 @@ func _update_facing() -> void:
 func _is_aiming() -> bool:
 	if Input.is_action_pressed("use_item") or Input.is_action_pressed("interact_secondary"):
 		return true
+	var interaction := get_node_or_null("Interaction")
+	if interaction != null and interaction.has_method("is_drawing_bow") and bool(interaction.call("is_drawing_bow")):
+		return true
 	if InputMap.has_action("block_autolock") and Input.is_action_pressed("block_autolock"):
 		return true
 	if is_auto_tool_held():
@@ -277,17 +299,15 @@ func is_auto_tool_held() -> bool:
 
 
 func _is_swinging() -> bool:
-	return _anim != null and _anim.is_playing() and _anim.current_animation == &"tool_swing"
+	if _anim == null or not _anim.is_playing():
+		return false
+	var current := _anim.current_animation
+	return current == &"tool_swing" or current == &"sword_swing" or current == &"spear_thrust" or current == &"bow_shot" or current == &"lantern_burst"
 
 
-## Weltposition unter dem Systemcursor.
-## Eine Transformation: Viewport-Maus -> Canvas-Transform (Kamera, Zoom, Stretch).
-## Keine handgerollte Screen-Center-Formel und kein fester Pixel-Offset.
+## Weltposition unter dem Systemcursor, im selben Canvas wie der Spieler.
 func get_world_mouse_position() -> Vector2:
-	var vp := get_viewport()
-	if vp == null:
-		return Vector2.ZERO
-	return vp.get_canvas_transform().affine_inverse() * vp.get_mouse_position()
+	return get_global_mouse_position()
 
 
 func _mouse_facing() -> float:
@@ -335,10 +355,29 @@ func _update_footsteps(delta: float) -> void:
 	if _footstep_cooldown > 0.0:
 		return
 	play_sfx(&"Footstep", CROUCH_FOOTSTEP_VOLUME if is_crouching else 0.0)
-	# Gegen die Zielgeschwindigkeit gerechnet, nicht gegen velocity.x. Sonst
-	# setzt der erste Schritt beim Anlaufen - da ist velocity.x noch fast 0 -
-	# einen mehrere Sekunden langen Abstand und es bleibt still.
-	_footstep_cooldown = FOOTSTEP_INTERVAL * move_speed / _current_move_speed()
+
+
+func _update_drop_through(delta: float) -> void:
+	if _drop_through_left <= 0.0:
+		return
+	_drop_through_left = maxf(0.0, _drop_through_left - delta)
+	if _drop_through_left <= 0.0:
+		set_collision_mask_value(6, true)
+
+
+func _try_ladder(delta: float) -> bool:
+	var parts := get_tree().get_first_node_in_group(&"building_part_system") as BuildingPartSystem
+	if parts == null or not parts.is_climbable_at_world(global_position + Vector2(0, -16)):
+		return false
+	var climb := 0.0
+	if Input.is_action_pressed("jump"):
+		climb -= 1.0
+	if Input.is_action_pressed("crouch"):
+		climb += 1.0
+	if InputMap.has_action("move_down") and Input.is_action_pressed("move_down"):
+		climb += 1.0
+	velocity.y = climb * move_speed
+	return true
 
 
 func _armor_sprites() -> Array[AnimatedSprite2D]:

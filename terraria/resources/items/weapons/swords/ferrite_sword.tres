@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dyfkyrp0x4exb" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
+[ext_resource type="Texture2D" path="res://assets/items/weapons/swords/ferrite_sword.png" id="3_icon"]
+
+[sub_resource type="Resource" id="WeaponData_1"]
+script = ExtResource("2_weapon")
+tier = 4
+base_damage = 23
+attack_speed = 1.2
+base_range = 2.6
+knockback = 128.0
+base_max_durability = 180
+
+[resource]
+script = ExtResource("1_script")
+id = 102
+display_name = "Ferritschwert"
+description = "Mittleres Kampsschwert aus Ferrit. Spürbar stärkerer Schwung."
+rarity = 1
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 2
+category = 1
+weapon_kind = 1
+weapon_data = SubResource("WeaponData_1")
+held_rotation_degrees = 45.0
+damage = 23
+knockback = 128.0
