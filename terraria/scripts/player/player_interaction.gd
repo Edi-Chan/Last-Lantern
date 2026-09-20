@@ -54,6 +54,11 @@ const AUTOLOCK_SWITCH_HYSTERESIS := 8.0
 const MINE_SOUND_INTERVAL := 0.22
 const WEAK_FEEDBACK_INTERVAL := 0.55
 const MIN_MINING_TIME := 0.05
+const BARE_HAND_DAMAGE := 7
+const BARE_HAND_KNOCKBACK := 70.0
+const BARE_HAND_COOLDOWN := 0.42
+const BARE_HAND_RANGE := 1.8
+const BARE_HAND_MINE_SPEED := 0.5
 
 var _weak_flash_left: float = 0.0
 var _weak_message_cooldown: float = 0.0
@@ -196,7 +201,7 @@ func _is_pointer_over_blocking_ui() -> bool:
 	if get_viewport().gui_get_hovered_control() != null:
 		return true
 	var mouse := get_viewport().get_mouse_position()
-	var groups: Array[StringName] = [&"minimap_ui", &"inventory_ui", &"world_map_ui", &"hotbar_ui", &"pause_menu", &"options_menu", &"fog_debug_ui", &"lantern_ui"]
+	var groups: Array[StringName] = [&"minimap_ui", &"inventory_ui", &"world_map_ui", &"hotbar_ui", &"pause_menu", &"options_menu", &"lantern_ui", &"admin_menu"]
 	for group_name in groups:
 		var node := get_tree().get_first_node_in_group(group_name)
 		var control := node as Control
@@ -501,6 +506,9 @@ func _handle_tool_use(delta: float) -> void:
 		return
 	if not _item_can_swing(item):
 		return
+	if item == null:
+		_start_bare_hand_swing()
+		return
 	if item.is_weapon():
 		_start_weapon_attack(item)
 		return
@@ -519,7 +527,7 @@ func _handle_bow_use(item: ItemData) -> void:
 
 func _item_can_swing(item: ItemData) -> bool:
 	if item == null:
-		return false
+		return true
 	if item.is_weapon():
 		return true
 	return item.item_type == ItemData.ItemType.TOOL or item.tool_kind != ItemData.ToolKind.NONE
@@ -529,6 +537,18 @@ func _is_attack_anim_playing() -> bool:
 	if _anim == null or not _anim.is_playing():
 		return false
 	return ATTACK_ANIMS.has(_anim.current_animation)
+
+
+func _start_bare_hand_swing() -> void:
+	# Faustschlag ohne Inventar-Item.
+	if _hitbox != null and _hitbox.has_method("begin_attack"):
+		_hitbox.call("begin_attack", BARE_HAND_DAMAGE, BARE_HAND_KNOCKBACK, _player, null, &"tool_swing", 0.08, 0.18, int(ItemData.WeaponKind.NONE), BARE_HAND_RANGE)
+	elif _hitbox != null and _hitbox.has_method("begin_swing"):
+		_hitbox.call("begin_swing", BARE_HAND_DAMAGE, BARE_HAND_KNOCKBACK, _player)
+	_play_attack_anim(&"tool_swing")
+	if _player != null:
+		_player.play_weapon_swing(int(ItemData.WeaponKind.NONE))
+	_attack_cooldown_left = BARE_HAND_COOLDOWN / _attack_speed_scale()
 
 
 func _start_tool_swing(item: ItemData) -> void:
@@ -541,7 +561,8 @@ func _start_tool_swing(item: ItemData) -> void:
 		_hitbox.call("begin_swing", damage, kb, _player)
 	_play_attack_anim(&"tool_swing")
 	_player.play_weapon_swing(int(ItemData.WeaponKind.NONE))
-	_attack_cooldown_left = item.resolve_attack_cooldown() if item.has_method("resolve_attack_cooldown") else 0.35
+	var tool_cd := item.resolve_attack_cooldown() if item.has_method("resolve_attack_cooldown") else 0.35
+	_attack_cooldown_left = tool_cd / _attack_speed_scale()
 
 
 func _start_weapon_attack(item: ItemData) -> void:
@@ -568,7 +589,7 @@ func _start_melee_attack(item: ItemData, anim: StringName, hit_start: float, hit
 		_hitbox.call("begin_attack", damage, kb, _player, item.weapon_data, play_anim, hit_start, hit_end, int(item.weapon_kind), item_range)
 	_play_attack_anim(play_anim)
 	_player.play_weapon_swing(int(item.weapon_kind))
-	_attack_cooldown_left = item.resolve_attack_cooldown()
+	_attack_cooldown_left = item.resolve_attack_cooldown() / _attack_speed_scale()
 	_use_selected_durability()
 
 
@@ -617,7 +638,7 @@ func _fire_bow_quick(item: ItemData) -> void:
 	var cd := 0.28
 	if weapon != null and weapon.has_method("get_quick_shot_cooldown"):
 		cd = float(weapon.call("get_quick_shot_cooldown"))
-	_attack_cooldown_left = cd
+	_attack_cooldown_left = cd / _attack_speed_scale()
 
 
 func _tick_bow_draw(delta: float) -> void:
@@ -665,7 +686,7 @@ func _release_bow() -> void:
 	_play_attack_anim(anim)
 	_player.play_sfx(&"BowRelease")
 	_spawn_arrow(item, weapon, charge, false)
-	_attack_cooldown_left = item.resolve_attack_cooldown()
+	_attack_cooldown_left = item.resolve_attack_cooldown() / _attack_speed_scale()
 
 
 func _cancel_bow_draw() -> void:
@@ -872,7 +893,7 @@ func _start_lantern_attack(item: ItemData) -> void:
 	_flash_lantern_light()
 	_player.play_weapon_swing(int(ItemData.WeaponKind.LANTERN))
 	var cd := item.resolve_attack_cooldown()
-	_attack_cooldown_left = cd
+	_attack_cooldown_left = cd / _attack_speed_scale()
 	_lantern_cooldown_left = cd
 	_use_selected_durability()
 
@@ -1061,6 +1082,7 @@ func _handle_mining(delta: float, tile: Vector2i, block: BlockData, in_range: bo
 		var trunk_hardness := trees.get_trunk_hardness(tile)
 		if trunk_hardness > 0.0:
 			hardness = trunk_hardness
+	speed *= _gather_speed_for(tile, block)
 	var mining_time := maxf(hardness / maxf(speed, 0.01), MIN_MINING_TIME)
 	mining_progress += delta
 	_update_progress_bar(mining_progress / mining_time)
@@ -1080,9 +1102,28 @@ func _get_effective_tool_power(item: ItemData, inst: ItemInstanceData) -> int:
 	return inst.effective_tool_power(item)
 
 
+func _gather_speed_for(tile: Vector2i, block: BlockData) -> float:
+	if _player == null or _player.stats == null:
+		return 1.0
+	var trees := get_tree().get_first_node_in_group("tree_system") as TreeSystem
+	if trees != null and trees.is_tree_tile(tile):
+		return _player.stats.woodcutting_speed()
+	if block != null and block.get_required_tool() == int(ItemData.ToolKind.AXE):
+		return _player.stats.woodcutting_speed()
+	return _player.stats.mining_speed()
+
+
+func _attack_speed_scale() -> float:
+	if _player == null or _player.stats == null:
+		return 1.0
+	return maxf(_player.stats.attack_speed(), 0.05)
+
+
 func _mining_efficiency(item: ItemData, inst: ItemInstanceData, block: BlockData) -> float:
 	var speed := base_mining_speed
-	if item == null or block == null:
+	if item == null:
+		return speed * BARE_HAND_MINE_SPEED
+	if block == null:
 		return speed
 	var use_speed := inst.effective_use_speed(item) if inst != null else item.get_base_use_speed()
 	speed *= maxf(use_speed, 0.01)
@@ -1246,6 +1287,10 @@ func _handle_placement(tile: Vector2i, place_state: Dictionary) -> void:
 		if not parts.try_place(block, tile, _place_orientation, _player):
 			return
 	else:
+		var liquid := _liquid()
+		if liquid != null and block.solid and liquid.has_water(tile):
+			if not liquid.displace_for_placement(tile):
+				return
 		if block_catalog != null:
 			block_catalog.set_block_cell(_tile_map, tile, block)
 		else:
@@ -1317,6 +1362,7 @@ func _break_block(tile: Vector2i, block: BlockData) -> void:
 	var trees := get_tree().get_first_node_in_group("tree_system") as TreeSystem
 	var item: ItemData = _inventory.get_selected_item() if _inventory != null else null
 	if trees != null and trees.handle_break(tile, _player, item):
+		_note_block_mined()
 		_reset_mining()
 		_refresh_target_after_break()
 		return
@@ -1328,6 +1374,7 @@ func _break_block(tile: Vector2i, block: BlockData) -> void:
 			_notify_map_tile(tile)
 			_player.play_sfx(&"BlockBreak", 0.0, _audio_material(removed))
 			_spawn_drop(tile, removed)
+			_note_block_mined()
 			_reset_mining()
 			_refresh_target_after_break()
 			return
@@ -1339,6 +1386,7 @@ func _break_block(tile: Vector2i, block: BlockData) -> void:
 		veg.on_block_removed(tile)
 	_player.play_sfx(&"BlockBreak", 0.0, _audio_material(block))
 	_spawn_drop(tile, block)
+	_note_block_mined()
 	_reset_mining()
 	_refresh_target_after_break()
 
@@ -1546,11 +1594,18 @@ func _spawn_drop(tile: Vector2i, block: BlockData) -> void:
 		var seed_base := world.get_seed() if world != null else 0
 		rng.seed = hash("%d:%d:%d:%d" % [seed_base, tile.x, tile.y, block.id])
 		amount = block.ore_data.roll_drop_amount(rng)
+	if _player != null and _player.stats != null:
+		amount = maxi(1, int(round(float(amount) * _player.stats.harvest_amount())))
 	var drop := item_drop_scene.instantiate() as ItemDrop
 	var parent := _drops_parent if _drops_parent != null else _tile_map.get_parent()
 	parent.add_child(drop)
 	drop.global_position = _tile_map.to_global(_tile_map.map_to_local(tile))
 	drop.setup(block.drop_item_id, amount, item.icon)
+
+
+func _note_block_mined() -> void:
+	if _player != null and _player.stats != null:
+		_player.stats.note_block_mined()
 
 
 func _refresh_target_after_break() -> void:
@@ -1652,12 +1707,24 @@ func _notify_structure_placed(tile: Vector2i) -> void:
 	var mgr := _structural()
 	if mgr != null:
 		mgr.call("notify_block_placed", tile)
+	_notify_liquid_changed(tile)
 
 
 func _notify_structure_removed(tile: Vector2i, mined: bool) -> void:
 	var mgr := _structural()
 	if mgr != null:
 		mgr.call("notify_block_removed", tile, mined)
+	_notify_liquid_changed(tile)
+
+
+func _liquid() -> LiquidSystem:
+	return get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+
+
+func _notify_liquid_changed(tile: Vector2i) -> void:
+	var liquid := _liquid()
+	if liquid != null:
+		liquid.on_block_changed(tile)
 
 
 func get_targeting_debug() -> Dictionary:

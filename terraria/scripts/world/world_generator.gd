@@ -94,6 +94,11 @@ const NEIGHBORS_8: Array[Vector2i] = [
 @export var spawn_clear_radius: int = 80
 @export var world_edge_width: int = 3
 @export var bedrock_rows: int = 5
+## Kleines Schwimmbecken direkt neben dem Startpunkt (zum Testen).
+@export var spawn_test_pool_enabled: bool = true
+@export var spawn_test_pool_offset_x: int = 10
+@export var spawn_test_pool_width: int = 30
+@export var spawn_test_pool_depth: int = 5
 
 @export_group("Referenzen")
 @export var block_catalog: BlockCatalog
@@ -121,7 +126,9 @@ var _cave_threshold: float = 1.0
 
 func _ready() -> void:
 	add_to_group("world_generator")
+	_apply_pending_seed()
 	generate_world()
+	_remember_generated_seed()
 
 
 func generate_world() -> void:
@@ -156,9 +163,11 @@ func generate_world() -> void:
 	generate_trees()
 	_build_forest_mask()
 	generate_vegetation()
+	_generate_water()
 	_align_underground_backdrop()
 	_align_surface_background()
 	_commit_to_tilemap()
+	_finalize_water()
 	if debug_place_ore_row:
 		place_progression_test_row()
 	_place_combat_dummy()
@@ -213,6 +222,21 @@ func get_surface_biome(tile_x: int) -> StringName:
 
 func get_seed() -> int:
 	return _used_seed
+
+
+func _apply_pending_seed() -> void:
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow == null or not flow.has_method("resolve_world_seed"):
+		return
+	var pending := int(flow.call("resolve_world_seed"))
+	if pending != 0:
+		world_seed = pending
+
+
+func _remember_generated_seed() -> void:
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow != null and flow.has_method("remember_generated_seed"):
+		flow.call("remember_generated_seed", get_seed())
 
 
 func is_hut_column(tile_x: int) -> bool:
@@ -898,3 +922,65 @@ func _set_tile(x: int, y: int, block_id: int) -> void:
 	if x < 0 or x >= world_width or y < 0 or y >= world_height:
 		return
 	_tiles[y * world_width + x] = block_id
+
+
+func _get_liquid_system() -> LiquidSystem:
+	var liquid := get_node_or_null("Terrain/LiquidSystem") as LiquidSystem
+	if liquid == null:
+		liquid = get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+	return liquid
+
+
+func _generate_water() -> void:
+	var liquid := _get_liquid_system()
+	if liquid == null:
+		push_warning("WorldGenerator: LiquidSystem fehlt unter Terrain/LiquidSystem.")
+		return
+	liquid.bind_world_generator(self)
+	liquid.begin_batch_writes()
+	var water_stats := WaterGeneration.generate(self, liquid)
+	if spawn_test_pool_enabled:
+		water_stats["spawn_test_pool"] = _generate_spawn_test_pool(liquid)
+	liquid.end_batch_writes()
+	stats["water"] = water_stats
+
+
+func _finalize_water() -> void:
+	var liquid := _get_liquid_system()
+	if liquid == null:
+		return
+	liquid.finalize_generation()
+
+
+func _generate_spawn_test_pool(liquid: LiquidSystem) -> Dictionary:
+	var info := {"placed": 0, "origin_x": -1, "surface_y": -1}
+	if spawn_tile == Vector2i.ZERO or liquid == null:
+		return info
+	var origin_x := spawn_tile.x + spawn_test_pool_offset_x
+	var surface_y := _surface[origin_x]
+	var pool_width := maxi(spawn_test_pool_width, 4)
+	var pool_depth := maxi(spawn_test_pool_depth, 3)
+	if origin_x + pool_width >= world_width - world_edge_width:
+		origin_x = spawn_tile.x - spawn_test_pool_offset_x - pool_width
+	if origin_x < world_edge_width + 1:
+		return info
+	var left := origin_x
+	var right := origin_x + pool_width - 1
+	for x in range(left + 1, right):
+		if x < world_edge_width or x >= world_width - world_edge_width:
+			continue
+		_set_tile(x, surface_y, AIR)
+		for y in range(surface_y + 1, surface_y + pool_depth):
+			if _get_tile(x, y) != BEDROCK:
+				_set_tile(x, y, AIR)
+	for x in range(left + 1, right):
+		for y in range(surface_y + 1, surface_y + pool_depth):
+			var cell := Vector2i(x, y)
+			if _get_tile(cell.x, cell.y) != AIR:
+				continue
+			liquid.set_cell(cell, LiquidTypes.Type.WATER, LiquidTypes.FULL, false)
+			info["placed"] += 1
+	info["origin_x"] = origin_x
+	info["surface_y"] = surface_y
+	info["size"] = Vector2i(pool_width - 2, pool_depth - 1)
+	return info

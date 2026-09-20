@@ -45,8 +45,7 @@ enum DayPhase {
 @export var lantern_levels: Array[LanternLevelData] = []
 
 @export_group("Debug")
-@export var show_debug_fog_button: bool = true
-## Debug-Button springt auf diese Uhrzeit (22.0 = 22:00).
+## Admin-Sprung zur Finsternis-Nacht (22.0 = 22:00).
 @export var debug_jump_hour: float = 22.0
 ## Optionaler Gameplay-Radius als duenne Linie. Standard aus, damit der heilige Rand allein steht.
 @export var show_debug_safe_radius: bool = false

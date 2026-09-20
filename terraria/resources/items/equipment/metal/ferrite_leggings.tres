@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/items/equipment/ferrite_leggings.png" id="2_icon"]
+[ext_resource type="SpriteFrames" path="res://resources/player/armor_legs_frames.tres" id="3_frames"]
+
+[resource]
+script = ExtResource("1_script")
+id = 141
+display_name = "Ferritbeinschutz"
+description = "Metallruestung aus Ferritbarren. Verteidigung 4."
+icon = ExtResource("2_icon")
+max_stack = 1
+item_type = 3
+category = 2
+equipment_slot = 3
+defense = 4
+armor_sprite_frames = ExtResource("3_frames")

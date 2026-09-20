@@ -13,6 +13,7 @@ const CATEGORY_ORDER: Array[int] = [
 	RecipeData.UiCategory.CONSUMABLE,
 	RecipeData.UiCategory.LIGHT,
 	RecipeData.UiCategory.DECORATION,
+	RecipeData.UiCategory.SMELTING,
 	RecipeData.UiCategory.OTHER,
 ]
 const GRID_COLUMNS := 8
@@ -25,7 +26,19 @@ var _inventory: Inventory
 var _item_catalog: ItemCatalog
 var _context: int = RecipeData.Station.NONE
 var _category: int = RecipeData.UiCategory.ALL
-var _weapon_kind_filter: int = -1
+var _subfilter: int = -1
+const SUB_ALL := -1
+const SUB_BOOTS := 1001
+const SUB_BAR := 1002
+const SUB_HEALING := 1003
+const SUB_FOOD := 1004
+const SUB_BUFF := 1005
+const SUB_TORCH := 1006
+const SUB_LANTERN := 1007
+const SUB_EXPLORE := 1008
+const SUB_FARM := 1009
+const SUB_GATHER := 1010
+const SUB_FORGE := 1011
 var _search: String = ""
 var _craftable_only: bool = false
 var _selected: RecipeData
@@ -54,6 +67,7 @@ var _qty_label: Label
 var _minus_btn: Button
 var _plus_btn: Button
 var _craft_btn: Button
+var _craft_reason: Label
 var _craft_fill: ColorRect
 var _craft_tween: Tween
 var _craft_feedback_playing: bool = false
@@ -66,6 +80,8 @@ func bind(crafting: CraftingSystem, inventory: Inventory, items: ItemCatalog) ->
 	_crafting = crafting
 	_inventory = inventory
 	_item_catalog = items
+	if _item_catalog == null and _crafting != null:
+		_item_catalog = _crafting.item_catalog
 	if _built:
 		refresh()
 
@@ -75,13 +91,39 @@ func set_station_context(context: int) -> void:
 	_selected = null
 	_quantity = 1
 	_category = RecipeData.UiCategory.ALL
-	_weapon_kind_filter = -1
+	_subfilter = SUB_ALL
 	if _built:
 		refresh()
 
 
 func get_station_context() -> int:
 	return _context
+
+
+func select_output_item(item_id: int) -> void:
+	if item_id < 0 or _crafting == null:
+		return
+	var found: RecipeData = null
+	for recipe in _crafting.get_recipes():
+		if recipe != null and recipe.output_item_id == item_id:
+			found = recipe
+			break
+	if found == null:
+		return
+	_selected = found
+	_quantity = 1
+	_category = RecipeData.UiCategory.ALL
+	_subfilter = SUB_ALL
+	_search = ""
+	_craftable_only = false
+	if _search_edit != null:
+		_search_edit.text = ""
+	if _craftable_check != null:
+		_craftable_check.set_pressed_no_signal(false)
+	if _built:
+		_rebuild_categories()
+		_rebuild_recipes()
+		_update_details()
 
 
 func refresh() -> void:
@@ -112,7 +154,7 @@ func _build_layout() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 6)
 	add_child(root)
 	root.add_child(_build_category_panel())
 	root.add_child(_build_recipe_panel())
@@ -125,17 +167,17 @@ func _panel_style() -> StyleBoxFlat:
 	style.bg_color = Color(0.07, 0.09, 0.125, 1)
 	style.border_color = Color(0.28, 0.36, 0.45, 1)
 	style.set_border_width_all(1)
-	style.content_margin_left = 8
-	style.content_margin_top = 8
-	style.content_margin_right = 8
-	style.content_margin_bottom = 8
+	style.content_margin_left = 5
+	style.content_margin_top = 5
+	style.content_margin_right = 5
+	style.content_margin_bottom = 5
 	style.anti_aliasing = false
 	return style
 
 
 func _build_category_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(141, 0)
+	panel.custom_minimum_size = Vector2(118, 0)
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	var scroll := ScrollContainer.new()
@@ -144,39 +186,42 @@ func _build_category_panel() -> Control:
 	panel.add_child(scroll)
 	_category_box = VBoxContainer.new()
 	_category_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_category_box.add_theme_constant_override("separation", 3)
+	_category_box.add_theme_constant_override("separation", 2)
 	scroll.add_child(_category_box)
 	return panel
 
 
 func _build_recipe_panel() -> Control:
 	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(320, 0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_stretch_ratio = 1.2
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 5)
 	panel.add_child(box)
 	_context_label = Label.new()
 	_context_label.visible = false
-	_context_label.add_theme_font_size_override("font_size", 12)
+	_context_label.add_theme_font_size_override("font_size", 10)
 	_context_label.add_theme_color_override("font_color", Color(0.9, 0.78, 0.42, 1))
 	box.add_child(_context_label)
 	var toolbar := HBoxContainer.new()
-	toolbar.add_theme_constant_override("separation", 8)
+	toolbar.add_theme_constant_override("separation", 6)
 	box.add_child(toolbar)
 	_search_edit = LineEdit.new()
 	_search_edit.placeholder_text = "Suchen..."
-	_search_edit.custom_minimum_size = Vector2(144, 19)
+	_search_edit.custom_minimum_size = Vector2(72, 18)
 	_search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_search_edit.add_theme_font_size_override("font_size", 11)
+	_search_edit.add_theme_font_size_override("font_size", 10)
 	if ResourceLoader.exists("res://assets/ui/search_icon.png"):
 		_search_edit.right_icon = load("res://assets/ui/search_icon.png") as Texture2D
 	_search_edit.text_changed.connect(_on_search_changed)
 	toolbar.add_child(_search_edit)
 	_craftable_check = CheckBox.new()
 	_craftable_check.text = "Nur herstellbare anzeigen"
-	_craftable_check.add_theme_font_size_override("font_size", 11)
+	_craftable_check.add_theme_font_size_override("font_size", 9)
+	_craftable_check.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_craftable_check.toggled.connect(_on_craftable_toggled)
 	toolbar.add_child(_craftable_check)
 	var scroll := ScrollContainer.new()
@@ -185,7 +230,7 @@ func _build_recipe_panel() -> Control:
 	box.add_child(scroll)
 	_recipe_host = VBoxContainer.new()
 	_recipe_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_recipe_host.add_theme_constant_override("separation", 10)
+	_recipe_host.add_theme_constant_override("separation", 6)
 	scroll.add_child(_recipe_host)
 	_empty_label = Label.new()
 	_empty_label.text = "Keine Rezepte in dieser Ansicht."
@@ -198,87 +243,105 @@ func _build_recipe_panel() -> Control:
 
 func _build_detail_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(214, 0)
+	panel.custom_minimum_size = Vector2(208, 0)
+	panel.custom_maximum_size = Vector2(268, 0)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_stretch_ratio = 0.7
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.clip_contents = false
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 8)
+	outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_theme_constant_override("separation", 5)
 	panel.add_child(outer)
+	var icon_frame := PanelContainer.new()
+	icon_frame.custom_minimum_size = Vector2(72, 72)
+	icon_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon_frame.add_theme_stylebox_override("panel", preload("res://resources/ui/inv_slot.tres"))
+	outer.add_child(icon_frame)
+	_detail_icon = TextureRect.new()
+	_detail_icon.custom_minimum_size = Vector2(64, 64)
+	_detail_icon.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_detail_icon.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_detail_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_detail_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_detail_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_detail_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_frame.add_child(_detail_icon)
+	_detail_name = Label.new()
+	_detail_name.add_theme_font_size_override("font_size", 12)
+	_detail_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(_detail_name)
 	_detail_scroll = ScrollContainer.new()
+	_detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	outer.add_child(_detail_scroll)
 	var body := VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 6)
+	body.add_theme_constant_override("separation", 4)
 	_detail_scroll.add_child(body)
-	var icon_frame := PanelContainer.new()
-	icon_frame.custom_minimum_size = Vector2(58, 58)
-	icon_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	icon_frame.add_theme_stylebox_override("panel", preload("res://resources/ui/inv_slot.tres"))
-	body.add_child(icon_frame)
-	_detail_icon = TextureRect.new()
-	_detail_icon.custom_minimum_size = Vector2(60, 60)
-	_detail_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_detail_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_detail_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	icon_frame.add_child(_detail_icon)
-	_detail_name = Label.new()
-	_detail_name.add_theme_font_size_override("font_size", 14)
-	_detail_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_child(_detail_name)
 	_detail_sub = Label.new()
-	_detail_sub.add_theme_font_size_override("font_size", 11)
+	_detail_sub.add_theme_font_size_override("font_size", 10)
 	_detail_sub.add_theme_color_override("font_color", MUTED)
 	_detail_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_sub.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(_detail_sub)
 	_owned_label = Label.new()
-	_owned_label.add_theme_font_size_override("font_size", 11)
+	_owned_label.add_theme_font_size_override("font_size", 10)
 	_owned_label.add_theme_color_override("font_color", Color(0.78, 0.86, 0.72, 1))
 	body.add_child(_owned_label)
 	_detail_desc = Label.new()
-	_detail_desc.add_theme_font_size_override("font_size", 11)
+	_detail_desc.add_theme_font_size_override("font_size", 10)
 	_detail_desc.add_theme_color_override("font_color", Color(0.74, 0.78, 0.82, 1))
 	_detail_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_desc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(_detail_desc)
 	_stats_box = VBoxContainer.new()
 	_stats_box.add_theme_constant_override("separation", 2)
 	body.add_child(_stats_box)
-	var mats_title := _section_title("Benötigte Materialien")
-	body.add_child(mats_title)
+	outer.add_child(_section_title("Benötigte Materialien"))
 	_mats_box = VBoxContainer.new()
-	_mats_box.add_theme_constant_override("separation", 4)
-	body.add_child(_mats_box)
-	body.add_child(_section_title("Benötigte Werkstation"))
+	_mats_box.add_theme_constant_override("separation", 3)
+	outer.add_child(_mats_box)
+	outer.add_child(_section_title("Benötigte Werkstation"))
 	_station_name = Label.new()
-	_station_name.add_theme_font_size_override("font_size", 12)
-	body.add_child(_station_name)
+	_station_name.add_theme_font_size_override("font_size", 10)
+	_station_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_station_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(_station_name)
 	_station_state = Label.new()
-	_station_state.add_theme_font_size_override("font_size", 11)
-	body.add_child(_station_state)
+	_station_state.add_theme_font_size_override("font_size", 10)
+	_station_state.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_station_state.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(_station_state)
 	var qty_row := HBoxContainer.new()
 	qty_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	qty_row.add_theme_constant_override("separation", 8)
+	qty_row.add_theme_constant_override("separation", 6)
 	outer.add_child(qty_row)
 	_minus_btn = Button.new()
 	_minus_btn.text = "–"
-	_minus_btn.custom_minimum_size = Vector2(28, 24)
+	_minus_btn.custom_minimum_size = Vector2(22, 20)
 	_minus_btn.pressed.connect(func() -> void: _set_quantity(_quantity - 1))
 	qty_row.add_child(_minus_btn)
 	_qty_label = Label.new()
-	_qty_label.custom_minimum_size = Vector2(36, 0)
+	_qty_label.custom_minimum_size = Vector2(28, 0)
 	_qty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_qty_label.add_theme_font_size_override("font_size", 14)
+	_qty_label.add_theme_font_size_override("font_size", 12)
 	qty_row.add_child(_qty_label)
 	_plus_btn = Button.new()
 	_plus_btn.text = "+"
-	_plus_btn.custom_minimum_size = Vector2(28, 24)
+	_plus_btn.custom_minimum_size = Vector2(22, 20)
 	_plus_btn.pressed.connect(func() -> void: _set_quantity(_quantity + 1))
 	qty_row.add_child(_plus_btn)
 	_craft_btn = Button.new()
 	_craft_btn.text = "Herstellen"
-	_craft_btn.custom_minimum_size = Vector2(0, 26)
-	_craft_btn.clip_contents = true
+	_craft_btn.custom_minimum_size = Vector2(0, 22)
+	_craft_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_craft_btn.add_theme_font_size_override("font_size", 11)
+	_craft_btn.clip_contents = false
 	_craft_btn.add_theme_stylebox_override("normal", preload("res://resources/ui/inv_craft_button.tres"))
 	_craft_btn.add_theme_stylebox_override("hover", preload("res://resources/ui/inv_craft_button.tres"))
 	_craft_btn.add_theme_stylebox_override("pressed", preload("res://resources/ui/inv_craft_button.tres"))
@@ -294,10 +357,19 @@ func _build_detail_panel() -> Control:
 	_craft_fill.offset_bottom = -1.0
 	_craft_btn.add_child(_craft_fill)
 	outer.add_child(_craft_btn)
+	_craft_reason = Label.new()
+	_craft_reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_craft_reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_craft_reason.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_craft_reason.add_theme_font_size_override("font_size", 9)
+	_craft_reason.add_theme_color_override("font_color", BAD_COLOR)
+	outer.add_child(_craft_reason)
 	var hint := Label.new()
 	hint.text = "Halte Shift, um mehrere herzustellen."
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hint.add_theme_font_size_override("font_size", 9)
 	hint.add_theme_color_override("font_color", Color(0.58, 0.64, 0.7, 1))
 	outer.add_child(hint)
 	return panel
@@ -306,8 +378,10 @@ func _build_detail_panel() -> Control:
 func _section_title(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color(0.82, 0.86, 0.9, 1))
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
 
 
@@ -353,39 +427,52 @@ func _update_context_banner() -> void:
 	_context_label.text = "⚒ Werkstation: %s" % RecipeData.station_display_name(_context)
 
 
+func _all_recipes() -> Array[RecipeData]:
+	if _crafting == null:
+		return []
+	return _crafting.get_recipes()
+
+
 func _visible_recipes() -> Array[RecipeData]:
 	var result: Array[RecipeData] = []
-	if _crafting == null:
-		return result
-	for recipe in _crafting.recipes_for_context(_context):
+	for recipe in _all_recipes():
 		if recipe == null:
 			continue
-		if not recipe.unlocked and _craftable_only:
-			continue
 		var item := _item_of(recipe)
-		if item == null:
-			continue
 		if _category != RecipeData.UiCategory.ALL and int(recipe.ui_category) != _category:
 			continue
-		if _category == RecipeData.UiCategory.WEAPONS and _weapon_kind_filter >= 0:
-			if int(item.weapon_kind) != _weapon_kind_filter:
+		if _category != RecipeData.UiCategory.ALL and _subfilter != SUB_ALL:
+			if not _item_matches_subfilter(item, _category, _subfilter):
 				continue
 		if not _search.is_empty():
 			var q := _search.to_lower()
-			if item.display_name.to_lower().find(q) < 0 and str(item.id).find(q) < 0:
+			var name_ok := item != null and item.display_name.to_lower().find(q) >= 0
+			var id_ok := str(recipe.output_item_id).find(q) >= 0
+			if not name_ok and not id_ok:
 				continue
 		if _craftable_only and not _crafting.is_craftable(recipe, _inventory, _nearby):
 			continue
 		result.append(recipe)
+	result.sort_custom(_recipe_sort)
 	return result
+
+
+func _recipe_sort(a: RecipeData, b: RecipeData) -> bool:
+	var ka: Array = RecipeCatalog.recipe_sort_key(a, _item_of(a))
+	var kb: Array = RecipeCatalog.recipe_sort_key(b, _item_of(b))
+	var n := mini(ka.size(), kb.size())
+	for i in n:
+		if ka[i] == kb[i]:
+			continue
+		return ka[i] < kb[i]
+	return false
 
 
 func _categories_in_context() -> Array[int]:
 	var present: Dictionary = {}
-	if _crafting != null:
-		for recipe in _crafting.recipes_for_context(_context):
-			if recipe != null:
-				present[int(recipe.ui_category)] = true
+	for recipe in _all_recipes():
+		if recipe != null:
+			present[int(recipe.ui_category)] = true
 	var result: Array[int] = []
 	result.append(RecipeData.UiCategory.ALL)
 	for category in CATEGORY_ORDER:
@@ -399,8 +486,7 @@ func _categories_in_context() -> Array[int]:
 func _rebuild_categories() -> void:
 	if _category_box == null:
 		return
-	for child in _category_box.get_children():
-		child.queue_free()
+	_clear_children(_category_box)
 	_category_buttons.clear()
 	var available := _categories_in_context()
 	if not available.has(_category):
@@ -410,52 +496,230 @@ func _rebuild_categories() -> void:
 		button.text = RecipeData.ui_category_display_name(category)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.focus_mode = Control.FOCUS_NONE
-		button.custom_minimum_size = Vector2(0, 28)
+		button.custom_minimum_size = Vector2(0, 22)
+		button.add_theme_font_size_override("font_size", 10)
 		button.pressed.connect(_on_category_pressed.bind(category))
 		_apply_category_style(button, category == _category)
 		_category_box.add_child(button)
 		_category_buttons[category] = button
-	if _category == RecipeData.UiCategory.WEAPONS:
-		_add_weapon_kind_filters()
+	var subs := _subfilters_for(_category)
+	if not subs.is_empty():
+		_add_subfilters(subs)
 
 
 func _on_category_pressed(category: int) -> void:
+	if _category == category:
+		return
 	_category = category
-	if category != RecipeData.UiCategory.WEAPONS:
-		_weapon_kind_filter = -1
+	_subfilter = SUB_ALL
 	_rebuild_categories()
 	_rebuild_recipes()
+	_update_details()
 
 
-func _add_weapon_kind_filters() -> void:
+func _subfilters_for(category: int) -> Array:
+	match category:
+		RecipeData.UiCategory.WEAPONS:
+			return [
+				[SUB_ALL, "Alle"],
+				[int(ItemData.WeaponKind.SWORD), "Schwerter"],
+				[int(ItemData.WeaponKind.SPEAR), "Speere"],
+				[int(ItemData.WeaponKind.BOW), "Bögen"],
+				[int(ItemData.WeaponKind.LANTERN), "Kampflaternen"],
+			]
+		RecipeData.UiCategory.TOOLS:
+			return [
+				[SUB_ALL, "Alle"],
+				[int(ItemData.ToolKind.PICKAXE), "Spitzhacken"],
+				[int(ItemData.ToolKind.AXE), "Äxte"],
+				[int(ItemData.ToolKind.HAMMER), "Hämmer"],
+				[int(ItemData.ToolKind.WRENCH), "Schraubenschlüssel"],
+				[SUB_FARM, "Landwirtschaft"],
+				[SUB_GATHER, "Sammeln"],
+				[SUB_EXPLORE, "Erkundung"],
+			]
+		RecipeData.UiCategory.ARMOR:
+			return [
+				[SUB_ALL, "Alle"],
+				[int(ItemData.EquipmentSlot.HEAD), "Helme"],
+				[int(ItemData.EquipmentSlot.CHEST), "Brust"],
+				[int(ItemData.EquipmentSlot.LEGS), "Beine"],
+				[SUB_BOOTS, "Schuhe"],
+				[int(ItemData.EquipmentSlot.ACCESSORY), "Accessoires"],
+			]
+		RecipeData.UiCategory.BUILDING_PARTS:
+			return [
+				[SUB_ALL, "Alle"],
+				[int(BlockData.BuildingPartType.FOUNDATION), "Fundamente"],
+				[int(BlockData.BuildingPartType.WALL), "Wände"],
+				[int(BlockData.BuildingPartType.BACKGROUND_WALL), "Hintergrund"],
+				[int(BlockData.BuildingPartType.FLOOR), "Böden"],
+				[int(BlockData.BuildingPartType.ROOF), "Dächer"],
+				[int(BlockData.BuildingPartType.SUPPORT), "Stützen"],
+				[int(BlockData.BuildingPartType.PLATFORM), "Plattformen"],
+				[int(BlockData.BuildingPartType.STAIRS), "Treppen"],
+				[int(BlockData.BuildingPartType.LADDER), "Leitern"],
+				[int(BlockData.BuildingPartType.DOOR), "Türen"],
+				[int(BlockData.BuildingPartType.WINDOW), "Fenster"],
+				[int(BlockData.BuildingPartType.DEFENSE), "Verteidigung"],
+			]
+		RecipeData.UiCategory.DECORATION:
+			return [
+				[SUB_ALL, "Alle"],
+				[int(BlockData.BuildingPartType.STORAGE), "Lager"],
+				[int(BlockData.BuildingPartType.DECORATION), "Möbel"],
+				[SUB_BAR, "Theke"],
+			]
+		RecipeData.UiCategory.STATIONS:
+			return [
+				[SUB_ALL, "Alle"],
+				[int(RecipeData.Station.WORKBENCH), "Werkbank"],
+				[int(RecipeData.Station.ANVIL), "Amboss"],
+				[int(RecipeData.Station.FURNACE), "Schmelzofen"],
+				[SUB_FORGE, "Schmiede"],
+			]
+		RecipeData.UiCategory.CONSUMABLE:
+			return [
+				[SUB_ALL, "Alle"],
+				[int(ItemData.ItemCategory.AMMUNITION), "Munition"],
+				[SUB_HEALING, "Heilung"],
+				[SUB_FOOD, "Nahrung"],
+				[SUB_BUFF, "Buffs"],
+			]
+		RecipeData.UiCategory.LIGHT:
+			return [
+				[SUB_ALL, "Alle"],
+				[SUB_TORCH, "Fackeln"],
+				[SUB_LANTERN, "Laternen"],
+			]
+		RecipeData.UiCategory.SMELTING:
+			return [
+				[SUB_ALL, "Alle Barren"],
+				[123, "Kupfer"],
+				[124, "Zinn"],
+				[125, "Ferrit"],
+				[126, "Aurel"],
+				[127, "Kobalt"],
+				[128, "Veyrit"],
+				[129, "Cryonit"],
+				[130, "Ignitium"],
+				[131, "Voidium"],
+				[132, "Astralith"],
+			]
+		_:
+			return []
+
+
+func _subfilter_title(category: int) -> String:
+	match category:
+		RecipeData.UiCategory.WEAPONS:
+			return "Waffentyp"
+		RecipeData.UiCategory.TOOLS:
+			return "Werkzeugtyp"
+		RecipeData.UiCategory.ARMOR:
+			return "Rüstungsteil"
+		RecipeData.UiCategory.BUILDING_PARTS:
+			return "Bauteil"
+		RecipeData.UiCategory.DECORATION:
+			return "Möbel"
+		RecipeData.UiCategory.STATIONS:
+			return "Station"
+		RecipeData.UiCategory.CONSUMABLE:
+			return "Verbrauchbar"
+		RecipeData.UiCategory.LIGHT:
+			return "Licht"
+		RecipeData.UiCategory.SMELTING:
+			return "Schmelzen"
+		_:
+			return "Unterkategorie"
+
+
+func _item_matches_subfilter(item: ItemData, category: int, sub_id: int) -> bool:
+	if item == null:
+		return false
+	match category:
+		RecipeData.UiCategory.WEAPONS:
+			return int(item.weapon_kind) == sub_id
+		RecipeData.UiCategory.TOOLS:
+			if sub_id == SUB_FARM:
+				return item.tool_kind == ItemData.ToolKind.HOE or item.tool_kind == ItemData.ToolKind.SICKLE
+			if sub_id == SUB_GATHER:
+				return item.tool_kind == ItemData.ToolKind.FISHING_ROD or item.tool_kind == ItemData.ToolKind.NET
+			if sub_id == SUB_EXPLORE:
+				return item.get_tool_category() == ToolData.ToolCategory.EXPLORATION
+			return int(item.tool_kind) == sub_id
+		RecipeData.UiCategory.ARMOR:
+			if sub_id == SUB_BOOTS:
+				return false
+			return int(item.equipment_slot) == sub_id
+		RecipeData.UiCategory.BUILDING_PARTS:
+			return int(item.building_part_type) == sub_id
+		RecipeData.UiCategory.DECORATION:
+			if sub_id == SUB_BAR:
+				return false
+			return int(item.building_part_type) == sub_id
+		RecipeData.UiCategory.STATIONS:
+			if sub_id == SUB_FORGE:
+				return item.id == 61
+			if sub_id == RecipeData.Station.WORKBENCH:
+				return item.id == 90
+			if sub_id == RecipeData.Station.ANVIL:
+				return item.id == 91
+			if sub_id == RecipeData.Station.FURNACE:
+				return item.id == 92
+			return false
+		RecipeData.UiCategory.CONSUMABLE:
+			if sub_id == SUB_HEALING:
+				return int(item.category) == int(ItemData.ItemCategory.HEALING)
+			if sub_id == SUB_FOOD:
+				return int(item.category) == int(ItemData.ItemCategory.FOOD_DRINK)
+			if sub_id == SUB_BUFF:
+				return int(item.category) == int(ItemData.ItemCategory.BUFF)
+			return int(item.category) == sub_id
+		RecipeData.UiCategory.LIGHT:
+			var name_l := item.display_name.to_lower()
+			if sub_id == SUB_TORCH:
+				return name_l.find("fackel") >= 0 or name_l.find("torch") >= 0
+			if sub_id == SUB_LANTERN:
+				return name_l.find("laterne") >= 0 or name_l.find("lantern") >= 0
+			return false
+		RecipeData.UiCategory.SMELTING:
+			return item.id == sub_id
+		_:
+			return true
+
+
+func _add_subfilters(entries: Array) -> void:
 	var spacer := Label.new()
-	spacer.text = "Waffentyp"
-	spacer.add_theme_font_size_override("font_size", 11)
+	spacer.text = _subfilter_title(_category)
+	spacer.add_theme_font_size_override("font_size", 10)
 	spacer.add_theme_color_override("font_color", Color(0.78, 0.82, 0.86, 1))
 	_category_box.add_child(spacer)
-	var kinds := [
-		[-1, "Alle"],
-		[int(ItemData.WeaponKind.SWORD), "Schwerter"],
-		[int(ItemData.WeaponKind.SPEAR), "Speere"],
-		[int(ItemData.WeaponKind.BOW), "Bögen"],
-		[int(ItemData.WeaponKind.LANTERN), "Kampflaternen"],
-	]
-	for entry in kinds:
+	for entry in entries:
 		var kind := int(entry[0])
 		var button := Button.new()
 		button.text = "  %s" % str(entry[1])
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.focus_mode = Control.FOCUS_NONE
-		button.custom_minimum_size = Vector2(0, 24)
-		button.pressed.connect(_on_weapon_kind_pressed.bind(kind))
-		_apply_weapon_filter_style(button, kind == _weapon_kind_filter)
+		button.custom_minimum_size = Vector2(0, 20)
+		button.add_theme_font_size_override("font_size", 10)
+		button.pressed.connect(_on_subfilter_pressed.bind(kind))
+		_apply_weapon_filter_style(button, kind == _subfilter)
 		_category_box.add_child(button)
 
 
-func _on_weapon_kind_pressed(kind: int) -> void:
-	_weapon_kind_filter = kind
+func _on_subfilter_pressed(kind: int) -> void:
+	if _subfilter == kind:
+		return
+	_subfilter = kind
 	_rebuild_categories()
 	_rebuild_recipes()
+	_update_details()
+
+
+func _refresh_category_styles() -> void:
+	for category in _category_buttons.keys():
+		_apply_category_style(_category_buttons[category] as Button, int(category) == _category)
 
 
 func _apply_weapon_filter_style(button: Button, selected: bool) -> void:
@@ -486,10 +750,10 @@ func _apply_category_style(button: Button, selected: bool) -> void:
 		return
 	var style := StyleBoxFlat.new()
 	style.set_border_width_all(1)
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
 	style.anti_aliasing = false
 	if selected:
 		style.bg_color = Color(0.22, 0.18, 0.10, 1)
@@ -505,12 +769,17 @@ func _apply_category_style(button: Button, selected: bool) -> void:
 
 
 func _rebuild_recipes() -> void:
-	for child in _recipe_host.get_children():
-		child.queue_free()
+	if _recipe_host == null:
+		return
+	_clear_children(_recipe_host)
 	_tiles.clear()
 	var recipes := _visible_recipes()
 	_empty_label.visible = recipes.is_empty()
 	if recipes.is_empty():
+		if _craftable_only:
+			_empty_label.text = "Keine herstellbaren Rezepte. Deaktiviere „Nur herstellbare anzeigen“, um alle Rezepte zu sehen."
+		else:
+			_empty_label.text = "Keine Rezepte in dieser Ansicht."
 		if _selected != null:
 			_selected = null
 			_update_details()
@@ -537,13 +806,13 @@ func _rebuild_recipes() -> void:
 		if _category == RecipeData.UiCategory.ALL:
 			var header := Label.new()
 			header.text = RecipeData.ui_category_display_name(category)
-			header.add_theme_font_size_override("font_size", 13)
+			header.add_theme_font_size_override("font_size", 11)
 			header.add_theme_color_override("font_color", Color(0.86, 0.9, 0.94, 1))
 			_recipe_host.add_child(header)
 		var grid := GridContainer.new()
 		grid.columns = GRID_COLUMNS
-		grid.add_theme_constant_override("h_separation", 6)
-		grid.add_theme_constant_override("v_separation", 6)
+		grid.add_theme_constant_override("h_separation", 4)
+		grid.add_theme_constant_override("v_separation", 4)
 		_recipe_host.add_child(grid)
 		for recipe_variant in grouped[category]:
 			var recipe := recipe_variant as RecipeData
@@ -556,7 +825,13 @@ func _rebuild_recipes() -> void:
 
 func _configure_tile(tile: RecipeTile, recipe: RecipeData) -> void:
 	var item := _item_of(recipe)
-	var missing_mats := _inventory == null or not _inventory.can_consume_items(recipe.get_costs_for_quantity(1))
+	var missing_mats := _crafting == null or _inventory == null
+	if not missing_mats:
+		for ingredient in recipe.get_ingredients():
+			var need := int(ingredient["amount"])
+			if _crafting.count_ingredient(_inventory, int(ingredient["item_id"])) < need:
+				missing_mats = true
+				break
 	var missing_station := recipe.requires_station() and not _stations_ok(recipe)
 	var locked := not recipe.unlocked
 	var selected := _selected != null and recipe.recipe_id == _selected.recipe_id
@@ -617,9 +892,44 @@ func _position_tooltip() -> void:
 
 
 func _item_of(recipe: RecipeData) -> ItemData:
-	if recipe == null or _item_catalog == null:
+	if recipe == null:
 		return null
-	return _item_catalog.get_item(recipe.output_item_id)
+	return _catalog_item(recipe.output_item_id)
+
+
+func _catalog_item(item_id: int) -> ItemData:
+	if item_id < 0:
+		return null
+	if _item_catalog != null:
+		var from_ui := _item_catalog.get_item(item_id)
+		if from_ui != null:
+			return from_ui
+	if _crafting != null and _crafting.item_catalog != null:
+		return _crafting.item_catalog.get_item(item_id)
+	return null
+
+
+func _set_craft_reason(text: String) -> void:
+	if _craft_reason == null:
+		return
+	_craft_reason.text = text
+	_craft_reason.visible = not text.is_empty()
+
+
+func _craft_block_reason(result: int) -> String:
+	match result:
+		CraftingSystem.Result.NO_MATERIALS:
+			return "Material fehlt — Rezept bleibt sichtbar."
+		CraftingSystem.Result.NO_STATION:
+			return "Station nicht in Reichweite."
+		CraftingSystem.Result.NO_SPACE:
+			return "Kein Inventarplatz."
+		CraftingSystem.Result.LOCKED:
+			return "Rezept noch gesperrt."
+		CraftingSystem.Result.INVALID_AMOUNT:
+			return "Ungültige Menge."
+		_:
+			return "Kann gerade nicht hergestellt werden."
 
 
 func _stations_ok(recipe: RecipeData) -> bool:
@@ -640,11 +950,13 @@ func _set_quantity(value: int) -> void:
 
 
 func _update_details() -> void:
-	var item := _item_of(_selected)
-	if item == null:
+	if _detail_icon == null:
+		return
+	if _selected == null:
 		_detail_icon.texture = null
+		_detail_icon.visible = false
 		_detail_name.text = "Kein Rezept ausgewählt"
-		_detail_sub.text = ""
+		_detail_sub.text = "Wähle links ein Item, um das Rezept zu sehen."
 		if _owned_label != null:
 			_owned_label.text = ""
 		_detail_desc.text = ""
@@ -654,26 +966,45 @@ func _update_details() -> void:
 		_station_state.text = ""
 		_qty_label.text = "1"
 		_craft_btn.disabled = true
+		_set_craft_reason("")
 		if not _craft_feedback_playing:
 			_craft_btn.text = "Herstellen"
 		return
-	_detail_icon.texture = item.icon
-	_detail_name.text = item.display_name
-	_detail_sub.text = item.get_inspect_subtitle()
-	_detail_sub.add_theme_color_override("font_color", item.get_rarity_color())
-	_update_owned_label(item)
-	_detail_desc.text = item.description
-	_detail_desc.visible = not item.description.is_empty()
-	_fill_stats(item)
+	var item := _item_of(_selected)
+	if item != null:
+		_detail_icon.texture = item.icon if item.icon != null else item.get_held_texture()
+		_detail_icon.visible = _detail_icon.texture != null
+		_detail_name.text = item.display_name
+		_detail_sub.text = item.get_inspect_subtitle()
+		_detail_sub.add_theme_color_override("font_color", item.get_rarity_color())
+		_update_owned_label(item)
+		_detail_desc.text = item.description
+		_detail_desc.visible = not item.description.is_empty()
+		_fill_stats(item)
+	else:
+		_detail_icon.texture = null
+		_detail_icon.visible = false
+		_detail_name.text = "Rezept %s" % String(_selected.recipe_id)
+		_detail_sub.text = "Item-ID %d" % _selected.output_item_id
+		if _owned_label != null:
+			_owned_label.text = ""
+		_detail_desc.text = ""
+		_clear_box(_stats_box)
 	_fill_materials()
 	_fill_station()
-	var max_q := _crafting.max_craftable(_selected, _inventory, _nearby) if _crafting != null else 0
-	_quantity = clampi(_quantity, 1, maxi(1, max_q))
+	var max_q := 1
+	if _crafting != null:
+		max_q = maxi(1, _crafting.max_craftable(_selected, _inventory, _nearby))
+	_quantity = clampi(_quantity, 1, max_q)
 	_qty_label.text = str(_quantity)
-	var can := _crafting != null and _crafting.evaluate(_selected, _inventory, _quantity, _nearby) == CraftingSystem.Result.OK
+	var result := CraftingSystem.Result.NO_RECIPE
+	if _crafting != null:
+		result = _crafting.evaluate(_selected, _inventory, _quantity, _nearby)
+	var can := result == CraftingSystem.Result.OK
 	_craft_btn.disabled = not can and not _craft_feedback_playing
 	_minus_btn.disabled = _quantity <= 1
-	_plus_btn.disabled = max_q <= _quantity
+	_plus_btn.disabled = _crafting == null or _crafting.max_craftable(_selected, _inventory, _nearby) <= _quantity
+	_set_craft_reason("" if can else _craft_block_reason(result))
 	if not _craft_feedback_playing:
 		_craft_btn.text = "Herstellen"
 
@@ -754,7 +1085,7 @@ func _fill_stats(item: ItemData) -> void:
 		var power_name := "Spitzhacken-Power" if item.get_tool_category() == ToolData.ToolCategory.MINING else "Werkzeug-Power"
 		_stat_row(power_name, str(power))
 	if item.defense > 0:
-		_stat_row("Verteidigung", str(item.defense))
+		_stat_row("Rüstung", "+%d" % item.defense)
 	var item_range := item.get_base_range()
 	if item_range > 0.0:
 		_stat_row("Reichweite", _fmt(item_range))
@@ -769,12 +1100,12 @@ func _stat_row(title: String, value: String) -> void:
 	var name_label := Label.new()
 	name_label.text = title
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.add_theme_font_size_override("font_size", 10)
 	name_label.add_theme_color_override("font_color", Color(0.82, 0.84, 0.88, 1))
 	var value_label := Label.new()
 	value_label.text = value
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	value_label.add_theme_font_size_override("font_size", 11)
+	value_label.add_theme_font_size_override("font_size", 10)
 	row.add_child(name_label)
 	row.add_child(value_label)
 	_stats_box.add_child(row)
@@ -784,29 +1115,43 @@ func _fill_materials() -> void:
 	_clear_box(_mats_box)
 	if _selected == null:
 		return
-	for ingredient in _selected.get_ingredients():
+	var ingredients := _selected.get_ingredients()
+	if ingredients.is_empty():
+		var empty := Label.new()
+		empty.text = "Keine Materialien hinterlegt."
+		empty.add_theme_font_size_override("font_size", 10)
+		empty.add_theme_color_override("font_color", MUTED)
+		_mats_box.add_child(empty)
+		return
+	for ingredient in ingredients:
 		var item_id := int(ingredient["item_id"])
-		var need := int(ingredient["amount"]) * _quantity
-		var have := _inventory.get_bag_amount(item_id) if _inventory != null else 0
-		var mat := _item_catalog.get_item(item_id) if _item_catalog != null else null
+		var need := int(ingredient["amount"]) * maxi(1, _quantity)
+		var have := 0
+		if _crafting != null:
+			have = _crafting.count_ingredient(_inventory, item_id)
+		elif _inventory != null:
+			have = 0
+			for alt_id in RecipeCatalog.substitute_ids(item_id):
+				have += _inventory.get_bag_amount(int(alt_id))
+		var mat := _catalog_item(item_id)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
+		row.add_theme_constant_override("separation", 4)
 		var icon := TextureRect.new()
-		icon.custom_minimum_size = Vector2(20, 20)
+		icon.custom_minimum_size = Vector2(16, 16)
 		icon.texture = mat.icon if mat != null else null
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		row.add_child(icon)
 		var name_label := Label.new()
-		name_label.text = mat.display_name if mat != null else str(item_id)
+		name_label.text = RecipeCatalog.ingredient_display_name(mat, item_id)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.add_theme_font_size_override("font_size", 11)
+		name_label.add_theme_font_size_override("font_size", 10)
 		row.add_child(name_label)
 		var count := Label.new()
 		count.text = "%d / %d" % [have, need]
 		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		count.add_theme_font_size_override("font_size", 11)
+		count.add_theme_font_size_override("font_size", 10)
 		count.add_theme_color_override("font_color", OK_COLOR if have >= need else BAD_COLOR)
 		row.add_child(count)
 		_mats_box.add_child(row)
@@ -856,9 +1201,14 @@ func _on_craft_pressed() -> void:
 
 
 func _clear_box(box: VBoxContainer) -> void:
-	if box == null:
+	_clear_children(box)
+
+
+func _clear_children(host: Node) -> void:
+	if host == null:
 		return
-	for child in box.get_children():
+	for child in host.get_children():
+		host.remove_child(child)
 		child.queue_free()
 
 

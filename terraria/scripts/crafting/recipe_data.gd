@@ -23,6 +23,7 @@ enum UiCategory {
 	LIGHT,
 	DECORATION,
 	OTHER,
+	SMELTING,
 }
 
 @export var recipe_id: StringName = &""
@@ -128,6 +129,8 @@ static func ui_category_display_name(category: int) -> String:
 			return "Dekoration"
 		UiCategory.OTHER:
 			return "Sonstiges"
+		UiCategory.SMELTING:
+			return "Schmelzen"
 		_:
 			return "Alle"
 
@@ -152,6 +155,9 @@ static func resolve_ui_category(item: ItemData) -> int:
 		return UiCategory.ARMOR
 	if item.category == ItemData.ItemCategory.TOOL or item.is_tool():
 		return UiCategory.TOOLS
+	if item.ore_metal_category == OreData.OreMetalCategory.REFINED_METAL \
+		or item.ore_metal_category == OreData.OreMetalCategory.ALLOY:
+		return UiCategory.SMELTING
 	if item.category == ItemData.ItemCategory.HEALING \
 		or item.category == ItemData.ItemCategory.FOOD_DRINK \
 		or item.category == ItemData.ItemCategory.BUFF:

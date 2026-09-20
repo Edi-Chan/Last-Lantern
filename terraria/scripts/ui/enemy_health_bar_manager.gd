@@ -438,15 +438,37 @@ func _fade_out_bar(id: int) -> void:
 
 
 func _read_health(enemy: Node) -> float:
+	if enemy == null:
+		return 0.0
 	if enemy.has_method("get_health_current"):
-		return float(enemy.call("get_health_current"))
-	return float(enemy.get("current_health"))
+		return _as_float(enemy.call("get_health_current"), 0.0)
+	if "current_health" in enemy:
+		return _as_float(enemy.get("current_health"), 0.0)
+	if "health" in enemy:
+		return _as_float(enemy.get("health"), 0.0)
+	return 0.0
 
 
 func _read_max(enemy: Node) -> float:
+	if enemy == null:
+		return 1.0
 	if enemy.has_method("get_health_max"):
-		return float(enemy.call("get_health_max"))
-	return float(enemy.get("max_health"))
+		return _as_float(enemy.call("get_health_max"), 1.0)
+	if "max_health" in enemy:
+		return _as_float(enemy.get("max_health"), 1.0)
+	return 1.0
+
+
+func _as_float(value: Variant, fallback: float) -> float:
+	if value == null:
+		return fallback
+	if value is float:
+		return value
+	if value is int:
+		return float(value)
+	if value is String and String(value).is_valid_float():
+		return String(value).to_float()
+	return fallback
 
 
 func _rank(enemy: Node) -> int:

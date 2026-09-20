@@ -128,6 +128,8 @@ enum Rarity {
 @export var attack_cooldown: float = 0.35
 @export var knockback: float = 100.0
 @export var defense: int = 0
+## Zusaetzliche Stat-Boni. `defense` bleibt der einfache Ruestungswert.
+@export var stat_modifiers: Array[StatModifier] = []
 ## Optionale Overlay-Frames fuer HEAD/CHEST/LEGS. Leer = kein Player-Overlay.
 @export var armor_sprite_frames: SpriteFrames
 
@@ -158,6 +160,11 @@ func is_tool() -> bool:
 	if is_weapon():
 		return false
 	return item_type == ItemType.TOOL or get_tool_kind() != ToolKind.NONE or tool_data != null
+
+
+func collect_stat_modifiers() -> Array[StatModifier]:
+	# Bestehende defense-Werte werden als ARMOR-Flat mitgelesen.
+	return StatSheet.modifiers_from_item(self)
 
 
 func get_rarity_display_name() -> String:

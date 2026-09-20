@@ -52,6 +52,9 @@ func is_open() -> bool:
 func open_pause() -> void:
 	if _open:
 		return
+	var admin := get_node_or_null("/root/AdminManager")
+	if admin != null and bool(admin.call("is_menu_open")):
+		admin.call("close_menu")
 	_close_gameplay_windows()
 	_open = true
 	_hidden_for_options = false
@@ -119,6 +122,11 @@ func _on_load_pressed() -> void:
 
 
 func _on_quit_pressed() -> void:
+	resume_game()
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow != null and flow.has_method("return_to_main_menu"):
+		flow.call("return_to_main_menu", true)
+		return
 	get_tree().quit()
 
 

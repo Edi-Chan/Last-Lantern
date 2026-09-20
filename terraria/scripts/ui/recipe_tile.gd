@@ -5,7 +5,7 @@ signal tile_pressed(tile: RecipeTile)
 signal tile_hovered(tile: RecipeTile)
 signal tile_unhovered(tile: RecipeTile)
 
-const TILE_SIZE := 52
+const TILE_SIZE := 36
 
 var recipe: RecipeData
 var item: ItemData
@@ -31,10 +31,10 @@ func _ready() -> void:
 	_icon = TextureRect.new()
 	_icon.name = "Icon"
 	_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_icon.offset_left = 4
-	_icon.offset_top = 4
-	_icon.offset_right = -4
-	_icon.offset_bottom = -4
+	_icon.offset_left = 3
+	_icon.offset_top = 3
+	_icon.offset_right = -3
+	_icon.offset_bottom = -3
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -47,9 +47,9 @@ func _ready() -> void:
 	_station_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_station_mark.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	_station_mark.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	_station_mark.offset_left = -16
-	_station_mark.offset_top = -14
-	_station_mark.add_theme_font_size_override("font_size", 10)
+	_station_mark.offset_left = -13
+	_station_mark.offset_top = -12
+	_station_mark.add_theme_font_size_override("font_size", 8)
 	_station_mark.add_theme_color_override("font_color", Color(0.92, 0.78, 0.38, 1))
 	_station_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_station_mark)
@@ -60,7 +60,7 @@ func _ready() -> void:
 	_lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_lock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_lock.add_theme_font_size_override("font_size", 14)
+	_lock.add_theme_font_size_override("font_size", 11)
 	_lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_lock)
 	gui_input.connect(_on_gui_input)

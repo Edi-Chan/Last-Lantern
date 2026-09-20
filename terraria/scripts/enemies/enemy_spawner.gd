@@ -15,7 +15,7 @@ const TILE := 16.0
 @export var max_alive_darkness: int = 6
 @export var spawn_interval_normal: float = 28.0
 @export var spawn_interval_darkness: float = 12.0
-@export var initial_normal_count: int = 1
+@export var initial_normal_count: int = 3
 
 var _world: WorldGenerator
 var _player: Player

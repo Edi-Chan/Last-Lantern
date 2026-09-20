@@ -24,6 +24,5 @@ item_type = 1
 category = 10
 tool_kind = 7
 tool_data = SubResource("ToolData_1")
-plant_id = null
 held_rotation_degrees = 15.0
 damage = 2

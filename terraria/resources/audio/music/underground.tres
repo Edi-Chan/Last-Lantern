@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="MusicTrackData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/music_track_data.gd" id="1_script"]
+[ext_resource type="AudioStream" path="res://audio/music/underground.wav" id="2_stream"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"underground"
+display_name = "Hoehle"
+stream = ExtResource("2_stream")
+stream_path = "res://audio/music/underground.wav"
+volume_db = -3.0
+crossfade_seconds = 2.8
+priority = 40
+enabled = true
+scenes = Array[StringName]([&"world"])
+biomes = Array[StringName]([])
+day_phases = Array[StringName]([])
+depth_layers = Array[StringName]([&"underground"])
+fog_states = Array[StringName]([&"clear"])
+interiors = Array[StringName]([&"WORLD"])
+cues = Array[StringName]([])

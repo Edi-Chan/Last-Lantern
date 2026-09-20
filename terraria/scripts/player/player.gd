@@ -32,6 +32,7 @@ var world_input_enabled: bool = true
 var facing_sign: float = 1.0
 var is_sprinting: bool = false
 var is_crouching: bool = false
+var character_name: String = ""
 
 var _inventory_action_held: bool = false
 var _was_on_floor: bool = true
@@ -60,6 +61,7 @@ var _headroom_query := PhysicsShapeQueryParameters2D.new()
 @onready var _anim: AnimationPlayer = $AnimationPlayer
 @onready var _audio: PlayerAudio = $Audio
 @onready var stats: PlayerStats = $Stats
+@onready var _water: WaterInteraction = $WaterInteraction
 
 ## Gameplay-Collider. Beim Ducken schrumpft er nur nach oben, die Unterkante
 ## bleibt auf der Fusslinie (y = 0) und der Player sinkt nicht in den Boden.
@@ -172,11 +174,14 @@ func take_damage(amount: float, _source: Node = null, damage_type: Variant = nul
 func apply_damage_event(event: DamageEvent) -> void:
 	if stats == null or event == null:
 		return
+	var admin := get_node_or_null("/root/AdminManager")
+	if admin != null and bool(admin.call("should_block_damage")):
+		return
 	event.target_node = self
 	event.is_player_target = true
 	if event.world_position == Vector2.ZERO:
 		event.world_position = get_combat_text_origin()
-	var result := stats.apply_incoming_damage(float(event.incoming_amount if event.incoming_amount > 0 else event.amount), event.ignore_armor)
+	var result := stats.apply_incoming_damage(float(event.incoming_amount if event.incoming_amount > 0 else event.amount), event.ignore_armor, event.damage_type)
 	event.incoming_amount = int(round(float(result["incoming"])))
 	event.amount = int(round(float(result["applied"])))
 	event.reduced = bool(result["reduced"])
@@ -243,6 +248,7 @@ func _has_standing_headroom() -> bool:
 func _update_sprint(delta: float) -> void:
 	if stats == null:
 		return
+	var water_mult := _water_movement_multipliers()
 	var has_move_input := world_input_enabled \
 		and Input.get_axis("move_left", "move_right") != 0.0
 	is_sprinting = has_move_input \
@@ -250,7 +256,8 @@ func _update_sprint(delta: float) -> void:
 		and Input.is_action_pressed("sprint") \
 		and not is_crouching \
 		and not _sprint_exhausted \
-		and stats.stamina > 0.0
+		and stats.stamina > 0.0 \
+		and bool(water_mult.get("sprint_allowed", true))
 
 	if is_sprinting:
 		stats.drain_stamina(stamina_sprint_cost * delta)
@@ -265,25 +272,48 @@ func _update_sprint(delta: float) -> void:
 	if _stamina_regen_left > 0.0:
 		_stamina_regen_left = maxf(_stamina_regen_left - delta, 0.0)
 	else:
-		stats.restore_stamina(stamina_regeneration * delta)
+		stats.restore_stamina(stats.stamina_regen_rate() * delta)
 
 
 func _current_move_speed() -> float:
+	var speed := move_speed * stats.movement_multiplier() if stats != null else move_speed
 	if is_crouching:
-		return move_speed * crouch_speed_multiplier
-	if is_sprinting:
-		return move_speed * sprint_multiplier
-	return move_speed
+		speed *= crouch_speed_multiplier
+	elif is_sprinting:
+		speed *= stats.sprint_multiplier() if stats != null else sprint_multiplier
+	speed *= float(_water_movement_multipliers().get("speed", 1.0))
+	var admin := get_node_or_null("/root/AdminManager")
+	if admin != null:
+		speed *= float(admin.call("get_speed_multiplier"))
+	return speed
 
 
 func _handle_gravity(delta: float) -> void:
+	if _is_admin_noclip():
+		return
 	if _try_ladder(delta):
 		return
+	if _water != null:
+		_water.apply_swim_forces(delta)
 	if not is_on_floor():
-		velocity.y = minf(velocity.y + gravity * delta, max_fall_speed)
+		var g_delta := gravity * delta
+		if _water != null and _water.in_water:
+			g_delta = _water.apply_water_gravity_multiplier(gravity, delta)
+		var fall_cap := max_fall_speed
+		if _water != null and _water.swimming:
+			fall_cap *= float(_water_movement_multipliers().get("max_fall", 1.0))
+		velocity.y = minf(velocity.y + g_delta, fall_cap)
 
 
 func _handle_jump() -> void:
+	if _is_admin_noclip():
+		var vertical := 0.0
+		if Input.is_action_pressed("jump"):
+			vertical -= 1.0
+		if Input.is_action_pressed("crouch") or (InputMap.has_action("move_down") and Input.is_action_pressed("move_down")):
+			vertical += 1.0
+		velocity.y = vertical * _current_move_speed()
+		return
 	if _drop_through_left > 0.0:
 		return
 	var wants_drop := Input.is_action_pressed("crouch")
@@ -294,8 +324,13 @@ func _handle_jump() -> void:
 		set_collision_mask_value(6, false)
 		velocity.y = 60.0
 		return
+	if _water != null and _water.swimming:
+		return
 	if is_on_floor() and Input.is_action_just_pressed("jump"):
-		velocity.y = jump_velocity
+		var jump := jump_velocity
+		if stats != null:
+			jump *= stats.jump_multiplier()
+		velocity.y = jump
 		play_sfx(&"Jump")
 	elif Input.is_action_just_released("jump") and velocity.y < 0.0:
 		velocity.y *= jump_cut_multiplier
@@ -363,6 +398,17 @@ func _is_swinging() -> bool:
 ## Weltposition unter dem Systemcursor, im selben Canvas wie der Spieler.
 func get_world_mouse_position() -> Vector2:
 	return get_global_mouse_position()
+
+
+func _water_movement_multipliers() -> Dictionary:
+	if _water == null:
+		return {"speed": 1.0, "gravity": 1.0, "max_fall": 1.0, "sprint_allowed": true}
+	return _water.get_movement_multipliers()
+
+
+func _is_admin_noclip() -> bool:
+	var admin := get_node_or_null("/root/AdminManager")
+	return admin != null and bool(admin.get("no_clip"))
 
 
 func _mouse_facing() -> float:
@@ -516,7 +562,7 @@ func _refresh_armor_visuals() -> void:
 	_apply_armor_item(_helmet, inventory.get_equipment_item("head"))
 	_sync_armor_layers()
 	if stats != null:
-		stats.set_armor_defense(inventory.get_total_defense())
+		stats.rebuild_from_inventory(inventory)
 
 
 func _apply_armor_item(sprite: AnimatedSprite2D, item: ItemData) -> void:
@@ -528,6 +574,20 @@ func _apply_armor_item(sprite: AnimatedSprite2D, item: ItemData) -> void:
 	sprite.sprite_frames = item.armor_sprite_frames
 	sprite.speed_scale = 0.0
 	sprite.visible = true
+
+
+func apply_appearance(data: LookRecord) -> void:
+	if data == null:
+		return
+	data.normalize()
+	character_name = data.character_name
+
+
+func apply_knockback(impulse: Vector2) -> void:
+	var scale := 1.0
+	if stats != null:
+		scale = 1.0 - stats.knockback_resistance()
+	velocity += impulse * scale
 
 
 func compose_preview_texture() -> Texture2D:

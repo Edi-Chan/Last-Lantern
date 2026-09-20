@@ -1,7 +1,7 @@
 extends CanvasLayer
 
 ## Gehoert an: HUD-Wurzel. UI-Skalierung ohne Einfluss auf die Weltkamera.
-## Chrome (Leben, Zeit, Hotbar, Minimap, Tests) liegt hinter dem Inventar.
+## Chrome (Leben, Zeit, Hotbar, Minimap) liegt hinter dem Inventar.
 
 const CHROME_LAYER := 20
 const INVENTORY_LAYER := 30
@@ -14,6 +14,7 @@ func _ready() -> void:
 	_ensure_menus()
 	_ensure_enemy_health_overlay()
 	_ensure_combat_text_overlay()
+	_ensure_pickup_text_overlay()
 	if not SettingsManager.ui_scale_changed.is_connected(_on_ui_scale_changed):
 		SettingsManager.ui_scale_changed.connect(_on_ui_scale_changed)
 	call_deferred("_apply_ui_scale")
@@ -62,6 +63,14 @@ func _ensure_combat_text_overlay() -> void:
 	add_child(overlay)
 
 
+func _ensure_pickup_text_overlay() -> void:
+	if get_node_or_null("PickupTextOverlay") != null:
+		return
+	var overlay := PickupTextSystem.new()
+	overlay.name = "PickupTextOverlay"
+	add_child(overlay)
+
+
 func _ensure_menus() -> void:
 	var modal := _ensure_canvas_layer("ModalLayer", MODAL_LAYER)
 	if find_child("PauseMenu", true, false) == null:
@@ -72,6 +81,23 @@ func _ensure_menus() -> void:
 		var options: Node = load("res://scenes/ui/options_menu.tscn").instantiate()
 		options.name = "OptionsMenu"
 		modal.add_child(options)
+	_ensure_admin_menu(modal)
+
+
+func _ensure_admin_menu(modal: CanvasLayer) -> void:
+	var existing := find_child("AdminMenu", true, false)
+	var admin := get_node_or_null("/root/AdminManager")
+	var available := admin != null and bool(admin.call("is_available"))
+	if not available:
+		if existing != null:
+			existing.queue_free()
+		return
+	if existing == null:
+		existing = load("res://scenes/ui/admin_menu.tscn").instantiate()
+		existing.name = "AdminMenu"
+		modal.add_child(existing)
+	elif existing.get_parent() != modal:
+		existing.reparent(modal)
 
 
 func _on_ui_scale_changed(_scale: float) -> void:

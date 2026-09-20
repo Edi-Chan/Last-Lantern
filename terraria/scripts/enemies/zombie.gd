@@ -51,6 +51,7 @@ var _idle_sound_left: float = 2.5
 var _detected_once: bool = false
 var _strike_on: bool = false
 var _on_screen: bool = true
+var frozen: bool = false
 var _flash_tween: Tween
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
@@ -145,6 +146,11 @@ func _physics_process(delta: float) -> void:
 		if _state == State.DEAD:
 			_apply_gravity(delta)
 			move_and_slide()
+		return
+	if frozen:
+		velocity.x = 0.0
+		_apply_gravity(delta)
+		move_and_slide()
 		return
 	_refresh_refs()
 	_attack_cd = maxf(_attack_cd - delta, 0.0)
@@ -245,6 +251,7 @@ func apply_damage_event(event: DamageEvent) -> void:
 		mgr.call("notify_hit", self)
 	CombatTextSystem.present(event)
 	if current_health <= 0:
+		_credit_player_kill(event.source_node)
 		_die()
 		return
 	if _state == State.TRANSFORM:
@@ -272,9 +279,15 @@ func current_attack_damage() -> float:
 func current_speed() -> float:
 	if data == null:
 		return 42.0
-	if darkness_active:
-		return data.scaled_darkness_speed(_fog_cycle())
-	return data.move_speed
+	var speed := data.scaled_darkness_speed(_fog_cycle()) if darkness_active else data.move_speed
+	var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+	if liquid != null and liquid.settings != null:
+		var sample := liquid.sample_submersion(global_position, -28.0, -14.0)
+		if bool(sample.get("swimming", false)):
+			speed *= liquid.settings.enemy_deep_speed_multiplier
+		elif bool(sample.get("in_water", false)):
+			speed *= liquid.settings.enemy_shallow_speed_multiplier
+	return speed
 
 
 func current_detection() -> float:
@@ -386,6 +399,15 @@ func _begin_attack() -> void:
 	_play_anim(_anim_name(ANIM_ATTACK), true)
 
 
+func _credit_player_kill(source: Node) -> void:
+	var node := source
+	while node != null:
+		if node is Player and (node as Player).stats != null:
+			(node as Player).stats.note_enemy_killed()
+			return
+		node = node.get_parent()
+
+
 func _die() -> void:
 	_set_state(State.DEAD)
 	_set_strike(false)
@@ -401,6 +423,10 @@ func _die() -> void:
 	_play_sfx("Death")
 	_play_anim(_anim_name(ANIM_DEATH), true)
 	died.emit()
+
+
+func remove_silent() -> void:
+	queue_free()
 
 
 func _apply_form(dark: bool, animate: bool, refill: bool) -> void:
@@ -497,6 +523,9 @@ func _set_strike(active: bool) -> void:
 func _can_see_player() -> bool:
 	if not _player_alive():
 		return false
+	var admin := get_node_or_null("/root/AdminManager")
+	if admin != null and bool(admin.call("should_ignore_player_for_ai")):
+		return false
 	return _distance_to_player() <= current_detection()
 
 
@@ -592,6 +621,14 @@ func _set_circle(area: Area2D, radius: float) -> void:
 func _apply_gravity(delta: float) -> void:
 	var g := data.gravity if data != null else 1000.0
 	var cap := data.max_fall_speed if data != null else 600.0
+	var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+	if liquid != null:
+		var sample := liquid.sample_submersion(global_position, -28.0, -14.0)
+		if bool(sample.get("swimming", false)):
+			g *= liquid.settings.enemy_water_gravity_multiplier
+			cap *= 0.5
+		elif bool(sample.get("in_water", false)):
+			g *= 0.85
 	if not is_on_floor():
 		velocity.y = minf(velocity.y + g * delta, cap)
 	elif velocity.y > 0.0:

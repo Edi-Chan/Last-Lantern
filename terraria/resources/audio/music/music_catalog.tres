@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MusicCatalog" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/music_catalog.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/audio/music/menu.tres" id="2_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/grassland_day.tres" id="3_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/grassland_evening.tres" id="4_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/grassland_night.tres" id="5_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/forest_day.tres" id="6_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/forest_night.tres" id="7_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/sand_day.tres" id="8_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/sand_night.tres" id="9_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/underground.tres" id="10_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/deep.tres" id="11_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/fog.tres" id="12_track"]
+[ext_resource type="Resource" path="res://resources/audio/music/interior.tres" id="13_track"]
+
+[resource]
+script = ExtResource("1_script")
+tracks = [ExtResource("2_track"), ExtResource("3_track"), ExtResource("4_track"), ExtResource("5_track"), ExtResource("6_track"), ExtResource("7_track"), ExtResource("8_track"), ExtResource("9_track"), ExtResource("10_track"), ExtResource("11_track"), ExtResource("12_track"), ExtResource("13_track")]
+fallback_id = &"menu"

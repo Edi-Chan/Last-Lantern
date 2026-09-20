@@ -12,21 +12,25 @@
 [ext_resource type="StyleBox" path="res://resources/ui/inv_esc_key.tres" id="10_esc"]
 [ext_resource type="StyleBox" path="res://resources/ui/inv_slot.tres" id="11_slot"]
 [ext_resource type="Texture2D" uid="uid://dwvgi7s4vm7lq" path="res://assets/player/player_idle.png" id="12_player"]
-[ext_resource type="Texture2D" path="res://assets/ui/bag_icon.png" id="13_bag"]
-[ext_resource type="Texture2D" path="res://assets/ui/search_icon.png" id="14_search"]
-[ext_resource type="Texture2D" path="res://assets/ui/trash_icon.png" id="15_trash"]
-[ext_resource type="Texture2D" path="res://assets/ui/slot_helm.png" id="16_helm"]
-[ext_resource type="Texture2D" path="res://assets/ui/slot_chest.png" id="17_chest"]
-[ext_resource type="Texture2D" path="res://assets/ui/slot_legs.png" id="18_legs"]
-[ext_resource type="Texture2D" path="res://assets/ui/slot_boots.png" id="19_boots"]
-[ext_resource type="Texture2D" path="res://assets/ui/slot_acc.png" id="20_acc"]
-[ext_resource type="Script" path="res://scripts/ui/inspect_card.gd" id="21_inspect"]
-[ext_resource type="Script" path="res://scripts/ui/crafting_page.gd" id="22_craft"]
-[ext_resource type="Script" path="res://scripts/ui/quests_page.gd" id="23_quests"]
+[ext_resource type="Texture2D" uid="uid://ch0pthtuhduo6" path="res://assets/ui/bag_icon.png" id="13_bag"]
+[ext_resource type="Texture2D" path="res://assets/ui/character_icon.png" id="27_char"]
+[ext_resource type="Texture2D" path="res://assets/ui/crafting_icon.png" id="28_craft"]
+[ext_resource type="Texture2D" path="res://assets/ui/quest_icon.png" id="29_quest"]
+[ext_resource type="Texture2D" uid="uid://d45f6jk60rei" path="res://assets/ui/search_icon.png" id="14_search"]
+[ext_resource type="Texture2D" uid="uid://b1id73w4dokbc" path="res://assets/ui/trash_icon.png" id="15_trash"]
+[ext_resource type="Texture2D" uid="uid://bxw7jy1md863" path="res://assets/ui/slot_helm.png" id="16_helm"]
+[ext_resource type="Texture2D" uid="uid://cdx0dr4mu4j6v" path="res://assets/ui/slot_chest.png" id="17_chest"]
+[ext_resource type="Texture2D" uid="uid://bidnhgw5gb18x" path="res://assets/ui/slot_legs.png" id="18_legs"]
+[ext_resource type="Texture2D" uid="uid://bvy807x2lsaqf" path="res://assets/ui/slot_boots.png" id="19_boots"]
+[ext_resource type="Texture2D" uid="uid://cygnr0pnsw4wd" path="res://assets/ui/slot_acc.png" id="20_acc"]
+[ext_resource type="Script" uid="uid://ok8bi0co2ycu" path="res://scripts/ui/inspect_card.gd" id="21_inspect"]
+[ext_resource type="Script" uid="uid://dmxmvaogebu1x" path="res://scripts/ui/crafting_page.gd" id="22_craft"]
+[ext_resource type="Script" uid="uid://c1wpf6ecpfwql" path="res://scripts/ui/quests_page.gd" id="23_quests"]
 [ext_resource type="StyleBox" path="res://resources/ui/inv_main_tab.tres" id="24_mtab"]
 [ext_resource type="StyleBox" path="res://resources/ui/inv_main_tab_active.tres" id="25_mtab_on"]
+[ext_resource type="Script" path="res://scripts/ui/character_page.gd" id="26_character"]
 
-[node name="InventoryScreen" type="Control"]
+[node name="InventoryScreen" type="Control" unique_id=495563181]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -37,17 +41,16 @@ theme = ExtResource("3_theme")
 script = ExtResource("1_xqb13")
 slot_scene = ExtResource("2_4uvq7")
 
-[node name="Dimmer" type="ColorRect" parent="."]
+[node name="Dimmer" type="ColorRect" parent="." unique_id=1164254593]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 color = Color(0.02, 0.03, 0.05, 0.72)
 
-[node name="CenterWrap" type="CenterContainer" parent="."]
+[node name="CenterWrap" type="CenterContainer" parent="." unique_id=1852561276]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -56,69 +59,82 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="MainPanel" type="PanelContainer" parent="CenterWrap"]
+[node name="MainPanel" type="PanelContainer" parent="CenterWrap" unique_id=1798755452]
 custom_minimum_size = Vector2(832, 500)
-layout_mode = 2
 clip_contents = true
+layout_mode = 2
 theme_override_styles/panel = ExtResource("4_outer")
 
-[node name="MainLayout" type="MarginContainer" parent="CenterWrap/MainPanel"]
+[node name="MainLayout" type="MarginContainer" parent="CenterWrap/MainPanel" unique_id=1935194984]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 8
 
-[node name="Body" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout"]
+[node name="Body" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout" unique_id=250135035]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HeaderRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+[node name="HeaderRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body" unique_id=1165739318]
 custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MainTabs" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+[node name="MainTabs" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow" unique_id=1567699610]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="TabInventory" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
+[node name="TabCharacter" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
+custom_minimum_size = Vector2(96, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = ExtResource("24_mtab")
+theme_override_styles/pressed = ExtResource("25_mtab_on")
+theme_override_styles/hover = ExtResource("25_mtab_on")
+text = "Charakter"
+icon = ExtResource("27_char")
+
+[node name="TabInventory" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs" unique_id=1216088340]
 custom_minimum_size = Vector2(96, 22)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("25_mtab_on")
-theme_override_styles/hover = ExtResource("25_mtab_on")
 theme_override_styles/pressed = ExtResource("25_mtab_on")
+theme_override_styles/hover = ExtResource("25_mtab_on")
 text = "Inventar"
 icon = ExtResource("13_bag")
 
-[node name="TabCrafting" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
+[node name="TabCrafting" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs" unique_id=1437664265]
 custom_minimum_size = Vector2(96, 22)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("24_mtab")
-theme_override_styles/hover = ExtResource("25_mtab_on")
 theme_override_styles/pressed = ExtResource("25_mtab_on")
+theme_override_styles/hover = ExtResource("25_mtab_on")
 text = "Crafting"
+icon = ExtResource("28_craft")
 
-[node name="TabQuests" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs"]
+[node name="TabQuests" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs" unique_id=708911973]
 custom_minimum_size = Vector2(88, 22)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("24_mtab")
-theme_override_styles/hover = ExtResource("25_mtab_on")
 theme_override_styles/pressed = ExtResource("25_mtab_on")
+theme_override_styles/hover = ExtResource("25_mtab_on")
 text = "Quests"
+icon = ExtResource("29_quest")
 
-[node name="HeaderSpacer" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+[node name="HeaderSpacer" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow" unique_id=618797406]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="CloseButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow"]
+[node name="CloseButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/HeaderRow" unique_id=1113511458]
 custom_minimum_size = Vector2(22, 20)
 layout_mode = 2
 focus_mode = 0
@@ -126,35 +142,36 @@ theme_override_colors/font_color = Color(1, 0.92, 0.92, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 12
 theme_override_styles/normal = ExtResource("6_close")
-theme_override_styles/hover = ExtResource("6_close")
 theme_override_styles/pressed = ExtResource("6_close")
+theme_override_styles/hover = ExtResource("6_close")
 text = "X"
 
-[node name="Content" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+[node name="Content" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body" unique_id=626593586]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 11
 
-[node name="LeftColumn" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content"]
+[node name="LeftColumn" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content" unique_id=134523984]
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="CharacterEquipRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn"]
+[node name="CharacterEquipRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn" unique_id=1132796942]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="CharacterSection" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow"]
+[node name="CharacterSection" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow" unique_id=49172230]
 custom_minimum_size = Vector2(94, 0)
 layout_mode = 2
 
-[node name="PreviewFrame" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection"]
+[node name="PreviewFrame" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection" unique_id=1624062071]
 custom_minimum_size = Vector2(94, 134)
 layout_mode = 2
 theme_override_styles/panel = ExtResource("5_inner")
 
-[node name="CharacterPreview" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame"]
+[node name="CharacterPreview" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame" unique_id=11327900]
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -164,9 +181,9 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("12_player")
 stretch_mode = 5
-texture_filter = 1
 
-[node name="HeldPreview" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame"]
+[node name="HeldPreview" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame" unique_id=1200618353]
+texture_filter = 1
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 1
 anchors_preset = 3
@@ -182,18 +199,17 @@ grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 stretch_mode = 5
-texture_filter = 1
 
-[node name="EquipmentSlots" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow"]
+[node name="EquipmentSlots" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow" unique_id=116804195]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 3
 
-[node name="RowHead" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+[node name="RowHead" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots" unique_id=598082370]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="LabelHead" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead"]
+[node name="LabelHead" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead" unique_id=1132149548]
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
@@ -201,11 +217,13 @@ theme_override_font_sizes/font_size = 11
 text = "Helm"
 vertical_alignment = 1
 
-[node name="EquipHead" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead" instance=ExtResource("2_4uvq7")]
+[node name="EquipHead" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead" unique_id=982376714 instance=ExtResource("2_4uvq7")]
 layout_mode = 2
 equipment_key = "head"
 
-[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead/EquipHead"]
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowHead/EquipHead" unique_id=483415567]
+modulate = Color(1, 1, 1, 0.35)
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -216,17 +234,17 @@ offset_left = -9.0
 offset_top = -9.0
 offset_right = 9.0
 offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("16_helm")
 stretch_mode = 5
-texture_filter = 1
-modulate = Color(1, 1, 1, 0.35)
 
-[node name="RowChest" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+[node name="RowChest" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots" unique_id=317022936]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="LabelChest" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest"]
+[node name="LabelChest" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest" unique_id=940163429]
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
@@ -234,11 +252,13 @@ theme_override_font_sizes/font_size = 11
 text = "Brust"
 vertical_alignment = 1
 
-[node name="EquipChest" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest" instance=ExtResource("2_4uvq7")]
+[node name="EquipChest" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest" unique_id=1794326671 instance=ExtResource("2_4uvq7")]
 layout_mode = 2
 equipment_key = "chest"
 
-[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest/EquipChest"]
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowChest/EquipChest" unique_id=1802426621]
+modulate = Color(1, 1, 1, 0.35)
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -249,17 +269,17 @@ offset_left = -9.0
 offset_top = -9.0
 offset_right = 9.0
 offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("17_chest")
 stretch_mode = 5
-texture_filter = 1
-modulate = Color(1, 1, 1, 0.35)
 
-[node name="RowLegs" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+[node name="RowLegs" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots" unique_id=34606705]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="LabelLegs" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs"]
+[node name="LabelLegs" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs" unique_id=1266316363]
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
@@ -267,11 +287,13 @@ theme_override_font_sizes/font_size = 11
 text = "Beine"
 vertical_alignment = 1
 
-[node name="EquipLegs" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs" instance=ExtResource("2_4uvq7")]
+[node name="EquipLegs" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs" unique_id=2114896093 instance=ExtResource("2_4uvq7")]
 layout_mode = 2
 equipment_key = "legs"
 
-[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs/EquipLegs"]
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowLegs/EquipLegs" unique_id=1825504570]
+modulate = Color(1, 1, 1, 0.35)
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -282,19 +304,19 @@ offset_left = -9.0
 offset_top = -9.0
 offset_right = 9.0
 offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("18_legs")
 stretch_mode = 5
-texture_filter = 1
-modulate = Color(1, 1, 1, 0.35)
 
-[node name="RowBoots" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
-layout_mode = 2
-theme_override_constants/separation = 6
+[node name="RowBoots" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots" unique_id=2112523814]
 modulate = Color(1, 1, 1, 0.45)
+layout_mode = 2
 tooltip_text = "Stiefel sind noch nicht ausrüstbar."
+theme_override_constants/separation = 6
 
-[node name="LabelBoots" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots"]
+[node name="LabelBoots" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots" unique_id=899115518]
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
@@ -302,13 +324,15 @@ theme_override_font_sizes/font_size = 11
 text = "Stiefel"
 vertical_alignment = 1
 
-[node name="BootsPlaceholder" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots"]
-custom_minimum_size = Vector2(29, 29)
+[node name="BootsPlaceholder" type="Panel" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots" unique_id=1449403750]
+custom_minimum_size = Vector2(24, 24)
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = ExtResource("11_slot")
 
-[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots/BootsPlaceholder"]
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowBoots/BootsPlaceholder" unique_id=471048402]
+modulate = Color(1, 1, 1, 0.45)
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -319,17 +343,17 @@ offset_left = -9.0
 offset_top = -9.0
 offset_right = 9.0
 offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("19_boots")
 stretch_mode = 5
-texture_filter = 1
-modulate = Color(1, 1, 1, 0.45)
 
-[node name="RowAcc1" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+[node name="RowAcc1" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots" unique_id=274072997]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="LabelAcc1" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1"]
+[node name="LabelAcc1" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1" unique_id=1416178248]
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
@@ -337,11 +361,13 @@ theme_override_font_sizes/font_size = 11
 text = "Acc. 1"
 vertical_alignment = 1
 
-[node name="EquipAcc1" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1" instance=ExtResource("2_4uvq7")]
+[node name="EquipAcc1" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1" unique_id=750232598 instance=ExtResource("2_4uvq7")]
 layout_mode = 2
 equipment_key = "accessory_1"
 
-[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1/EquipAcc1"]
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc1/EquipAcc1" unique_id=554847930]
+modulate = Color(1, 1, 1, 0.35)
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -352,17 +378,17 @@ offset_left = -9.0
 offset_top = -9.0
 offset_right = 9.0
 offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("20_acc")
 stretch_mode = 5
-texture_filter = 1
-modulate = Color(1, 1, 1, 0.35)
 
-[node name="RowAcc2" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots"]
+[node name="RowAcc2" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots" unique_id=296005917]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="LabelAcc2" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2"]
+[node name="LabelAcc2" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2" unique_id=1976444091]
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.76, 0.82, 1)
@@ -370,11 +396,13 @@ theme_override_font_sizes/font_size = 11
 text = "Acc. 2"
 vertical_alignment = 1
 
-[node name="EquipAcc2" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2" instance=ExtResource("2_4uvq7")]
+[node name="EquipAcc2" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2" unique_id=2125032271 instance=ExtResource("2_4uvq7")]
 layout_mode = 2
 equipment_key = "accessory_2"
 
-[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2/EquipAcc2"]
+[node name="EmptyHint" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/CharacterEquipRow/EquipmentSlots/RowAcc2/EquipAcc2" unique_id=1338397305]
+modulate = Color(1, 1, 1, 0.35)
+texture_filter = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -385,247 +413,263 @@ offset_left = -9.0
 offset_top = -9.0
 offset_right = 9.0
 offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("20_acc")
 stretch_mode = 5
-texture_filter = 1
-modulate = Color(1, 1, 1, 0.35)
 
-[node name="InspectPanel" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn"]
+[node name="InspectPanel" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn" unique_id=996658876]
 custom_minimum_size = Vector2(240, 192)
+clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
-clip_contents = true
 theme_override_styles/panel = ExtResource("5_inner")
 script = ExtResource("21_inspect")
 
-[node name="InspectMargin" type="MarginContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel"]
+[node name="InspectMargin" type="MarginContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel" unique_id=1481011565]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="InspectOuter" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin"]
+[node name="InspectOuter" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin" unique_id=1539588386]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="InspectName" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+[node name="InspectName" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter" unique_id=917188045]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.97, 0.99, 1)
 theme_override_font_sizes/font_size = 12
 text = "Kein Gegenstand ausgewählt"
 autowrap_mode = 3
 
-[node name="InspectSubtitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+[node name="InspectSubtitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter" unique_id=920784078]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.68, 0.74, 1)
 theme_override_font_sizes/font_size = 11
 autowrap_mode = 3
 
-[node name="InspectCategory" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+[node name="InspectCategory" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter" unique_id=1064550232]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 autowrap_mode = 3
 
-[node name="InspectScroll" type="ScrollContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter"]
+[node name="InspectScroll" type="ScrollContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter" unique_id=966096186]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
-vertical_scroll_mode = 1
 
-[node name="InspectScrollPad" type="MarginContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll"]
+[node name="InspectScrollPad" type="MarginContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll" unique_id=1255008515]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_right = 10
 
-[node name="InspectLayout" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad"]
+[node name="InspectLayout" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad" unique_id=787894051]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="InspectIconFrame" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+[node name="InspectIconFrame" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout" unique_id=1682103339]
 custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_styles/panel = ExtResource("11_slot")
 
-[node name="InspectIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectIconFrame"]
+[node name="InspectIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectIconFrame" unique_id=281782378]
+texture_filter = 1
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
-texture_filter = 1
 
-[node name="InspectDescription" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+[node name="InspectDescription" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout" unique_id=1606670352]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.76, 0.8, 1)
 theme_override_font_sizes/font_size = 11
 text = "Kein Gegenstand ausgewählt"
 autowrap_mode = 3
 
-[node name="InspectDescSep" type="HSeparator" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+[node name="InspectDescSep" type="HSeparator" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout" unique_id=1228296766]
 modulate = Color(0.35, 0.42, 0.5, 0.85)
 layout_mode = 2
 
-[node name="InspectStatsBox" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+[node name="InspectStatsBox" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout" unique_id=1233459135]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="InspectValueSep" type="HSeparator" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+[node name="InspectValueSep" type="HSeparator" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout" unique_id=262666650]
 visible = false
 modulate = Color(0.35, 0.42, 0.5, 0.85)
 layout_mode = 2
 
-[node name="InspectValueRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout"]
+[node name="InspectValueRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout" unique_id=1966943298]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="InspectValueIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow"]
+[node name="InspectValueIcon" type="TextureRect" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow" unique_id=1210082273]
+texture_filter = 1
 custom_minimum_size = Vector2(8, 8)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
 stretch_mode = 5
-texture_filter = 1
 
-[node name="InspectValueTitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow"]
+[node name="InspectValueTitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow" unique_id=1699596758]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.76, 0.32, 1)
 theme_override_font_sizes/font_size = 11
 text = "Wert"
 
-[node name="InspectValueAmount" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow"]
+[node name="InspectValueAmount" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/LeftColumn/InspectPanel/InspectMargin/InspectOuter/InspectScroll/InspectScrollPad/InspectLayout/InspectValueRow" unique_id=269058272]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.82, 0.28, 1)
 theme_override_font_sizes/font_size = 11
 text = "0"
 horizontal_alignment = 2
 
-[node name="InventorySection" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content"]
+[node name="InventorySection" type="VBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content" unique_id=44640883]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="InventoryToolbar" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+[node name="InventoryToolbar" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection" unique_id=862571587]
 layout_mode = 2
-theme_override_constants/separation = 4
+size_flags_horizontal = 3
+clip_contents = true
+theme_override_constants/separation = 3
 
-[node name="SearchLineEdit" type="LineEdit" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(134, 18)
+[node name="SearchLineEdit" type="LineEdit" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=1751904015]
+custom_minimum_size = Vector2(34, 18)
 layout_mode = 2
+tooltip_text = "Suche"
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("7_search")
 theme_override_styles/focus = ExtResource("7_search")
 placeholder_text = "Suchen ..."
-tooltip_text = "Suche"
-right_icon = ExtResource("14_search")
 caret_blink = true
+right_icon = ExtResource("14_search")
 
-[node name="TabAlle" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(38, 18)
+[node name="TabAlle" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=866035916]
+custom_minimum_size = Vector2(34, 18)
+clip_text = true
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("9_tab_on")
-theme_override_styles/hover = ExtResource("9_tab_on")
 theme_override_styles/pressed = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
 text = "Alle"
 
-[node name="TabEquip" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(67, 18)
+[node name="TabEquip" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=317187616]
+custom_minimum_size = Vector2(34, 18)
+clip_text = true
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("8_tab")
-theme_override_styles/hover = ExtResource("9_tab_on")
 theme_override_styles/pressed = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
 text = "Ausrüstung"
 
-[node name="TabConsume" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(77, 18)
+[node name="TabConsume" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=1634839709]
+custom_minimum_size = Vector2(34, 18)
+clip_text = true
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("8_tab")
-theme_override_styles/hover = ExtResource("9_tab_on")
 theme_override_styles/pressed = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
 text = "Verbrauchbar"
 
-[node name="TabMats" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(67, 18)
+[node name="TabMats" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=1232424033]
+custom_minimum_size = Vector2(34, 18)
+clip_text = true
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("8_tab")
-theme_override_styles/hover = ExtResource("9_tab_on")
 theme_override_styles/pressed = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
 text = "Materialien"
 
-[node name="TabOther" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(58, 18)
+[node name="TabOther" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=1339627950]
+custom_minimum_size = Vector2(34, 18)
+clip_text = true
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("8_tab")
-theme_override_styles/hover = ExtResource("9_tab_on")
 theme_override_styles/pressed = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
 text = "Sonstiges"
 
-[node name="FilterButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(45, 18)
+[node name="FilterButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=1643224393]
+custom_minimum_size = Vector2(34, 18)
+clip_text = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
-theme_override_styles/normal = ExtResource("8_tab")
-theme_override_styles/hover = ExtResource("9_tab_on")
-theme_override_styles/pressed = ExtResource("9_tab_on")
-text = "Filter"
 tooltip_text = "Detailfilter"
-flat = false
-
-[node name="SortButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar"]
-custom_minimum_size = Vector2(38, 18)
-layout_mode = 2
 theme_override_font_sizes/font_size = 10
 theme_override_styles/normal = ExtResource("8_tab")
-theme_override_styles/hover = ExtResource("9_tab_on")
 theme_override_styles/pressed = ExtResource("9_tab_on")
-text = "Std"
-tooltip_text = "Sortierung"
+theme_override_styles/hover = ExtResource("9_tab_on")
+text = "Filter"
 flat = false
 
-[node name="InventoryGrid" type="GridContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+[node name="SortButton" type="MenuButton" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection/InventoryToolbar" unique_id=508409676]
+custom_minimum_size = Vector2(34, 18)
+clip_text = true
 layout_mode = 2
+tooltip_text = "Sortierung"
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = ExtResource("8_tab")
+theme_override_styles/pressed = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
+text = "Std"
+flat = false
+
+[node name="InventoryGrid" type="GridContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection" unique_id=984170258]
+layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = 4
-theme_override_constants/v_separation = 4
+theme_override_constants/h_separation = 3
+theme_override_constants/v_separation = 3
 columns = 10
 
-[node name="HotbarTitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+[node name="HotbarTitle" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection" unique_id=231422977]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.84, 0.9, 1)
 theme_override_font_sizes/font_size = 11
 text = "Hotbar"
 
-[node name="HotbarGrid" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection"]
+[node name="HotbarGrid" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body/Content/InventorySection" unique_id=2062522721]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
-[node name="CraftingPage" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body"]
+[node name="CharacterPage" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body"]
+visible = false
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("26_character")
+
+[node name="CraftingPage" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body" unique_id=1077545116]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-mouse_filter = 0
 script = ExtResource("22_craft")
 
-[node name="QuestsPage" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+[node name="QuestsPage" type="PanelContainer" parent="CenterWrap/MainPanel/MainLayout/Body" unique_id=186701775]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
@@ -633,45 +677,45 @@ size_flags_vertical = 3
 theme_override_styles/panel = ExtResource("5_inner")
 script = ExtResource("23_quests")
 
-[node name="FooterRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body"]
+[node name="FooterRow" type="HBoxContainer" parent="CenterWrap/MainPanel/MainLayout/Body" unique_id=1909976365]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EscCloseButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+[node name="EscCloseButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow" unique_id=976253701]
 custom_minimum_size = Vector2(40, 20)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 10
 theme_override_styles/normal = ExtResource("10_esc")
-theme_override_styles/hover = ExtResource("10_esc")
 theme_override_styles/pressed = ExtResource("10_esc")
+theme_override_styles/hover = ExtResource("10_esc")
 text = "ESC"
 
-[node name="EscCloseLabel" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+[node name="EscCloseLabel" type="Label" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow" unique_id=1693191335]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.82, 0.86, 1)
 theme_override_font_sizes/font_size = 11
 text = "Schließen"
 vertical_alignment = 1
 
-[node name="FooterSpacer" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+[node name="FooterSpacer" type="Control" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow" unique_id=726124843]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="DropButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow"]
+[node name="DropButton" type="Button" parent="CenterWrap/MainPanel/MainLayout/Body/FooterRow" unique_id=2107561835]
 custom_minimum_size = Vector2(168, 18)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
 theme_override_styles/normal = ExtResource("8_tab")
-theme_override_styles/hover = ExtResource("9_tab_on")
 theme_override_styles/pressed = ExtResource("9_tab_on")
+theme_override_styles/hover = ExtResource("9_tab_on")
 text = "  Gegenstand fallen lassen"
 icon = ExtResource("15_trash")
 
-[node name="HoverTooltip" type="PanelContainer" parent="."]
+[node name="HoverTooltip" type="PanelContainer" parent="." unique_id=212181069]
 visible = false
 z_index = 40
 z_as_relative = false
@@ -679,7 +723,7 @@ layout_mode = 0
 mouse_filter = 2
 theme_override_styles/panel = ExtResource("5_inner")
 
-[node name="HoverMargin" type="MarginContainer" parent="HoverTooltip"]
+[node name="HoverMargin" type="MarginContainer" parent="HoverTooltip" unique_id=742533650]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/margin_left = 6
@@ -687,21 +731,20 @@ theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 6
 theme_override_constants/margin_bottom = 4
 
-[node name="HoverLayout" type="HBoxContainer" parent="HoverTooltip/HoverMargin"]
+[node name="HoverLayout" type="HBoxContainer" parent="HoverTooltip/HoverMargin" unique_id=595078534]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="HoverIcon" type="TextureRect" parent="HoverTooltip/HoverMargin/HoverLayout"]
+[node name="HoverIcon" type="TextureRect" parent="HoverTooltip/HoverMargin/HoverLayout" unique_id=1657535926]
+texture_filter = 1
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 2
 mouse_filter = 2
 stretch_mode = 5
-texture_filter = 1
 
-[node name="HoverLabel" type="Label" parent="HoverTooltip/HoverMargin/HoverLayout"]
+[node name="HoverLabel" type="Label" parent="HoverTooltip/HoverMargin/HoverLayout" unique_id=2125169013]
 custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
-mouse_filter = 2
 theme_override_font_sizes/font_size = 10
 autowrap_mode = 2

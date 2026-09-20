@@ -17,3 +17,6 @@ func _ready() -> void:
 	var lantern := get_tree().get_first_node_in_group("lantern") as Lantern
 	if lantern != null:
 		lantern.place_near_spawn()
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow != null and flow.has_method("on_world_ready"):
+		flow.call("on_world_ready", self)

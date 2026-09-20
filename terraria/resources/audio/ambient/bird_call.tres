@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="AmbientLayerData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/ambient_layer_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"bird_call"
+display_name = "Vogelruf"
+stream_path = "res://audio/ambient/world/bird_01.wav"
+stream_paths = Array[String](["res://audio/ambient/world/bird_01.wav", "res://audio/ambient/world/bird_02.wav", "res://audio/ambient/world/bird_03.wav", "res://audio/ambient/world/bird_04.wav", "res://audio/ambient/world/bird_05.wav", "res://audio/ambient/world/bird_06.wav", "res://audio/ambient/world/bird_07.wav", "res://audio/ambient/world/bird_08.wav"])
+volume_db = -20.0
+kind = 1
+fade_seconds = 1.6
+oneshot_min = 5.0
+oneshot_max = 16.0
+priority = 0
+enabled = true
+scenes = Array[StringName]([&"world"])
+biomes = Array[StringName]([&"grassland", &"forest"])
+day_phases = Array[StringName]([&"morning", &"noon", &"evening"])
+depth_layers = Array[StringName]([&"surface"])
+fog_states = Array[StringName]([&"clear"])
+interiors = Array[StringName]([&"WORLD"])

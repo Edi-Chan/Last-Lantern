@@ -1,12 +1,11 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://s7pvm205pkt2"]
 
 [ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://dyfkyrp0x4exb" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
-[ext_resource type="Texture2D" path="res://assets/items/weapons/lanterns/old_combat_lantern.png" id="3_icon"]
+[ext_resource type="Texture2D" uid="uid://ckc3fcbd6uds3" path="res://assets/items/weapons/lanterns/old_combat_lantern.png" id="3_icon"]
 
 [sub_resource type="Resource" id="WeaponData_1"]
 script = ExtResource("2_weapon")
-tier = 1
 base_damage = 15
 attack_speed = 0.85
 base_range = 2.2
@@ -14,7 +13,6 @@ knockback = 70.0
 base_max_durability = 120
 darkness_damage_multiplier = 1.5
 cooldown = 1.2
-energy_cost = 0.0
 special = "Lichtstoß. Später Energie/Brennstoff möglich."
 
 [resource]
@@ -29,6 +27,5 @@ item_type = 2
 category = 1
 weapon_kind = 4
 weapon_data = SubResource("WeaponData_1")
-held_rotation_degrees = 0.0
 damage = 15
 knockback = 70.0

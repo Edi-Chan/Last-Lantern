@@ -38,8 +38,13 @@ func is_options_open() -> bool:
 	return _options_menu != null and bool(_options_menu.call("is_open"))
 
 
+func is_admin_open() -> bool:
+	var admin := get_node_or_null("/root/AdminManager")
+	return admin != null and bool(admin.call("is_menu_open"))
+
+
 func is_blocking_gameplay() -> bool:
-	if is_pause_open() or is_options_open() or SettingsManager.is_gameplay_blocked():
+	if is_admin_open() or is_pause_open() or is_options_open() or SettingsManager.is_gameplay_blocked():
 		return true
 	var lantern_ui := get_tree().get_first_node_in_group("lantern_ui")
 	if lantern_ui != null and lantern_ui.has_method("is_open") and bool(lantern_ui.call("is_open")):
@@ -69,6 +74,10 @@ func close_options_to_pause() -> void:
 
 func _handle_escape() -> bool:
 	_refresh_refs()
+	var admin := get_node_or_null("/root/AdminManager")
+	if admin != null and bool(admin.call("is_menu_open")):
+		admin.call("close_menu")
+		return true
 	if _options_menu != null and bool(_options_menu.call("is_open")):
 		return bool(_options_menu.call("handle_escape"))
 	var lantern_ui := get_tree().get_first_node_in_group("lantern_ui")
@@ -83,6 +92,8 @@ func _handle_escape() -> bool:
 	if _pause_menu != null and bool(_pause_menu.call("is_open")):
 		_pause_menu.call("resume_game")
 		return true
+	if get_tree().get_first_node_in_group("start_flow_ui") != null:
+		return false
 	if _pause_menu != null:
 		_pause_menu.call("open_pause")
 		return true

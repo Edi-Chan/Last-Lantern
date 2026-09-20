@@ -25,7 +25,6 @@ item_type = 1
 category = 10
 tool_kind = 1
 tool_data = SubResource("ToolData_1")
-plant_id = null
 held_rotation_degrees = 45.0
 damage = 9
 mining_speed = 1.05

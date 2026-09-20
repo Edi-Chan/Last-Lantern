@@ -32,6 +32,7 @@ var _base_glow_scale: Vector2 = Vector2(0.38, 0.38)
 var _foundation_height_px: float = 16.0
 var _stone_tile_image: Image
 var _altar_cache: Dictionary = {}
+var _placed_from_save: bool = false
 
 
 func _ready() -> void:
@@ -76,6 +77,8 @@ func _process(_delta: float) -> void:
 
 
 func place_near_spawn() -> void:
+	if _placed_from_save:
+		return
 	var world := get_tree().get_first_node_in_group("world_generator") as WorldGenerator
 	if world == null or settings == null:
 		return
@@ -554,12 +557,31 @@ func to_save_dict() -> Dictionary:
 	return {
 		"level": level,
 		"active": is_lantern_active,
-		"position": global_position,
+		"position": [global_position.x, global_position.y],
 	}
 
 
 func from_save_dict(data: Dictionary) -> void:
 	apply_level(int(data.get("level", 1)), false)
 	set_lantern_active(bool(data.get("active", true)))
-	if data.has("position"):
-		global_position = data["position"]
+	var pos := _vec2_from_save(data.get("position", null))
+	if pos != Vector2.INF:
+		global_position = pos
+		_placed_from_save = true
+
+
+static func _vec2_from_save(value: Variant) -> Vector2:
+	match typeof(value):
+		TYPE_VECTOR2:
+			return value
+		TYPE_ARRAY:
+			if value.size() >= 2:
+				return Vector2(float(value[0]), float(value[1]))
+		TYPE_DICTIONARY:
+			return Vector2(float(value.get("x", 0.0)), float(value.get("y", 0.0)))
+		TYPE_STRING:
+			var cleaned := String(value).strip_edges().trim_prefix("(").trim_suffix(")")
+			var parts := cleaned.split(",")
+			if parts.size() >= 2:
+				return Vector2(float(parts[0].strip_edges()), float(parts[1].strip_edges()))
+	return Vector2.INF

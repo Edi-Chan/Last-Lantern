@@ -96,6 +96,16 @@ func test_health_bar_control_defaults() -> void:
 	assert_true(src.contains("func debug_spawn_horde"))
 
 
+func test_read_health_tolerates_missing_fields() -> void:
+	var mgr := EnemyHealthBarManager.new()
+	var bare := Node.new()
+	assert_eq(mgr._read_health(bare), 0.0)
+	assert_eq(mgr._read_max(bare), 1.0)
+	assert_eq(mgr._as_float(null, 3.0), 3.0)
+	bare.free()
+	mgr.free()
+
+
 func test_zombie_health_signals_not_polled() -> void:
 	var src := _read("res://scripts/ui/enemy_health_bar_manager.gd")
 	assert_true(src.contains("health_changed.connect"))

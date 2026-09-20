@@ -11,6 +11,7 @@
 [ext_resource type="Resource" path="res://resources/blocks/block_catalog.tres" id="7_je7p5"]
 [ext_resource type="PackedScene" uid="uid://bnbthd7adhe53" path="res://scenes/items/item_drop.tscn" id="8_fm80t"]
 [ext_resource type="Script" uid="uid://k44jfgsh54og" path="res://scripts/player/player_stats.gd" id="9_8ydkj"]
+[ext_resource type="Script" path="res://scripts/liquid/water_interaction.gd" id="22_water"]
 [ext_resource type="Script" uid="uid://cmtv30rely8kb" path="res://scripts/audio/player_audio.gd" id="12_8ydkj"]
 [ext_resource type="AudioStream" uid="uid://dwkfygnrucn1w" path="res://audio/sfx/footstep.wav" id="13_lgqa7"]
 [ext_resource type="AudioStream" uid="uid://cc18k5wscajno" path="res://audio/sfx/jump.wav" id="14_8ydkj"]
@@ -296,6 +297,9 @@ item_catalog = ExtResource("5_5gtgg")
 
 [node name="Stats" type="Node" parent="." unique_id=939677051]
 script = ExtResource("9_8ydkj")
+
+[node name="WaterInteraction" type="Node" parent="."]
+script = ExtResource("22_water")
 
 [node name="Interaction" type="Node" parent="." unique_id=2129851771]
 script = ExtResource("6_h17s1")

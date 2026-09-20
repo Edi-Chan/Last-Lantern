@@ -50,8 +50,18 @@ func _physics_process(delta: float) -> void:
 		if absf(velocity.x) < stop_threshold:
 			velocity.x = 0.0
 	else:
-		velocity.y = minf(velocity.y + gravity_strength * delta, max_fall_speed)
-		velocity.x = move_toward(velocity.x, 0.0, air_friction * delta)
+		var gravity := gravity_strength
+		var fall_cap := max_fall_speed
+		var drag := air_friction
+		var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+		if liquid != null and liquid.settings != null:
+			var sample := liquid.sample_submersion(global_position, -8.0, -4.0)
+			if bool(sample.get("in_water", false)):
+				gravity *= liquid.settings.water_gravity_multiplier
+				fall_cap *= liquid.settings.water_max_fall_multiplier
+				drag += liquid.settings.water_drag_vertical * 8.0
+		velocity.y = minf(velocity.y + gravity * delta, fall_cap)
+		velocity.x = move_toward(velocity.x, 0.0, drag * delta)
 	move_and_slide()
 
 	if not _can_pickup:

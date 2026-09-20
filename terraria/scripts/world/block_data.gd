@@ -105,6 +105,19 @@ func get_required_pickaxe_power() -> int:
 func is_block_unbreakable() -> bool:
 	return is_unbreakable or hardness >= 100.0
 
+func allows_bare_hands() -> bool:
+	if is_block_unbreakable():
+		return false
+	if is_building_part():
+		return false
+	var need_kind := get_required_tool()
+	var need_power := get_required_tool_power()
+	if need_kind == 0 and need_power <= 0:
+		return true
+	# Natuerliches Holz und Baumstaemme. Stein, Erze und gebaute Teile bleiben gesperrt.
+	return need_kind == 2 and need_power <= 1
+
+
 func evaluate_break(item: Resource = null, inst: RefCounted = null) -> BreakCheck:
 	if is_block_unbreakable():
 		return BreakCheck.UNBREAKABLE
@@ -112,7 +125,9 @@ func evaluate_break(item: Resource = null, inst: RefCounted = null) -> BreakChec
 	var need_power := get_required_tool_power()
 	if need_kind == 0 and need_power <= 0:
 		return BreakCheck.CAN_BREAK
-	if item == null or item.get("tool_data") == null:
+	if item == null:
+		return BreakCheck.CAN_BREAK if allows_bare_hands() else BreakCheck.WRONG_TOOL
+	if item.get("tool_data") == null:
 		return BreakCheck.WRONG_TOOL
 	if int(item.get("tool_kind")) != need_kind:
 		return BreakCheck.WRONG_TOOL

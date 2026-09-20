@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AmbientLayerData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/ambient_layer_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"birds_day"
+display_name = "Voegel Wiese"
+stream_path = "res://audio/ambient/world/birds_day.wav"
+volume_db = -7.0
+kind = 0
+fade_seconds = 1.6
+oneshot_min = 4.0
+oneshot_max = 10.0
+priority = 0
+enabled = false
+scenes = Array[StringName]([&"world"])
+biomes = Array[StringName]([&"grassland"])
+day_phases = Array[StringName]([&"morning", &"noon"])
+depth_layers = Array[StringName]([&"surface"])
+fog_states = Array[StringName]([&"clear"])
+interiors = Array[StringName]([&"WORLD"])

@@ -132,6 +132,23 @@ func test_prepared_tool_items() -> void:
 	assert_eq(scanner.max_stack, 1)
 
 
+func test_wood_starter_tools() -> void:
+	var pick := _tool("res://resources/items/tools/mining/pickaxes/wood_pickaxe.tres")
+	assert_ne(pick, null)
+	assert_eq(pick.id, 117)
+	assert_eq(pick.display_name, "Holzspitzhacke")
+	assert_eq(int(pick.tool_kind), int(ItemData.ToolKind.PICKAXE))
+	assert_eq(pick.tool_data.base_tool_power, 6)
+	assert_true(pick.tool_data.base_tool_power < 10)
+	assert_eq(pick.tool_data.pickaxe_tier, 0)
+	var axe := _tool("res://resources/items/tools/woodcutting/wood_axe.tres")
+	assert_eq(axe.id, 118)
+	assert_eq(axe.display_name, "Holzaxt")
+	assert_eq(int(axe.tool_kind), int(ItemData.ToolKind.AXE))
+	assert_eq(axe.tool_data.base_tool_power, 6)
+	assert_true(axe.tool_data.base_use_speed < 0.9)
+
+
 func test_default_hotbar_tool_order() -> void:
 	assert_eq(Inventory.DEFAULT_HOTBAR_TOOL_IDS.size(), 10)
 	assert_eq(int(Inventory.DEFAULT_HOTBAR_TOOL_IDS[0]), 22)

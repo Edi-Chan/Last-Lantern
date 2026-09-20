@@ -39,6 +39,19 @@
 [ext_resource type="Resource" path="res://resources/buildings/mechanic_blueprint.tres" id="35_mech_bp"]
 [ext_resource type="Resource" path="res://resources/buildings/merchant_blueprint.tres" id="36_merch_bp"]
 [ext_resource type="Script" path="res://scripts/building_parts/building_part_system.gd" id="27_parts"]
+[ext_resource type="Script" path="res://scripts/liquid/liquid_system.gd" id="37_liquid"]
+[ext_resource type="Resource" path="res://resources/systems/liquid_settings.tres" id="38_liquid_settings"]
+[ext_resource type="Script" path="res://scripts/liquid/liquid_renderer.gd" id="39_liquid_renderer"]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleMaterial_splash"]
+direction = Vector3(0, -1, 0)
+spread = 45.0
+initial_velocity_min = 20.0
+initial_velocity_max = 60.0
+gravity = Vector3(0, 80, 0)
+scale_min = 1.5
+scale_max = 2.5
+color = Color(0.45, 0.72, 0.95, 0.85)
 
 [node name="World" type="Node2D" unique_id=762429514]
 script = ExtResource("1_worldgen")
@@ -165,6 +178,28 @@ collision_enabled = false
 
 [node name="TileMapLayer" type="TileMapLayer" parent="Terrain" unique_id=374040131 groups=["terrain"]]
 tile_set = ExtResource("1_dphjl")
+
+[node name="LiquidSystem" type="Node2D" parent="Terrain" groups=["liquid_system"]]
+z_index = 2
+script = ExtResource("37_liquid")
+settings = ExtResource("38_liquid_settings")
+
+[node name="LiquidRenderer" type="Node2D" parent="Terrain/LiquidSystem"]
+script = ExtResource("39_liquid_renderer")
+
+[node name="SplashParticles" type="GPUParticles2D" parent="Terrain/LiquidSystem/LiquidRenderer"]
+emitting = false
+amount = 12
+lifetime = 0.45
+one_shot = true
+explosiveness = 0.9
+process_material = SubResource("ParticleMaterial_splash")
+
+[node name="SplashAudio" type="AudioStreamPlayer2D" parent="Terrain/LiquidSystem/LiquidRenderer"]
+bus = &"SFX"
+
+[node name="FlowAudio" type="AudioStreamPlayer2D" parent="Terrain/LiquidSystem/LiquidRenderer"]
+bus = &"SFX"
 
 [node name="TreeSystem" type="Node2D" parent="." unique_id=2132218927]
 script = ExtResource("7_trees")

@@ -9,7 +9,10 @@ const OUT := "res://assets/items/weapons"
 
 
 func run() -> void:
+	_save(_draw_sword(_pal_wood(), 1), "res://assets/items/weapons/swords/wood_sword.png")
 	_save(_draw_sword(_pal_stone(), 1), "res://assets/items/weapons/swords/stone_sword.png")
+	_save(_draw_pickaxe(_pal_wood()), "res://assets/items/tools/mining/pickaxes/wood_pickaxe.png")
+	_save(_draw_axe(_pal_wood()), "res://assets/items/tools/woodcutting/wood_axe.png")
 	_save(_draw_sword(_pal_copper(), 2), "res://assets/items/weapons/swords/copper_sword.png")
 	_save(_draw_sword(_pal_ferrite(), 3), "res://assets/items/weapons/swords/ferrite_sword.png")
 	_save(_draw_sword(_pal_cobalt(), 4), "res://assets/items/weapons/swords/cobalt_sword.png")
@@ -114,6 +117,52 @@ func _draw_sword(pal: Dictionary, tier: int) -> Image:
 	if tier >= 7:
 		_px(img, 14, 1, Color(1, 0.95, 0.7, 1))
 		_px(img, 4, 11, Color("e6c45a"))
+	return img
+
+
+func _draw_pickaxe(pal: Dictionary) -> Image:
+	var img := _blank()
+	var wood: Color = pal["grip"]
+	var wrap: Color = pal["wrap"]
+	var head: Color = pal["blade"]
+	var hi: Color = pal["hi"]
+	var edge: Color = pal["edge"]
+	for i in range(4, 13):
+		_px(img, i, i, wood)
+		_px(img, i + 1, i, wrap if i % 2 == 0 else wood)
+	_px(img, 3, 12, wrap)
+	_px(img, 4, 13, wrap)
+	for x in range(8, 14):
+		_px(img, x, 3, head)
+		_px(img, x, 4, head)
+	_px(img, 7, 4, head)
+	_px(img, 13, 5, head)
+	_px(img, 9, 3, hi)
+	_px(img, 10, 3, hi)
+	_px(img, 13, 4, edge)
+	_px(img, 12, 5, edge)
+	return img
+
+
+func _draw_axe(pal: Dictionary) -> Image:
+	var img := _blank()
+	var wood: Color = pal["grip"]
+	var wrap: Color = pal["wrap"]
+	var head: Color = pal["blade"]
+	var hi: Color = pal["hi"]
+	var edge: Color = pal["edge"]
+	for i in range(3, 13):
+		_px(img, i, 12 - i + 3, wood)
+		_px(img, i + 1, 12 - i + 3, wrap if i % 2 == 0 else wood)
+	for y in range(2, 8):
+		_px(img, 10, y, head)
+		_px(img, 11, y, head)
+	_px(img, 12, 3, head)
+	_px(img, 12, 4, head)
+	_px(img, 12, 5, head)
+	_px(img, 13, 4, edge)
+	_px(img, 11, 3, hi)
+	_px(img, 10, 4, hi)
 	return img
 
 

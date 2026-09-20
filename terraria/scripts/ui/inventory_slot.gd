@@ -52,9 +52,11 @@ func _ready() -> void:
 	_refresh_panel_style()
 
 
-func configure_size(px: int) -> void:
-	_slot_px = maxi(16, px)
-	var sz := Vector2(_slot_px, _slot_px)
+func configure_size(width_px: int, height_px: int = -1) -> void:
+	var w := maxi(16, width_px)
+	var h := maxi(16, height_px if height_px >= 16 else width_px)
+	_slot_px = h
+	var sz := Vector2(w, h)
 	custom_minimum_size = sz
 	custom_maximum_size = sz
 	size = sz

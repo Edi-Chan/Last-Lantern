@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
+[ext_resource type="Texture2D" path="res://assets/items/weapons/swords/wood_sword.png" id="3_icon"]
+
+[sub_resource type="Resource" id="WeaponData_1"]
+script = ExtResource("2_weapon")
+tier = 0
+base_damage = 8
+attack_speed = 1.0
+base_range = 2.3
+knockback = 95.0
+base_max_durability = 60
+
+[resource]
+script = ExtResource("1_script")
+id = 119
+display_name = "Holzschwert"
+description = "Frühe Holzwaffe. Weniger Schaden und Reichweite als das Steinschwert."
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 2
+category = 1
+weapon_kind = 1
+weapon_data = SubResource("WeaponData_1")
+held_rotation_degrees = 45.0
+damage = 8
+knockback = 95.0

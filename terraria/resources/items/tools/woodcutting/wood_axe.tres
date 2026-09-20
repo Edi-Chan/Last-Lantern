@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/tool_data.gd" id="2_tool"]
+[ext_resource type="Texture2D" path="res://assets/items/tools/woodcutting/wood_axe.png" id="3_icon"]
+
+[sub_resource type="Resource" id="ToolData_1"]
+script = ExtResource("2_tool")
+tool_category = 2
+base_damage = 6
+base_tool_power = 6
+base_use_speed = 0.75
+base_max_durability = 60
+base_range = 2.5
+special = "Holz"
+
+[resource]
+script = ExtResource("1_script")
+id = 118
+display_name = "Holzaxt"
+description = "Erste Axt zum Fällen früher Bäume. Langsamer und schwächer als die Steinaxt."
+icon = ExtResource("3_icon")
+max_stack = 1
+item_type = 1
+category = 10
+tool_kind = 2
+tool_data = SubResource("ToolData_1")
+held_rotation_degrees = 45.0
+damage = 6
+mining_speed = 0.75

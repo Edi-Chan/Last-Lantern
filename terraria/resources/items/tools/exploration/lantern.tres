@@ -23,5 +23,4 @@ max_stack = 1
 item_type = 1
 category = 10
 tool_data = SubResource("ToolData_1")
-plant_id = null
 damage = 1

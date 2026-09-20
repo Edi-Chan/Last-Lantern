@@ -28,7 +28,8 @@ func test_timeline_cycle_windows() -> void:
 	assert_false(hud.contains("current_day ="))
 	var scene := _read("res://scenes/ui/hud.tscn")
 	assert_true(scene.contains("top_timeline.tscn"))
-	assert_true(scene.contains("TEST: TAG 7 22:00"))
+	assert_false(scene.contains("TEST: TAG 7 22:00"))
+	assert_false(scene.contains("FogDebug"))
 	var hud_src := _read("res://scripts/ui/hud.gd")
 	assert_true(hud_src.contains("INVENTORY_LAYER := 30"))
 	assert_true(hud_src.contains("CHROME_LAYER := 20"))
@@ -45,6 +46,10 @@ func test_day_phases_use_settings() -> void:
 	assert_true(hud.contains("day_phase_at"))
 	assert_true(hud.contains("phase_noon_start"))
 	assert_true(hud.contains("night_end_time"))
+	assert_true(hud.contains("update_visual_state"))
+	assert_true(hud.contains("Tag %d / %d"))
+	assert_false(hud.contains("☀ FRÜH"))
+	assert_false(hud.contains("Finsternis in %d Tagen"))
 
 
 func test_fog_day_formula() -> void:
@@ -191,6 +196,24 @@ func test_auto_tool_uses_hotbar_and_restores() -> void:
 	var player := _read("res://scripts/player/player.gd")
 	assert_true(player.contains("func is_auto_tool_held"))
 	assert_true(player.contains("KEY_ALT"))
+
+
+func test_liquid_system_integration() -> void:
+	var scene := _read("res://scenes/world/world.tscn")
+	assert_true(scene.contains("LiquidSystem"))
+	var world_src := _read("res://scripts/world/world_generator.gd")
+	assert_true(world_src.contains("_generate_water"))
+	assert_true(world_src.contains("_finalize_water"))
+	var save_src := _read("res://scripts/save/save_manager.gd")
+	assert_true(save_src.contains('"liquid"'))
+	var player_scene := _read("res://scenes/player/player.tscn")
+	assert_true(player_scene.contains("WaterInteraction"))
+	var liquid_src := _read("res://scripts/liquid/liquid_system.gd")
+	assert_true(liquid_src.contains("_queued"))
+	assert_true(liquid_src.contains("_flow_down_once"))
+	assert_true(liquid_src.contains("sleep_after_stable_ticks"))
+	var renderer_src := _read("res://scripts/liquid/liquid_renderer.gd")
+	assert_false(renderer_src.contains("for y in _system.world_height"))
 
 
 func _read(path: String) -> String:

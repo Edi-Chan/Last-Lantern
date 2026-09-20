@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AmbientLayerData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/ambient_layer_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"wind_cave"
+display_name = "Hoehlenwind"
+stream_path = "res://audio/ambient/world/wind_cave.wav"
+volume_db = -8.0
+kind = 0
+fade_seconds = 1.6
+oneshot_min = 4.0
+oneshot_max = 10.0
+priority = 0
+enabled = true
+scenes = Array[StringName]([&"world"])
+biomes = Array[StringName]([])
+day_phases = Array[StringName]([])
+depth_layers = Array[StringName]([&"underground", &"deep"])
+fog_states = Array[StringName]([&"clear", &"warning", &"fog_active", &"fog_ending"])
+interiors = Array[StringName]([&"WORLD"])

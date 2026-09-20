@@ -70,14 +70,33 @@ static func apply_hit(target: Node, amount: int, knockback_force: float, source:
 		return false
 	if not target.has_method("take_damage") and not target.has_method("apply_damage_event"):
 		return false
-	var event := DamageEvent.outgoing_hit(amount, source, target, weapon)
+	var resolved := maxi(amount, 0)
+	var kb := knockback_force
+	var critical := false
+	var stats := _source_stats(source)
+	if stats != null:
+		resolved = maxi(int(round(float(resolved) * stats.damage_multiplier())), 0)
+		if roll_critical(stats.crit_chance()):
+			resolved = critical_amount(resolved, stats.crit_multiplier())
+			critical = true
+		kb *= stats.knockback_modifier()
+	if resolved <= 0:
+		return false
+	var event := DamageEvent.outgoing_hit(resolved, source, target, weapon)
+	event.critical = critical
 	apply_damage_event(target, event)
-	if knockback_force > 0.0 and target.has_method("apply_knockback") and source != null:
+	if kb > 0.0 and target.has_method("apply_knockback") and source != null:
 		var away: Vector2 = target.global_position - source.global_position
 		if away == Vector2.ZERO:
 			away = Vector2.RIGHT
-		target.apply_knockback(away.normalized() * knockback_force)
+		target.apply_knockback(away.normalized() * kb)
 	return true
+
+
+static func _source_stats(source: Node) -> PlayerStats:
+	if source is Player:
+		return (source as Player).stats
+	return null
 
 
 static func apply_damage_event(target: Node, event: DamageEvent) -> void:

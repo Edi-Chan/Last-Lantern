@@ -12,6 +12,7 @@ enum Type {
 	HEALING,
 	## Vorbereitet, aktuell ungenutzt.
 	POISON,
+	DROWNING,
 	LIGHTNING,
 	BLEED,
 	HOLY,

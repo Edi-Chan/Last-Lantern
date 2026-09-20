@@ -11,6 +11,11 @@ signal equipment_changed
 const SLOT_COUNT := 70
 const HOTBAR_COUNT := 10
 const START_PICKAXE_ID := 22
+const WOOD_PICKAXE_ID := 117
+const WOOD_AXE_ID := 118
+const WOOD_SWORD_ID := 119
+## Echtes New-Game-Hotbar: Slots 1-3. Demo-Loadout bleibt separat fuer den Editor.
+const NEW_GAME_HOTBAR_ITEM_IDS := [WOOD_PICKAXE_ID, WOOD_AXE_ID, WOOD_SWORD_ID]
 const TEST_HELMET_ID := 4
 const TEST_CHEST_ID := 5
 const TEST_LEGS_ID := 21
@@ -82,15 +87,67 @@ func _ready() -> void:
 		"accessory_2": _empty_slot(),
 	}
 	add_to_group("player_inventory")
-	_give_demo_armor_once()
-	_give_demo_tools_once()
-	_give_demo_stone_once()
-	_give_lantern_upgrade_materials_once()
-	_give_dev_structural_loadout_once()
-	_give_dev_forge_blueprint_once()
-	_give_dev_shop_blueprints_once()
-	_give_dev_building_test_loadout_once()
-	_give_dev_weapon_test_loadout_once()
+	if _should_give_start_loadout():
+		_give_demo_armor_once()
+		_give_demo_tools_once()
+		_give_demo_stone_once()
+		_give_lantern_upgrade_materials_once()
+		_give_dev_structural_loadout_once()
+		_give_dev_forge_blueprint_once()
+		_give_dev_shop_blueprints_once()
+		_give_dev_building_test_loadout_once()
+		_give_dev_weapon_test_loadout_once()
+
+
+func _should_give_start_loadout() -> bool:
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow == null:
+		return true
+	if bool(flow.get("skip_start_loadout")):
+		return false
+	## Nur Editor/Direktstart (Mode.IDLE). New Game, Continue und laufende Welt nicht.
+	return int(flow.get("mode")) == 0
+
+
+func give_new_game_start_items() -> void:
+	_ensure_slot_storage()
+	for i in NEW_GAME_HOTBAR_ITEM_IDS.size():
+		var item_id := int(NEW_GAME_HOTBAR_ITEM_IDS[i])
+		if get_total_amount(item_id) > 0:
+			continue
+		if i < HOTBAR_COUNT:
+			_put_item_in_empty_slot(i, item_id)
+		else:
+			_add_item_to_bag(item_id, 1)
+	_apply_new_game_hotbar_loadout()
+	inventory_changed.emit()
+
+
+func _ensure_slot_storage() -> void:
+	if slots.size() < SLOT_COUNT:
+		slots.resize(SLOT_COUNT)
+	for i in SLOT_COUNT:
+		if slots[i] == null or typeof(slots[i]) != TYPE_DICTIONARY:
+			slots[i] = _empty_slot()
+
+
+func _apply_new_game_hotbar_loadout() -> void:
+	for i in NEW_GAME_HOTBAR_ITEM_IDS.size():
+		if i >= HOTBAR_COUNT:
+			break
+		var item_id := int(NEW_GAME_HOTBAR_ITEM_IDS[i])
+		var slot := slots[i]
+		if int(slot["item_id"]) == item_id and int(slot["amount"]) > 0:
+			continue
+		if int(slot["item_id"]) >= 0 and int(slot["amount"]) > 0:
+			continue
+		if _hotbar_contains(item_id):
+			continue
+		var bag_slot := _find_bag_slot_with_item(item_id)
+		if bag_slot >= 0:
+			transfer(bag_slot, i)
+			continue
+		_put_item_in_empty_slot(i, item_id)
 
 
 func _empty_slot() -> Dictionary:
@@ -190,12 +247,20 @@ func can_add_item(item_id: int, amount: int = 1) -> bool:
 	return false
 
 
+func clear_all() -> void:
+	for i in SLOT_COUNT:
+		_clear(slots[i])
+	inventory_changed.emit()
+	equipment_changed.emit()
+
+
 func add_item(item_id: int, amount: int = 1) -> bool:
 	if item_id < 0 or amount <= 0:
 		return false
 	var item := _get_item(item_id)
 	var max_stack := item.max_stack if item != null else 999
 	var remaining := amount
+	var gained := 0
 	for slot in slots:
 		if int(slot["item_id"]) != item_id:
 			continue
@@ -205,8 +270,9 @@ func add_item(item_id: int, amount: int = 1) -> bool:
 		var added: int = mini(space, remaining)
 		slot["amount"] = int(slot["amount"]) + added
 		remaining -= added
+		gained += added
 		if remaining <= 0:
-			inventory_changed.emit()
+			_notify_items_received(item_id, gained, item)
 			return true
 	for slot in slots:
 		if int(slot["item_id"]) != -1:
@@ -216,9 +282,12 @@ func add_item(item_id: int, amount: int = 1) -> bool:
 		slot["amount"] = added
 		_init_instance(slot, item)
 		remaining -= added
+		gained += added
 		if remaining <= 0:
-			inventory_changed.emit()
+			_notify_items_received(item_id, gained, item)
 			return true
+	if gained > 0:
+		_notify_items_received(item_id, gained, item)
 	return false
 
 
@@ -239,6 +308,13 @@ func get_bag_amount(item_id: int) -> int:
 	for slot in slots:
 		if int(slot["item_id"]) == item_id:
 			total += int(slot["amount"])
+	return total
+
+
+func get_bag_amount_of(item_ids: Array[int]) -> int:
+	var total := 0
+	for item_id in item_ids:
+		total += get_bag_amount(int(item_id))
 	return total
 
 
@@ -829,6 +905,18 @@ func from_save_dict(data: Dictionary) -> void:
 	inventory_changed.emit()
 	equipment_changed.emit()
 	selected_slot_changed.emit(selected_hotbar_index)
+
+
+func _notify_items_received(item_id: int, amount: int, item: ItemData) -> void:
+	_note_items_found(amount)
+	inventory_changed.emit()
+	PickupTextSystem.present(self, item_id, amount, item)
+
+
+func _note_items_found(amount: int) -> void:
+	var stats := get_parent().get_node_or_null("Stats") as PlayerStats if get_parent() != null else null
+	if stats != null:
+		stats.note_items_found(amount)
 
 
 func _serialize_slot(slot: Dictionary) -> Dictionary:

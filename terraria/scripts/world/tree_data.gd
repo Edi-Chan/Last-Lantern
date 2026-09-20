@@ -25,6 +25,9 @@ extends Resource
 
 
 func can_fell_with(item: Resource = null) -> bool:
-	if item == null or item.get("tool_data") == null:
+	# Leere Hand zaehlt als schwache Axt fuer das Faellen.
+	if item == null:
+		return true
+	if item.get("tool_data") == null:
 		return false
 	return int(item.get("tool_kind")) == required_felling_tool

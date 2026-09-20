@@ -11,9 +11,9 @@ const INSPECT_ROOT := PANEL_PATH + "/LeftColumn/InspectPanel/InspectMargin/Inspe
 const INSPECT_LAYOUT_PATH := INSPECT_ROOT + "/InspectScroll/InspectScrollPad/InspectLayout"
 const PANEL_SIZE := Vector2(832, 500)
 const CONTENT_SCALE := 1.0
-const BAG_SLOT_SIZE := 50
-const HOTBAR_SLOT_SIZE := 45
-const EQUIP_SLOT_SIZE := 27
+const BAG_SLOT_SIZE := 34
+const HOTBAR_SLOT_SIZE := 32
+const EQUIP_SLOT_SIZE := 24
 const EMPTY_VIEW_SLOT := -1
 const FILTER_ALL_ID := 100
 const FILTER_GROUP_ALL := -1
@@ -71,7 +71,7 @@ const FILTER_SHORT_NAMES := {
 	ItemData.ItemCategory.AMMUNITION: "Muni",
 	ItemData.ItemCategory.BUILDING_MATERIAL: "Bau",
 	ItemData.ItemCategory.RESOURCE: "Rohst.",
-	ItemData.ItemCategory.ORE_METAL: "Erze",
+	ItemData.ItemCategory.ORE_METAL: "Erze & Barren",
 	ItemData.ItemCategory.MAGIC_ENERGY: "Magie",
 	ItemData.ItemCategory.TOOL: "Tools",
 	ItemData.ItemCategory.BUFF: "Buffs",
@@ -83,11 +83,14 @@ const FILTER_SHORT_NAMES := {
 }
 
 enum MainTab {
+	CHARACTER,
 	INVENTORY,
 	CRAFTING,
 	QUESTS,
 }
 
+@onready var _inventory_section: VBoxContainer = get_node(PANEL_PATH + "/InventorySection")
+@onready var _inventory_toolbar: HBoxContainer = get_node(PANEL_PATH + "/InventorySection/InventoryToolbar")
 @onready var _inventory_grid: GridContainer = get_node(PANEL_PATH + "/InventorySection/InventoryGrid")
 @onready var _hotbar_grid: HBoxContainer = get_node(PANEL_PATH + "/InventorySection/HotbarGrid")
 @onready var _preview: TextureRect = get_node(PANEL_PATH + "/LeftColumn/CharacterEquipRow/CharacterSection/PreviewFrame/CharacterPreview")
@@ -119,10 +122,12 @@ enum MainTab {
 @onready var _search_edit: LineEdit = get_node(PANEL_PATH + "/InventorySection/InventoryToolbar/SearchLineEdit")
 @onready var _filter_button: MenuButton = get_node(PANEL_PATH + "/InventorySection/InventoryToolbar/FilterButton")
 @onready var _sort_button: MenuButton = get_node(PANEL_PATH + "/InventorySection/InventoryToolbar/SortButton")
+@onready var _tab_character: Button = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs/TabCharacter") as Button
 @onready var _tab_inventory: Button = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs/TabInventory") as Button
 @onready var _tab_crafting: Button = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs/TabCrafting") as Button
 @onready var _tab_quests: Button = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/HeaderRow/MainTabs/TabQuests") as Button
 @onready var _inventory_page: Control = get_node_or_null(PANEL_PATH) as Control
+@onready var _character_page: CharacterPage = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/CharacterPage") as CharacterPage
 @onready var _crafting_page: CraftingPage = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/CraftingPage") as CraftingPage
 @onready var _quests_page: Control = get_node_or_null("CenterWrap/MainPanel/MainLayout/Body/QuestsPage") as Control
 
@@ -153,6 +158,7 @@ var _hover_slot: Panel = null
 var _hover_delay: Timer
 var _restore_world_input_after_close: bool = false
 var _cancel_handled_frame: int = -1
+var _bag_slot_width: int = BAG_SLOT_SIZE
 
 
 func _ready() -> void:
@@ -164,6 +170,7 @@ func _ready() -> void:
 	_inventory = get_tree().get_first_node_in_group("player_inventory") as Inventory
 	_player = get_tree().get_first_node_in_group("player") as Player
 	_build_slots()
+	_setup_character_page()
 	_collect_equipment_slots()
 	_setup_toolbar()
 	_setup_context_ui()
@@ -176,6 +183,7 @@ func _ready() -> void:
 	_setup_overlay_input()
 	_setup_main_tabs()
 	_setup_crafting()
+	_setup_inventory_fit()
 	if _preview != null:
 		_preview.texture = load("res://assets/player/player_idle.png") as Texture2D
 	if _inventory != null:
@@ -216,11 +224,35 @@ func _setup_crafting() -> void:
 		_crafting_page.bind(_crafting, _inventory, items)
 
 
+func _setup_character_page() -> void:
+	if _character_page == null:
+		return
+	_character_page.bind(_inventory, _player, slot_scene)
+	for slot in _character_page.equipment_slots():
+		_register_equip_slot(slot)
+
+
 func _setup_main_tabs() -> void:
+	_setup_main_tab_icon(_tab_character, "res://assets/ui/character_icon.png")
+	_setup_main_tab_icon(_tab_inventory, "res://assets/ui/bag_icon.png")
+	_setup_main_tab_icon(_tab_crafting, "res://assets/ui/crafting_icon.png")
+	_setup_main_tab_icon(_tab_quests, "res://assets/ui/quest_icon.png")
+	_bind_main_tab(_tab_character, MainTab.CHARACTER)
 	_bind_main_tab(_tab_inventory, MainTab.INVENTORY)
 	_bind_main_tab(_tab_crafting, MainTab.CRAFTING)
 	_bind_main_tab(_tab_quests, MainTab.QUESTS)
 	_set_main_tab(MainTab.INVENTORY)
+
+
+func _setup_main_tab_icon(button: Button, icon_path: String) -> void:
+	if button == null or not ResourceLoader.exists(icon_path):
+		return
+	var tex := load(icon_path) as Texture2D
+	if tex == null:
+		return
+	button.icon = tex
+	button.expand_icon = false
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 
 
 func _bind_main_tab(button: Button, tab: int) -> void:
@@ -241,6 +273,8 @@ func _on_main_tab_pressed(tab: int) -> void:
 
 func _set_main_tab(tab: int) -> void:
 	_main_tab = tab
+	if _character_page != null:
+		_character_page.visible = tab == MainTab.CHARACTER
 	if _inventory_page != null:
 		_inventory_page.visible = tab == MainTab.INVENTORY
 	if _crafting_page != null:
@@ -249,11 +283,20 @@ func _set_main_tab(tab: int) -> void:
 		_quests_page.visible = tab == MainTab.QUESTS
 	if _drop_button != null:
 		_drop_button.visible = tab == MainTab.INVENTORY
+	_apply_main_tab_style(_tab_character, tab == MainTab.CHARACTER, "Charakter")
 	_apply_main_tab_style(_tab_inventory, tab == MainTab.INVENTORY, "Inventar")
 	_apply_main_tab_style(_tab_crafting, tab == MainTab.CRAFTING, "Crafting")
 	_apply_main_tab_style(_tab_quests, tab == MainTab.QUESTS, "Quests")
+	_lock_panel_size()
+	if tab == MainTab.CHARACTER and _character_page != null:
+		_character_page.refresh()
 	if tab == MainTab.CRAFTING and _crafting_page != null:
 		_crafting_page.refresh()
+		var inspect_item: ItemData = null
+		if _inventory != null:
+			inspect_item = _inventory.get_ref_item(_resolved_inspect_ref())
+		if inspect_item != null:
+			_crafting_page.select_output_item(inspect_item.id)
 
 
 func _apply_main_tab_style(button: Button, selected: bool, label: String) -> void:
@@ -290,18 +333,25 @@ func _setup_inspect_scroll() -> void:
 	_inspect_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 
 
+func _active_panel_size() -> Vector2:
+	return PANEL_SIZE
+
+
 func _lock_panel_size() -> void:
 	if _main_panel == null:
 		return
-	_main_panel.custom_minimum_size = PANEL_SIZE
-	_main_panel.custom_maximum_size = PANEL_SIZE
-	_main_panel.size = PANEL_SIZE
+	var panel := _active_panel_size()
+	_main_panel.custom_minimum_size = panel
+	_main_panel.custom_maximum_size = panel
+	_main_panel.size = panel
 	_main_panel.clip_contents = true
-	_main_panel.pivot_offset = PANEL_SIZE * 0.5
+	_main_panel.pivot_offset = panel * 0.5
 	var vp := get_viewport_rect().size
-	var fit := minf((vp.x - 24.0) / PANEL_SIZE.x, (vp.y - 24.0) / PANEL_SIZE.y)
+	var fit := minf((vp.x - 24.0) / panel.x, (vp.y - 24.0) / panel.y)
 	var ui_scale := clampf(fit, 0.62, 1.0)
 	_main_panel.scale = Vector2(ui_scale, ui_scale)
+	_fit_inventory_layout.call_deferred()
+	_fit_inventory_layout.call_deferred()
 
 
 func _on_selected_changed(index: int) -> void:
@@ -467,9 +517,73 @@ func _make_slot(index: int) -> Panel:
 	return slot
 
 
-func _configure_slot_size(slot: Panel, px: int) -> void:
+func _configure_slot_size(slot: Panel, width_px: int, height_px: int = -1) -> void:
 	if slot != null and slot.has_method("configure_size"):
-		slot.call("configure_size", px)
+		slot.call("configure_size", width_px, height_px)
+
+
+func _setup_inventory_fit() -> void:
+	if _inventory_section != null and not _inventory_section.resized.is_connected(_fit_inventory_layout):
+		_inventory_section.resized.connect(_fit_inventory_layout)
+	if _inventory_grid != null:
+		_inventory_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if not _inventory_grid.resized.is_connected(_fit_inventory_layout):
+			_inventory_grid.resized.connect(_fit_inventory_layout)
+	if _inventory_toolbar != null:
+		_inventory_toolbar.clip_contents = true
+		_inventory_toolbar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_inventory_toolbar.add_theme_constant_override("separation", 3)
+	_fit_inventory_layout.call_deferred()
+
+
+func _fit_inventory_layout() -> void:
+	if _inventory_section == null or _inventory_grid == null or _bag_slots.is_empty():
+		return
+	var width := _inventory_section.size.x
+	if width < 80.0:
+		return
+	var cols := maxi(1, _inventory_grid.columns)
+	var sep := _inventory_grid.get_theme_constant("h_separation")
+	var slot_w := int(floor((width - float((cols - 1) * sep)) / float(cols)))
+	slot_w = maxi(16, slot_w)
+	_bag_slot_width = slot_w
+	for slot in _bag_slots:
+		_configure_slot_size(slot, slot_w, BAG_SLOT_SIZE)
+	if _hotbar_grid != null:
+		_hotbar_grid.add_theme_constant_override("separation", sep)
+	for slot in _hotbar_slots:
+		_configure_slot_size(slot, slot_w, HOTBAR_SLOT_SIZE)
+		var cell := slot.get_parent() as Control
+		if cell != null:
+			cell.custom_minimum_size.x = slot_w
+			cell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_fit_toolbar_to_slots(slot_w)
+
+
+func _fit_toolbar_to_slots(slot_w: int) -> void:
+	var bar_h := mini(18, BAG_SLOT_SIZE)
+	if _search_edit != null:
+		_search_edit.custom_minimum_size = Vector2(slot_w, bar_h)
+		_search_edit.custom_maximum_size = Vector2(slot_w * 3, bar_h)
+		_search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_search_edit.clip_contents = true
+		_search_edit.add_theme_font_size_override("font_size", 9)
+	for tab in [_tab_alle, _tab_equip, _tab_consume, _tab_mats, _tab_other]:
+		if tab == null:
+			continue
+		tab.custom_minimum_size = Vector2(slot_w, bar_h)
+		tab.custom_maximum_size = Vector2(slot_w * 2, bar_h)
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tab.clip_text = true
+		tab.add_theme_font_size_override("font_size", 9)
+	for button in [_filter_button, _sort_button]:
+		if button == null:
+			continue
+		button.custom_minimum_size = Vector2(slot_w, bar_h)
+		button.custom_maximum_size = Vector2(slot_w, bar_h)
+		button.size_flags_horizontal = 0
+		button.clip_text = true
+		button.add_theme_font_size_override("font_size", 8)
 
 
 func _collect_equipment_slots() -> void:
@@ -479,27 +593,35 @@ func _collect_equipment_slots() -> void:
 func _collect_equipment_slots_in(node: Node) -> void:
 	for child in node.get_children():
 		if child.has_method("apply_item"):
-			var key := str(child.get("equipment_key"))
-			if key.is_empty():
-				continue
-			_equip_slots[key] = child
-			if not child.is_connected("slot_clicked", _on_slot_clicked):
-				child.connect("slot_clicked", _on_slot_clicked)
-			if child.has_signal("slot_right_clicked") and not child.is_connected("slot_right_clicked", _on_slot_right_clicked):
-				child.connect("slot_right_clicked", _on_slot_right_clicked)
-			if child.has_signal("slot_double_clicked") and not child.is_connected("slot_double_clicked", _on_slot_double_clicked):
-				child.connect("slot_double_clicked", _on_slot_double_clicked)
-			if child.has_signal("slot_shift_clicked") and not child.is_connected("slot_shift_clicked", _on_slot_shift_clicked):
-				child.connect("slot_shift_clicked", _on_slot_shift_clicked)
-			if child.has_signal("slot_ctrl_clicked") and not child.is_connected("slot_ctrl_clicked", _on_slot_ctrl_clicked):
-				child.connect("slot_ctrl_clicked", _on_slot_ctrl_clicked)
-			if child.has_signal("slot_hovered") and not child.is_connected("slot_hovered", _on_slot_hovered):
-				child.connect("slot_hovered", _on_slot_hovered)
-			if child.has_signal("slot_unhovered") and not child.is_connected("slot_unhovered", _on_slot_unhovered):
-				child.connect("slot_unhovered", _on_slot_unhovered)
-			_configure_slot_size(child, EQUIP_SLOT_SIZE)
+			_register_equip_slot(child)
 		else:
 			_collect_equipment_slots_in(child)
+
+
+func _register_equip_slot(child: Node) -> void:
+	var key := str(child.get("equipment_key"))
+	if key.is_empty():
+		return
+	if not _equip_slots.has(key):
+		_equip_slots[key] = []
+	var list: Array = _equip_slots[key]
+	if not list.has(child):
+		list.append(child)
+	if not child.is_connected("slot_clicked", _on_slot_clicked):
+		child.connect("slot_clicked", _on_slot_clicked)
+	if child.has_signal("slot_right_clicked") and not child.is_connected("slot_right_clicked", _on_slot_right_clicked):
+		child.connect("slot_right_clicked", _on_slot_right_clicked)
+	if child.has_signal("slot_double_clicked") and not child.is_connected("slot_double_clicked", _on_slot_double_clicked):
+		child.connect("slot_double_clicked", _on_slot_double_clicked)
+	if child.has_signal("slot_shift_clicked") and not child.is_connected("slot_shift_clicked", _on_slot_shift_clicked):
+		child.connect("slot_shift_clicked", _on_slot_shift_clicked)
+	if child.has_signal("slot_ctrl_clicked") and not child.is_connected("slot_ctrl_clicked", _on_slot_ctrl_clicked):
+		child.connect("slot_ctrl_clicked", _on_slot_ctrl_clicked)
+	if child.has_signal("slot_hovered") and not child.is_connected("slot_hovered", _on_slot_hovered):
+		child.connect("slot_hovered", _on_slot_hovered)
+	if child.has_signal("slot_unhovered") and not child.is_connected("slot_unhovered", _on_slot_unhovered):
+		child.connect("slot_unhovered", _on_slot_unhovered)
+	_configure_slot_size(child, EQUIP_SLOT_SIZE)
 
 
 func _setup_toolbar() -> void:
@@ -518,15 +640,14 @@ func _style_toolbar_controls() -> void:
 	var chrome := _toolbar_style()
 	if _search_edit != null:
 		_search_edit.placeholder_text = "Suchen ..."
-		_search_edit.custom_minimum_size = Vector2(112, 18)
-		_search_edit.add_theme_font_size_override("font_size", 10)
+		_search_edit.add_theme_font_size_override("font_size", 9)
 		_search_edit.add_theme_color_override("font_placeholder_color", Color(0.55, 0.6, 0.66, 0.85))
 	for button in [_filter_button, _sort_button]:
 		if button == null:
 			continue
 		button.flat = false
-		button.custom_minimum_size = Vector2(38, 18)
-		button.add_theme_font_size_override("font_size", 9)
+		button.clip_text = true
+		button.add_theme_font_size_override("font_size", 8)
 		button.add_theme_stylebox_override("normal", chrome)
 		button.add_theme_stylebox_override("hover", chrome)
 		button.add_theme_stylebox_override("pressed", chrome)
@@ -534,6 +655,7 @@ func _style_toolbar_controls() -> void:
 		_filter_button.tooltip_text = "Detailfilter"
 	if _sort_button != null:
 		_sort_button.tooltip_text = "Sortierung"
+	_fit_toolbar_to_slots(_bag_slot_width)
 
 
 func _setup_filter_tabs() -> void:
@@ -738,14 +860,17 @@ func refresh() -> void:
 		return
 	refresh_inventory_view()
 	for key in _equip_slots.keys():
-		var slot: Panel = _equip_slots[key]
 		var item := _inventory.get_equipment_item(str(key))
 		var data: Dictionary = _inventory.equipment[key]
-		slot.call("apply_item", item, int(data["amount"]), _is_inspect_ref(str(key)), bool(data.get("favorite", false)))
+		for slot in _equip_slots[key]:
+			if slot != null and is_instance_valid(slot):
+				slot.call("apply_item", item, int(data["amount"]), _is_inspect_ref(str(key)), bool(data.get("favorite", false)))
 	_update_preview()
 	_update_inspect_panel()
 	if _main_tab == MainTab.CRAFTING and _crafting_page != null:
 		_crafting_page.refresh()
+	if _main_tab == MainTab.CHARACTER and _character_page != null:
+		_character_page.refresh()
 	_lock_panel_size()
 
 
@@ -910,14 +1035,21 @@ func _update_preview() -> void:
 		var composed: Texture2D = _player.compose_preview_texture()
 		if composed != null:
 			_preview.texture = composed
-	if _held_preview == null or _inventory == null:
+			if _character_page != null and _character_page.preview_rect() != null:
+				_character_page.preview_rect().texture = composed
+	var held := _held_preview
+	var extra_held := _character_page.held_preview_rect() if _character_page != null else null
+	if _inventory == null:
 		return
 	var item := _inventory.get_selected_item()
-	if item == null or item.icon == null:
-		_held_preview.visible = false
-		return
-	_held_preview.visible = true
-	_held_preview.texture = item.icon
+	for preview in [held, extra_held]:
+		if preview == null:
+			continue
+		if item == null or item.icon == null:
+			preview.visible = false
+		else:
+			preview.visible = true
+			preview.texture = item.icon
 
 
 func _is_inspect_ref(ref: Variant) -> bool:
@@ -1347,7 +1479,8 @@ func _process(_delta: float) -> void:
 		return
 	if _main_panel != null:
 		var vp := get_viewport_rect().size
-		var fit := minf((vp.x - 24.0) / PANEL_SIZE.x, (vp.y - 24.0) / PANEL_SIZE.y)
+		var panel := _active_panel_size()
+		var fit := minf((vp.x - 24.0) / panel.x, (vp.y - 24.0) / panel.y)
 		var ui_scale := clampf(fit, 0.62, 1.0)
 		if not _main_panel.scale.is_equal_approx(Vector2(ui_scale, ui_scale)):
 			_lock_panel_size()

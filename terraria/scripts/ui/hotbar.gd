@@ -13,9 +13,17 @@ const BASE_BOTTOM_MARGIN := 16.0
 const BASE_SIDE_MARGIN := 16.0
 const ICON_INSET := 4.0
 const MIN_SLOT_SIZE := 24.0
+const SELECTED_TINT := Color(1.1, 1.06, 0.88, 1)
+const HOVER_TINT := Color(1.04, 1.05, 1.08, 1)
+const IDLE_TINT := Color(0.9, 0.93, 0.97, 1)
 
 var _inventory: Inventory
 var _slot_size: int = int(BASE_SLOT_SIZE)
+var _hovered_index: int = -1
+
+var _style_normal: StyleBox = preload("res://resources/ui/hotbar_slot.tres")
+var _style_selected: StyleBox = preload("res://resources/ui/hotbar_slot_selected.tres")
+var _style_hover: StyleBox = preload("res://resources/ui/hotbar_slot_hover.tres")
 
 func _ready() -> void:
 	_inventory = get_tree().get_first_node_in_group("player_inventory") as Inventory
@@ -34,6 +42,12 @@ func _ready() -> void:
 			slot.clip_contents = true
 			slot.mouse_filter = Control.MOUSE_FILTER_STOP
 			slot.gui_input.connect(_on_slot_gui_input.bind(i))
+			if not slot.mouse_entered.is_connected(_on_slot_mouse_entered):
+				slot.mouse_entered.connect(_on_slot_mouse_entered.bind(i))
+			if not slot.mouse_exited.is_connected(_on_slot_mouse_exited):
+				slot.mouse_exited.connect(_on_slot_mouse_exited.bind(i))
+			_ensure_select_glow(slot)
+			_ensure_select_marker(slot)
 			var icon := slot.get_node_or_null("Icon") as TextureRect
 			var amount := slot.get_node_or_null("Amount") as Label
 			if icon != null:
@@ -72,12 +86,18 @@ func _apply_layout() -> void:
 	var size_ratio := float(_slot_size) / BASE_SLOT_SIZE
 	var separation := maxi(4, int(round(BASE_SEPARATION * size_ratio)))
 	var bottom := maxi(8, int(round(BASE_BOTTOM_MARGIN * size_ratio)))
-	var side := maxi(8, int(round(BASE_SIDE_MARGIN * size_ratio)))
 	var extra := maxi(4, int(round(8.0 * size_ratio)))
-	offset_left = float(side)
-	offset_right = float(-side)
+	var total_width := _slot_size * Inventory.HOTBAR_COUNT + separation * (Inventory.HOTBAR_COUNT - 1)
+	anchor_left = 0.5
+	anchor_top = 1.0
+	anchor_right = 0.5
+	anchor_bottom = 1.0
+	offset_left = -total_width / 2
+	offset_right = total_width / 2
 	offset_bottom = float(-bottom)
 	offset_top = float(-(bottom + _slot_size + extra))
+	grow_horizontal = Control.GROW_DIRECTION_BOTH
+	grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_theme_constant_override("separation", separation)
 	alignment = BoxContainer.ALIGNMENT_CENTER
 	var slot_vec := Vector2(_slot_size, _slot_size)
@@ -213,9 +233,9 @@ func _style_slot_number(slot: Control, size_ratio: float) -> void:
 	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	number.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	number.add_theme_font_size_override("font_size", maxi(8, int(round(10.0 * size_ratio))))
-	number.add_theme_color_override("font_color", Color(0.82, 0.86, 0.92, 0.72))
-	number.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
-	number.add_theme_constant_override("outline_size", 2)
+	number.add_theme_color_override("font_color", Color(0.72, 0.78, 0.86, 0.82))
+	number.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.82))
+	number.add_theme_constant_override("outline_size", maxi(2, int(round(3.0 * size_ratio))))
 	number.anchor_left = 0.0
 	number.anchor_top = 1.0
 	number.anchor_right = 0.0
@@ -285,9 +305,93 @@ func _on_slot_gui_input(event: InputEvent, index: int) -> void:
 		_inventory.set_selected_hotbar_index(index)
 
 
+func _on_slot_mouse_entered(index: int) -> void:
+	if _hovered_index == index:
+		return
+	_hovered_index = index
+	refresh()
+
+
+func _on_slot_mouse_exited(index: int) -> void:
+	if _hovered_index != index:
+		return
+	_hovered_index = -1
+	refresh()
+
+
+func _ensure_select_marker(slot: Control) -> void:
+	if slot == null or slot.get_node_or_null("SelectMarker") != null:
+		return
+	var marker := ColorRect.new()
+	marker.name = "SelectMarker"
+	marker.visible = false
+	marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marker.color = Color(0.98, 0.82, 0.24, 1)
+	marker.z_index = 4
+	slot.add_child(marker)
+	marker.anchor_left = 0.0
+	marker.anchor_top = 1.0
+	marker.anchor_right = 1.0
+	marker.anchor_bottom = 1.0
+	marker.offset_left = 2.0
+	marker.offset_top = -4.0
+	marker.offset_right = -2.0
+	marker.offset_bottom = -1.0
+
+
+func _ensure_select_glow(slot: Control) -> void:
+	if slot == null or slot.get_node_or_null("SelectGlow") != null:
+		return
+	var glow := ColorRect.new()
+	glow.name = "SelectGlow"
+	glow.visible = false
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.color = Color(1.0, 0.84, 0.28, 0.22)
+	glow.z_index = 0
+	slot.add_child(glow)
+	slot.move_child(glow, 0)
+	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glow.offset_left = 1.0
+	glow.offset_top = 1.0
+	glow.offset_right = -1.0
+	glow.offset_bottom = -1.0
+
+
+func _apply_slot_style(slot: Panel, index: int, size_ratio: float) -> void:
+	var selected := _inventory != null and index == _inventory.selected_hotbar_index
+	var hovered := index == _hovered_index
+	if selected:
+		slot.add_theme_stylebox_override("panel", _style_selected)
+		slot.modulate = SELECTED_TINT
+		slot.z_index = 2
+	elif hovered:
+		slot.add_theme_stylebox_override("panel", _style_hover)
+		slot.modulate = HOVER_TINT
+		slot.z_index = 1
+	else:
+		slot.add_theme_stylebox_override("panel", _style_normal)
+		slot.modulate = IDLE_TINT
+		slot.z_index = 0
+	var glow := slot.get_node_or_null("SelectGlow") as ColorRect
+	if glow != null:
+		glow.visible = selected
+	var marker := slot.get_node_or_null("SelectMarker") as ColorRect
+	if marker != null:
+		marker.visible = selected
+	var number := slot.get_node_or_null("SlotNumber") as Label
+	if number != null:
+		if selected:
+			number.add_theme_color_override("font_color", Color(1.0, 0.88, 0.34, 1))
+			number.add_theme_font_size_override("font_size", maxi(9, int(round(12.0 * size_ratio))))
+		else:
+			number.add_theme_color_override("font_color", Color(0.72, 0.78, 0.86, 0.82))
+			number.add_theme_font_size_override("font_size", maxi(8, int(round(10.0 * size_ratio))))
+
+
 func refresh() -> void:
 	if _inventory == null:
 		return
+	var size_ratio := float(_slot_size) / BASE_SLOT_SIZE
 	for i in Inventory.HOTBAR_COUNT:
 		var slot := get_node("Slot%d" % i) as Panel
 		var icon := slot.get_node("Icon") as TextureRect
@@ -295,7 +399,7 @@ func refresh() -> void:
 		var data: Dictionary = _inventory.get_slot(i)
 		var item_id := int(data["item_id"])
 		var count := int(data["amount"])
-		slot.modulate = Color(1.2, 1.15, 0.8) if i == _inventory.selected_hotbar_index else Color.WHITE
+		_apply_slot_style(slot, i, size_ratio)
 		if item_id < 0 or count <= 0:
 			icon.texture = null
 			amount.text = ""

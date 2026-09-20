@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_definition.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/zombie.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"zombie"
+display_name = "Zombie"
+scene = ExtResource("2_scene")

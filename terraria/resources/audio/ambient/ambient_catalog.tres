@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AmbientCatalog" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/ambient_catalog.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/wind_grass.tres" id="2_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/wind_night.tres" id="3_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/wind_forest.tres" id="4_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/wind_sand.tres" id="5_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/wind_cave.tres" id="6_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/birds_day.tres" id="7_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/birds_forest.tres" id="8_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/crickets_night.tres" id="9_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/bird_call.tres" id="10_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/owl.tres" id="11_layer"]
+[ext_resource type="Resource" path="res://resources/audio/ambient/drip.tres" id="12_layer"]
+
+[resource]
+script = ExtResource("1_script")
+layers = [ExtResource("2_layer"), ExtResource("3_layer"), ExtResource("4_layer"), ExtResource("5_layer"), ExtResource("6_layer"), ExtResource("7_layer"), ExtResource("8_layer"), ExtResource("9_layer"), ExtResource("10_layer"), ExtResource("11_layer"), ExtResource("12_layer")]

@@ -16,7 +16,9 @@ func _ready() -> void:
 
 func save_game() -> bool:
 	var payload := {
-		"version": 1,
+		"version": 2,
+		"world_seed": _world_seed(),
+		"character": _character_save(),
 		"buildings": _call_save("building_manager"),
 		"structural": _call_save("structural_manager"),
 		"building_parts": _call_save("building_part_system"),
@@ -24,6 +26,7 @@ func save_game() -> bool:
 		"fog_event": _call_save("fog_event"),
 		"lantern": _call_save("lantern"),
 		"vegetation": _call_save("vegetation_system"),
+		"liquid": _call_save("liquid_system"),
 		"inventory": _inventory_save(),
 		"player": _player_save(),
 	}
@@ -48,11 +51,13 @@ func load_game() -> bool:
 	_call_load("fog_event", data.get("fog_event", {}))
 	_call_load("lantern", data.get("lantern", {}))
 	_call_load("vegetation_system", data.get("vegetation", {}))
+	_call_load("liquid_system", data.get("liquid", {}))
 	_call_load("structural_manager", data.get("structural", {}))
 	_call_load("building_part_system", data.get("building_parts", {}))
 	_call_load("building_manager", data.get("buildings", {}))
 	_inventory_load(data.get("inventory", {}))
 	_player_load(data.get("player", {}))
+	_character_load(data.get("character", {}))
 	var buildings := get_tree().get_first_node_in_group("building_manager")
 	if buildings != null and buildings.has_method("apply_loaded_player_area"):
 		buildings.call("apply_loaded_player_area")
@@ -62,6 +67,23 @@ func load_game() -> bool:
 
 func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
+
+
+static func read_payload() -> Dictionary:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return {}
+	var text := FileAccess.get_file_as_string(SAVE_PATH)
+	if text.is_empty():
+		return {}
+	var parsed: Variant = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	return parsed
+
+
+static func has_valid_save() -> bool:
+	var payload := read_payload()
+	return not payload.is_empty()
 
 
 func _call_save(group_name: StringName) -> Dictionary:
@@ -98,9 +120,13 @@ func _player_save() -> Dictionary:
 	var player := get_tree().get_first_node_in_group("player") as Player
 	if player == null:
 		return {}
-	return {
+	var payload := {
 		"position": [player.global_position.x, player.global_position.y],
+		"character_name": player.character_name,
 	}
+	if player.stats != null:
+		payload["stats"] = player.stats.to_save_dict()
+	return payload
 
 
 func _player_load(data: Dictionary) -> void:
@@ -111,3 +137,40 @@ func _player_load(data: Dictionary) -> void:
 	if pos.size() >= 2:
 		player.global_position = Vector2(float(pos[0]), float(pos[1]))
 		player.velocity = Vector2.ZERO
+	if data.has("character_name"):
+		player.character_name = str(data.get("character_name", "")).strip_edges()
+	if data.has("stats") and player.stats != null and data["stats"] is Dictionary:
+		player.stats.from_save_dict(data["stats"])
+
+
+func _world_seed() -> int:
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow != null and flow.has_method("resolve_world_seed"):
+		var pending := int(flow.call("resolve_world_seed"))
+		if pending != 0:
+			return pending
+	var world := get_tree().get_first_node_in_group("world_generator")
+	if world != null and world.has_method("get_seed"):
+		return int(world.call("get_seed"))
+	return 0
+
+
+func _character_load(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	var player := get_tree().get_first_node_in_group("player") as Player
+	if player == null:
+		return
+	player.apply_appearance(SessionFactory.look_from_dict(data))
+
+
+func _character_save() -> Dictionary:
+	var player := get_tree().get_first_node_in_group("player") as Player
+	if player != null and not player.character_name.is_empty():
+		return {"character_name": player.character_name}
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow != null:
+		var session: Variant = flow.get("session")
+		if session is SessionRecord and session.appearance != null:
+			return session.appearance.to_dict()
+	return {}

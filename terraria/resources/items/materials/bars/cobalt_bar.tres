@@ -1,0 +1,17 @@
+﻿[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/items/bars/cobalt_bar.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = 127
+display_name = "Kobaltbarren"
+description = "Verarbeitetes Metall. 4x Erz am Schmelzofen."
+icon = ExtResource("2_icon")
+max_stack = 999
+item_type = 5
+category = 8
+ore_metal_category = 2
+placeable_block_id = -1
+held_scale = 1.0

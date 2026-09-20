@@ -10,13 +10,23 @@ extends CharacterBody2D
 
 
 var health: int = 20
+var frozen: bool = false
 
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _label: Label = $HealthLabel
 
 func _ready() -> void:
+	add_to_group("enemies")
 	health = max_health
 	_update_label()
+
+
+func get_health_current() -> float:
+	return float(health)
+
+
+func get_health_max() -> float:
+	return float(max_health)
 
 
 func _physics_process(delta: float) -> void:
@@ -72,3 +82,7 @@ func _update_label() -> void:
 	if _label == null:
 		return
 	_label.text = str(health)
+
+
+func remove_silent() -> void:
+	queue_free()

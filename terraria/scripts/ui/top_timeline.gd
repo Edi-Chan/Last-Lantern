@@ -1,135 +1,215 @@
 class_name TopTimeline
-extends PanelContainer
+extends Control
 
 ## Gehoert an: HUD/TopTimeline. Nur Anzeige. DayCycle und FogEvent bleiben Source of Truth.
 
-const LEFT_SAFE := 176.0
-const RIGHT_SAFE := 224.0
-const MIN_WIDTH := 360.0
-const MAX_WIDTH := 520.0
-const SLOT_COUNT := 7
+enum VisualState { NORMAL, WARNING, DARKNESS }
 
-const COL_MUTED := Color(0.70, 0.74, 0.80, 0.82)
-const COL_CURRENT := Color(0.98, 0.90, 0.58, 1)
-const COL_FOG := Color(0.95, 0.38, 0.34, 1)
-const COL_FOG_DIM := Color(0.78, 0.42, 0.40, 0.92)
-const COL_CLOCK := Color(0.93, 0.90, 0.78, 1)
+const HUD_WIDTH := 284.0
+const HUD_HEIGHT := 54.0
+const COL_TICK := Color("F2EEE6")
+const COL_TICK_GLOW := Color("FFFFFF", 0.35)
+const TOP_MARGIN := 16.0
+const BAR_SIZE := Vector2(220, 10)
+const ICON_PX := 22
+const MARKER_W := 7.0
+const PULSE_SECONDS := 2.0
+const BANNER_SECONDS := 2.2
+
+const COL_FRAME := Color("15151C")
+const COL_FRAME_WARN := Color("3A2438")
+const COL_FRAME_DARK := Color("4A1824")
+const COL_LABEL := Color("C8C4BC")
+const COL_LABEL_WARN := Color("D4B49A")
+const COL_LABEL_DARK := Color("C47878")
+const COL_DASH := Color("5A5868")
+
+const BAR_NORMAL: Array[Color] = [
+	Color("6FA8C8"),
+	Color("8EC4D8"),
+	Color("B8C8A0"),
+	Color("E0C46A"),
+	Color("D4884A"),
+	Color("6A4A88"),
+	Color("3A2A58"),
+]
+const BAR_WARNING: Array[Color] = [
+	Color("6FA8C8"),
+	Color("8EC4D8"),
+	Color("C4B878"),
+	Color("D4884A"),
+	Color("8A4068"),
+	Color("5A2848"),
+	Color("2E1838"),
+]
+const BAR_DARKNESS: Array[Color] = [
+	Color("2A2030"),
+	Color("4A1824"),
+	Color("5A2040"),
+	Color("3A1838"),
+	Color("2A1028"),
+	Color("1A0C1C"),
+	Color("120814"),
+]
 
 var _day: DayCycle
 var _fog: FogEvent
-var _slots: Array[PanelContainer] = []
-var _slot_labels: Array[Label] = []
-var _cycle_start: int = -1
-var _shown_day: int = -1
-var _shown_clock := ""
-var _shown_status := ""
-var _shown_phase := -1
+var _state: VisualState = VisualState.NORMAL
+var _progress: float = 0.0
+var _displayed_progress: float = 0.0
 var _pulse: float = 0.0
-var _last_track_w := -1.0
-var _slot_style: StyleBox
-var _fog_style: StyleBox
+var _banner_left: float = 0.0
+var _last_fog_state: int = -1
+var _shown_day: int = -1
+var _shown_clock: String = ""
 
-@onready var _day_row: HBoxContainer = $Margin/Rows/DayRow
-@onready var _status: Label = $Margin/Rows/StatusLabel
-@onready var _clock: Label = $Margin/Rows/ClockLabel
-@onready var _track: Control = $Margin/Rows/Track
-@onready var _marker: ColorRect = $Margin/Rows/Track/Marker
-@onready var _sunrise: ColorRect = $Margin/Rows/Track/SunriseTick
-@onready var _sunset: ColorRect = $Margin/Rows/Track/SunsetTick
-@onready var _phase_morning: Label = $Margin/Rows/PhaseRow/Morning
-@onready var _phase_noon: Label = $Margin/Rows/PhaseRow/Noon
-@onready var _phase_evening: Label = $Margin/Rows/PhaseRow/Evening
-@onready var _phase_night: Label = $Margin/Rows/PhaseRow/Night
-@onready var _seg_night_l: ColorRect = $Margin/Rows/Track/SegNightL
-@onready var _seg_morning: ColorRect = $Margin/Rows/Track/SegMorning
-@onready var _seg_noon: ColorRect = $Margin/Rows/Track/SegNoon
-@onready var _seg_evening: ColorRect = $Margin/Rows/Track/SegEvening
-@onready var _seg_night_r: ColorRect = $Margin/Rows/Track/SegNightR
+@onready var _sun: TextureRect = $Margin/Column/TimeRow/SunIcon
+@onready var _moon: TextureRect = $Margin/Column/TimeRow/MoonIcon
+@onready var _bar: Control = $Margin/Column/TimeRow/TimeBarContainer/TimeBar
+@onready var _marker: TextureRect = $Margin/Column/TimeRow/TimeBarContainer/TimeBar/TimeMarker
+@onready var _frame: Panel = $Margin/Column/TimeRow/TimeBarContainer/BarFrame
+@onready var _day_label: Label = $Margin/Column/DayRow/DayLabel
+@onready var _clock_label: Label = $Margin/Column/DayRow/ClockLabel
+@onready var _banner: Label = $Margin/Column/EclipseBanner
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	_marker.z_index = 3
-	_sunrise.z_index = 2
-	_sunset.z_index = 2
-	_collect_slots()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_apply_layout()
+	_apply_icon_textures()
+	if _banner != null:
+		_banner.visible = false
+	if _bar != null:
+		_bar.clip_contents = false
+		if not _bar.draw.is_connected(_on_bar_draw):
+			_bar.draw.connect(_on_bar_draw)
 	if not SettingsManager.ui_scale_changed.is_connected(_on_ui_scale_changed):
 		SettingsManager.ui_scale_changed.connect(_on_ui_scale_changed)
 	var vp := get_viewport()
-	if vp != null and not vp.size_changed.is_connected(_fit_width):
-		vp.size_changed.connect(_fit_width)
+	if vp != null and not vp.size_changed.is_connected(_apply_layout):
+		vp.size_changed.connect(_apply_layout)
 	call_deferred("_bind")
-	call_deferred("_fit_width")
 	set_process(true)
 
 
 func _on_ui_scale_changed(_scale: float) -> void:
-	_fit_width()
+	_apply_layout()
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED or what == NOTIFICATION_VISIBILITY_CHANGED:
-		_fit_width()
+		_apply_layout()
 
 
 func _process(delta: float) -> void:
-	_pulse += delta
-	_update_marker()
-	_update_fog_pulse()
+	var need := _day != null
+	if _day != null:
+		_progress = _calc_progress(_day.time_of_day)
+		_displayed_progress = _progress
+		_place_marker()
+		_refresh_clock_label(false)
+		if _bar != null:
+			_bar.queue_redraw()
+	if _state == VisualState.DARKNESS and _is_fog_running() and _frame != null:
+		_pulse += delta
+		var wave := 0.5 + 0.5 * sin(_pulse * TAU / PULSE_SECONDS)
+		_frame.modulate = Color(1, 1, 1, lerpf(0.75, 1.0, wave))
+		need = true
+	elif _frame != null and not is_equal_approx(_frame.modulate.a, 1.0):
+		_frame.modulate = Color.WHITE
+	if _banner_left > 0.0:
+		_banner_left = maxf(0.0, _banner_left - delta)
+		if _banner != null:
+			_banner.visible = true
+			_banner.modulate.a = clampf(_banner_left / 0.35, 0.0, 1.0) if _banner_left < 0.35 else 1.0
+		need = true
+	elif _banner != null and _banner.visible:
+		_banner.visible = false
+	if not need:
+		set_process(false)
 
 
 func _bind() -> void:
 	_day = get_tree().get_first_node_in_group("day_cycle") as DayCycle
 	_fog = get_tree().get_first_node_in_group("fog_event") as FogEvent
 	if _day != null:
-		if not _day.day_changed.is_connected(_on_day_changed):
-			_day.day_changed.connect(_on_day_changed)
 		if not _day.time_changed.is_connected(_on_time_changed):
 			_day.time_changed.connect(_on_time_changed)
+		if not _day.day_changed.is_connected(_on_day_changed):
+			_day.day_changed.connect(_on_day_changed)
 	if _fog != null and not _fog.state_changed.is_connected(_on_fog_state):
 		_fog.state_changed.connect(_on_fog_state)
-	_refresh_days(true)
-	_refresh_clock(true)
-	_refresh_status(true)
-	_refresh_phases(true)
-	_fit_width()
+	_refresh_all(true)
 
 
 func _on_day_changed(_day_n: int) -> void:
-	_refresh_days(false)
-	_refresh_status(true)
+	_refresh_all(true)
 
 
-func _on_time_changed(_day_n: int, _time: float, _night: bool) -> void:
-	_refresh_clock(false)
-	_refresh_status(false)
-	_refresh_phases(false)
-	if _day != null and _day.current_day != _shown_day:
-		_refresh_days(false)
+func _on_time_changed(_day_n: int, time_of_day: float, _night: bool) -> void:
+	_apply_progress(time_of_day)
+	update_visual_state()
+	_refresh_day_label(false)
+	_refresh_clock_label(true)
+	_update_icons()
 
 
-func _on_fog_state(_state: int) -> void:
-	_refresh_status(true)
-	_refresh_days(true)
+func _on_fog_state(state: int) -> void:
+	var became_active := (
+		state == FogEvent.State.FOG_ACTIVE
+		and _last_fog_state != FogEvent.State.FOG_ACTIVE
+	)
+	_last_fog_state = state
+	update_visual_state()
+	if became_active:
+		_show_banner()
 
 
-func _collect_slots() -> void:
-	_slots.clear()
-	_slot_labels.clear()
-	if _day_row == null:
+func _refresh_all(_force: bool) -> void:
+	if _day == null:
 		return
-	for child in _day_row.get_children():
-		var panel := child as PanelContainer
-		if panel == null:
-			continue
-		_slots.append(panel)
-		var label := panel.get_node_or_null("DayLabel") as Label
-		_slot_labels.append(label)
-		panel.mouse_filter = Control.MOUSE_FILTER_STOP
-		if _slots.size() == 1:
-			_slot_style = panel.get_theme_stylebox("panel")
-		if _slots.size() == SLOT_COUNT:
-			_fog_style = panel.get_theme_stylebox("panel")
+	_apply_progress(_day.time_of_day)
+	update_visual_state()
+	_refresh_day_label(true)
+	_refresh_clock_label(true)
+	_update_icons()
+	_place_marker()
+	if _bar != null:
+		_bar.queue_redraw()
+
+
+func _apply_progress(time_of_day: float) -> void:
+	_progress = _calc_progress(time_of_day)
+	if absf(_progress - _displayed_progress) > 0.5 or _displayed_progress == 0.0:
+		_displayed_progress = _progress
+	_place_marker()
+	if _bar != null:
+		_bar.queue_redraw()
+	_ensure_process()
+
+
+func _calc_progress(time_of_day: float) -> float:
+	var settings := _settings()
+	var day_start := 0.25
+	if settings != null:
+		day_start = settings.night_end_time
+	return fposmod(time_of_day - day_start, 1.0)
+
+
+func update_visual_state() -> void:
+	var settings := _settings()
+	var next := VisualState.NORMAL
+	if _is_fog_running() or _is_fog_day():
+		next = VisualState.DARKNESS
+	elif _is_warning_day(settings):
+		next = VisualState.WARNING
+	_state = next
+	_apply_frame_style()
+	_apply_day_label_color()
+	_apply_label_color()
+	if _bar != null:
+		_bar.queue_redraw()
+	_ensure_process()
 
 
 func _settings() -> LastLanternSettings:
@@ -140,211 +220,305 @@ func _settings() -> LastLanternSettings:
 	return null
 
 
-func _refresh_days(force: bool) -> void:
+func _cycle_index(day: int) -> int:
 	var settings := _settings()
-	if settings == null or _day == null or _slots.size() < SLOT_COUNT:
+	if settings == null:
+		return posmod(day - 1, 7) + 1
+	return day - settings.cycle_start_day(day) + 1
+
+
+func _is_fog_day() -> bool:
+	var settings := _settings()
+	return settings != null and _day != null and settings.is_fog_day(_day.current_day)
+
+
+func _is_warning_day(settings: LastLanternSettings) -> bool:
+	if settings == null or _day == null:
+		return false
+	var done := _fog.fog_done_today() if _fog != null else false
+	return settings.days_until_fog(_day.current_day, done) == 1
+
+
+func _is_fog_running() -> bool:
+	if _fog == null:
+		return false
+	return _fog.state == FogEvent.State.FOG_ACTIVE or _fog.state == FogEvent.State.FOG_ENDING
+
+
+func _refresh_day_label(force: bool) -> void:
+	if _day_label == null or _day == null:
 		return
 	var day := _day.current_day
-	var start := settings.cycle_start_day(day)
-	if not force and start == _cycle_start and day == _shown_day:
+	if not force and day == _shown_day:
 		return
-	_cycle_start = start
 	_shown_day = day
-	var fog_day := settings.cycle_fog_day(day)
-	var days_left := settings.days_until_fog(day, _fog.fog_done_today() if _fog != null else false)
-	for i in SLOT_COUNT:
-		var slot_day := start + i
-		var is_fog := slot_day == fog_day
-		var is_current := slot_day == day
-		var label := _slot_labels[i] if i < _slot_labels.size() else null
-		var panel := _slots[i]
-		if label != null:
-			if is_fog:
-				label.text = "⚠ TAG %d" % slot_day
-			elif is_current:
-				label.text = "[TAG %d]" % slot_day
-			else:
-				label.text = "TAG %d" % slot_day
-			if is_current:
-				label.add_theme_color_override("font_color", COL_FOG if is_fog else COL_CURRENT)
-			elif is_fog:
-				label.add_theme_color_override("font_color", COL_FOG_DIM)
-			else:
-				label.add_theme_color_override("font_color", COL_MUTED)
-		_apply_slot_style(panel, is_current, is_fog)
-		if is_fog:
-			panel.tooltip_text = "TAG %d\n⚠ Tödliche Finsternis" % slot_day
-		else:
-			var left := fog_day - slot_day
-			panel.tooltip_text = "TAG %d\nNormaler Tag\nFinsternis in %d Tagen" % [slot_day, left] if left > 0 else "TAG %d\nNormaler Tag" % slot_day
-		panel.set_meta("days_left_to_fog", days_left)
-		panel.set_meta("is_fog", is_fog)
-		panel.set_meta("is_current", is_current)
-
-
-func _refresh_clock(force: bool) -> void:
-	if _day == null or _clock == null:
-		return
 	var settings := _settings()
-	var icon := "☾"
+	var interval := 7
 	if settings != null:
-		match settings.day_phase_at(_day.time_of_day):
-			LastLanternSettings.DayPhase.MORNING:
-				icon = "☀"
-			LastLanternSettings.DayPhase.NOON:
-				icon = "☀"
-			LastLanternSettings.DayPhase.EVENING:
-				icon = "◐"
-			_:
-				icon = "☾"
-	var text := "%s %s" % [icon, _day.clock_text()]
+		interval = maxi(settings.fog_interval_days, 1)
+	_day_label.text = "Tag %d / %d" % [_cycle_index(day), interval]
+
+
+func _refresh_clock_label(force: bool) -> void:
+	if _clock_label == null or _day == null:
+		return
+	var text := _day.clock_text()
 	if not force and text == _shown_clock:
 		return
 	_shown_clock = text
-	_clock.text = text
+	_clock_label.text = text
 
 
-func _refresh_status(force: bool) -> void:
-	if _status == null or _day == null:
+func _apply_label_color() -> void:
+	if _clock_label == null:
+		return
+	match _state:
+		VisualState.WARNING:
+			_clock_label.add_theme_color_override("font_color", COL_LABEL_WARN)
+		VisualState.DARKNESS:
+			_clock_label.add_theme_color_override("font_color", COL_LABEL_DARK)
+		_:
+			_clock_label.add_theme_color_override("font_color", COL_LABEL)
+
+
+func _apply_day_label_color() -> void:
+	if _day_label == null:
+		return
+	match _state:
+		VisualState.WARNING:
+			_day_label.add_theme_color_override("font_color", COL_LABEL_WARN)
+		VisualState.DARKNESS:
+			_day_label.add_theme_color_override("font_color", COL_LABEL_DARK)
+		_:
+			_day_label.add_theme_color_override("font_color", COL_LABEL)
+
+
+func _apply_frame_style() -> void:
+	if _frame == null:
+		return
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0, 0, 0, 0)
+	box.border_width_left = 2
+	box.border_width_top = 2
+	box.border_width_right = 2
+	box.border_width_bottom = 2
+	box.anti_aliasing = false
+	match _state:
+		VisualState.WARNING:
+			box.border_color = COL_FRAME_WARN
+		VisualState.DARKNESS:
+			box.border_color = COL_FRAME_DARK
+		_:
+			box.border_color = COL_FRAME
+	_frame.add_theme_stylebox_override("panel", box)
+
+
+func _update_icons() -> void:
+	if _day == null:
 		return
 	var settings := _settings()
-	var text := ""
-	var color := COL_MUTED
-	if _fog != null and (_fog.state == FogEvent.State.FOG_ACTIVE or _fog.state == FogEvent.State.FOG_ENDING):
-		text = "☠ TÖDLICHE FINSTERNIS AKTIV"
-		color = COL_FOG
-	elif _fog != null and _fog.state == FogEvent.State.WARNING:
-		text = "Die Finsternis naht"
-		color = Color(1.0, 0.72, 0.35, 1)
-	elif settings != null:
-		var done := _fog.fog_done_today() if _fog != null else false
-		var left := settings.days_until_fog(_day.current_day, done)
-		if left <= 0:
-			text = "⚠ FINSTERNIS HEUTE"
-			color = COL_FOG
-		elif left == 1:
-			text = "⚠ FINSTERNIS MORGEN"
-			color = Color(0.95, 0.55, 0.38, 1)
-		else:
-			text = "Finsternis in %d Tagen" % left
-			color = COL_MUTED
-			if left <= 3:
-				color = Color(0.90, 0.70, 0.48, 0.95)
-	if not force and text == _shown_status:
+	if settings != null:
+		var _phase := settings.day_phase_at(_day.time_of_day)
+	var sun_v := _day.sun_visibility()
+	var moon_v := _day.moon_visibility()
+	if _sun != null:
+		var dim := lerpf(0.72, 1.0, sun_v)
+		if _state == VisualState.DARKNESS:
+			dim *= 0.75
+		_sun.modulate = Color(1.0, 1.0, 1.0, dim)
+	if _moon != null:
+		var glow := lerpf(0.72, 1.0, moon_v)
+		match _state:
+			VisualState.WARNING:
+				_moon.modulate = Color(0.92, 0.78, 1.0, maxf(glow, 0.82))
+			VisualState.DARKNESS:
+				_moon.modulate = Color(1.0, 0.55, 0.62, maxf(glow, 0.88))
+			_:
+				_moon.modulate = Color(1.0, 1.0, 1.0, maxf(glow, 0.82))
+
+
+func _place_marker() -> void:
+	if _marker == null or _bar == null:
 		return
-	_shown_status = text
-	_status.text = text
-	_status.add_theme_color_override("font_color", color)
+	var inner_w := _bar.size.x if _bar.size.x > 1.0 else BAR_SIZE.x
+	var x := roundf(_displayed_progress * maxf(inner_w - 1.0, 1.0) - MARKER_W * 0.5)
+	x = clampf(x, -1.0, inner_w - MARKER_W + 1.0)
+	_marker.position = Vector2(x, -6.0)
 
 
-func _refresh_phases(force: bool) -> void:
+func _on_bar_draw() -> void:
+	if _bar == null:
+		return
+	var colors := BAR_NORMAL
+	match _state:
+		VisualState.WARNING:
+			colors = BAR_WARNING
+		VisualState.DARKNESS:
+			colors = BAR_DARKNESS
+	var bar_size := _bar.size
+	var bounds := _phase_band_bounds()
+	var segments := mini(colors.size(), maxi(bounds.size() - 1, 0))
+	var x := 0.0
+	for i in segments:
+		var t1: float = bounds[i + 1]
+		var x1 := roundf(t1 * bar_size.x)
+		_bar.draw_rect(Rect2(x, 0.0, maxf(x1 - x, 1.0), bar_size.y), colors[i], true)
+		x = x1
+	_bar.draw_rect(Rect2(0.0, 0.0, 1.0, bar_size.y), COL_FRAME, true)
+	_bar.draw_rect(Rect2(bar_size.x - 1.0, 0.0, 1.0, bar_size.y), COL_FRAME, true)
+	_draw_time_tick(bar_size)
+
+
+func _draw_time_tick(bar_size: Vector2) -> void:
+	var tick_x := roundf(_displayed_progress * maxf(bar_size.x - 1.0, 1.0))
+	tick_x = clampf(tick_x, 0.0, bar_size.x - 1.0)
+	_bar.draw_rect(Rect2(tick_x - 1.0, -1.0, 3.0, bar_size.y + 2.0), COL_TICK_GLOW, true)
+	_bar.draw_rect(Rect2(tick_x, 0.0, 1.0, bar_size.y), COL_TICK, true)
+
+
+func _phase_band_bounds() -> PackedFloat32Array:
+	## Liest night_end_time, phase_noon_start, phase_evening_start, night_start_time
+	## nur fuer die Pixel-Balken — keine Gameplay-Aenderung.
 	var settings := _settings()
-	if settings == null or _day == null:
+	var ne := 0.25
+	var noon := 0.458333
+	var eve := 0.708333
+	var ns := 0.75
+	if settings != null:
+		ne = settings.night_end_time
+		noon = settings.phase_noon_start
+		eve = settings.phase_evening_start
+		ns = settings.night_start_time
+	var span := maxf(1.0 - ne, 0.001)
+	# colors.size() == 7 → bounds braucht 8 Stuetzpunkte (0..7).
+	return PackedFloat32Array([
+		0.0,
+		_time_to_bar_u(ne + span * 0.12, ne, span),
+		_time_to_bar_u(noon, ne, span),
+		_time_to_bar_u(noon + (eve - noon) * 0.55, ne, span),
+		_time_to_bar_u(eve, ne, span),
+		_time_to_bar_u(eve + (ns - eve) * 0.45, ne, span),
+		_time_to_bar_u(ns, ne, span),
+		1.0,
+	])
+
+
+func _time_to_bar_u(t: float, day_start: float, span: float) -> float:
+	return clampf((t - day_start) / span, 0.0, 1.0)
+
+
+func _show_banner() -> void:
+	if _banner == null:
 		return
-	var phase := int(settings.day_phase_at(_day.time_of_day))
-	if not force and phase == _shown_phase:
-		return
-	_shown_phase = phase
-	_set_phase_style(_phase_morning, phase == int(LastLanternSettings.DayPhase.MORNING))
-	_set_phase_style(_phase_noon, phase == int(LastLanternSettings.DayPhase.NOON))
-	_set_phase_style(_phase_evening, phase == int(LastLanternSettings.DayPhase.EVENING))
-	_set_phase_style(_phase_night, phase == int(LastLanternSettings.DayPhase.NIGHT))
+	_banner.text = "FINSTERNIS"
+	_banner.visible = true
+	_banner.modulate = COL_LABEL_DARK
+	_banner_left = BANNER_SECONDS
+	_ensure_process()
 
 
-func _set_phase_style(label: Label, active: bool) -> void:
-	if label == null:
-		return
-	label.modulate = Color(1, 1, 1, 1) if active else Color(0.72, 0.74, 0.78, 0.55)
+func _ensure_process() -> void:
+	var need := (
+		_day != null
+		or not is_equal_approx(_displayed_progress, _progress)
+		or (_state == VisualState.DARKNESS and _is_fog_running())
+		or _banner_left > 0.0
+	)
+	set_process(need)
 
 
-func _update_marker() -> void:
-	if _day == null or _track == null or _marker == null:
-		return
-	var width := _track.size.x
-	if width <= 1.0:
-		return
-	var t := clampf(_day.time_of_day, 0.0, 0.999)
-	var x := t * width - _marker.size.x * 0.5
-	_marker.position = Vector2(clampf(x, 0.0, width - _marker.size.x), 1.0)
-	if absf(width - _last_track_w) > 0.5:
-		_last_track_w = width
-		_layout_track_segments(width)
+func _apply_layout() -> void:
+	anchor_left = 0.5
+	anchor_right = 0.5
+	anchor_top = 0.0
+	anchor_bottom = 0.0
+	offset_left = -roundf(HUD_WIDTH * 0.5)
+	offset_right = roundf(HUD_WIDTH * 0.5)
+	offset_top = TOP_MARGIN
+	offset_bottom = TOP_MARGIN + HUD_HEIGHT
+	_place_marker()
 
 
-func _apply_slot_style(panel: PanelContainer, is_current: bool, is_fog: bool) -> void:
-	var base := _fog_style if is_fog else _slot_style
-	if base == null:
-		panel.self_modulate = Color(1.28, 0.78, 0.72, 1) if is_current and is_fog else (Color(1.32, 1.18, 0.82, 1) if is_current else Color.WHITE)
-		return
-	var sb := base.duplicate() as StyleBoxFlat
-	if sb == null:
-		return
-	if is_current:
-		sb.border_color = Color(0.92, 0.32, 0.28, 0.95) if is_fog else Color(0.96, 0.86, 0.48, 0.95)
-		sb.bg_color = Color(0.42, 0.12, 0.10, 0.55) if is_fog else Color(0.22, 0.20, 0.12, 0.55)
-		panel.self_modulate = Color(1.12, 1.04, 0.96, 1)
-	else:
-		panel.self_modulate = Color.WHITE
-	panel.add_theme_stylebox_override("panel", sb)
+func _apply_icon_textures() -> void:
+	if _sun != null:
+		_sun.texture = _build_sun_texture()
+		_sun.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_sun.custom_minimum_size = Vector2(ICON_PX, ICON_PX)
+		_sun.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_sun.stretch_mode = TextureRect.STRETCH_KEEP
+	if _moon != null:
+		_moon.texture = _build_moon_texture()
+		_moon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_moon.custom_minimum_size = Vector2(ICON_PX, ICON_PX)
+		_moon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_moon.stretch_mode = TextureRect.STRETCH_KEEP
+	if _marker != null:
+		_marker.texture = _build_marker_texture()
+		_marker.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_marker.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_marker.stretch_mode = TextureRect.STRETCH_KEEP
 
 
-func _update_fog_pulse() -> void:
-	if _slots.size() < SLOT_COUNT:
-		return
-	var fog_slot := _slots[SLOT_COUNT - 1]
-	var days_left := int(fog_slot.get_meta("days_left_to_fog", 99))
-	var is_current := bool(fog_slot.get_meta("is_current", false))
-	if days_left > 3 and not is_current:
-		if fog_slot.modulate != Color.WHITE:
-			fog_slot.modulate = Color.WHITE
-		return
-	if days_left <= 0 or is_current:
-		var u := 0.5 + 0.5 * sin(_pulse * 3.2)
-		fog_slot.modulate = Color(1.0, 0.72 + 0.18 * u, 0.70, 1.0)
-	elif days_left == 1:
-		var u := 0.5 + 0.5 * sin(_pulse * 2.2)
-		fog_slot.modulate = Color(1.0, 0.82 + 0.10 * u, 0.78, 1.0)
-	else:
-		fog_slot.modulate = Color(1.0, 0.90, 0.88, 1.0)
+func _build_sun_texture() -> ImageTexture:
+	var img := Image.create(ICON_PX, ICON_PX, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var y1 := Color("F4C14A")
+	var y2 := Color("FFF3A8")
+	var ray_col := Color("E8943A")
+	for p in [Vector2i(11, 1), Vector2i(11, 2), Vector2i(11, 19), Vector2i(11, 20), Vector2i(1, 11), Vector2i(2, 11), Vector2i(19, 11), Vector2i(20, 11)]:
+		img.set_pixel(p.x, p.y, ray_col)
+	for y in range(7, 15):
+		for x in range(7, 15):
+			if Vector2(x - 10.5, y - 10.5).length() <= 4.0:
+				img.set_pixel(x, y, y1)
+	for y in range(8, 14):
+		for x in range(8, 14):
+			if Vector2(x - 10.5, y - 10.5).length() <= 2.8:
+				img.set_pixel(x, y, y2)
+	return ImageTexture.create_from_image(img)
 
 
-func _layout_track_segments(width: float) -> void:
-	var settings := _settings()
-	if settings == null:
-		return
-	var ne := settings.night_end_time
-	var noon := settings.phase_noon_start
-	var eve := minf(settings.phase_evening_start, settings.night_start_time)
-	var ns := settings.night_start_time
-	_place_seg(_seg_night_l, 0.0, ne, width)
-	_place_seg(_seg_morning, ne, noon, width)
-	_place_seg(_seg_noon, noon, eve, width)
-	_place_seg(_seg_evening, eve, ns, width)
-	_place_seg(_seg_night_r, ns, 1.0, width)
-	if _sunrise != null:
-		_sunrise.position = Vector2(clampf(ne * width - 1.0, 0.0, width - 2.0), 0.0)
-		_sunrise.size = Vector2(2, 8)
-	if _sunset != null:
-		_sunset.position = Vector2(clampf(ns * width - 1.0, 0.0, width - 2.0), 0.0)
-		_sunset.size = Vector2(2, 8)
+func _build_moon_texture() -> ImageTexture:
+	var img := Image.create(ICON_PX, ICON_PX, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var m1 := Color("C8C0D8")
+	var m2 := Color("E8E0F0")
+	var m3 := Color("8B7AA8")
+	var st := Color("B8A8D0")
+	for y in range(5, 18):
+		for x in range(6, 19):
+			if Vector2(x - 12, y - 11).length() <= 6.0:
+				img.set_pixel(x, y, m1)
+	for y in range(5, 18):
+		for x in range(6, 19):
+			if Vector2(x - 15, y - 10).length() <= 4.7:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+	for y in range(6, 17):
+		for x in range(6, 14):
+			if img.get_pixel(x, y).a > 0.0 and x <= 8:
+				img.set_pixel(x, y, m3)
+	img.set_pixel(8, 8, m2)
+	img.set_pixel(9, 9, m2)
+	for p in [Vector2i(17, 4), Vector2i(19, 8), Vector2i(18, 16), Vector2i(3, 6), Vector2i(2, 15)]:
+		img.set_pixel(p.x, p.y, st)
+	return ImageTexture.create_from_image(img)
 
 
-func _place_seg(rect: ColorRect, from_t: float, to_t: float, width: float) -> void:
-	if rect == null:
-		return
-	var x0 := from_t * width
-	var x1 := to_t * width
-	rect.position = Vector2(x0, 0.0)
-	rect.size = Vector2(maxf(x1 - x0, 1.0), 8.0)
-
-
-func _fit_width() -> void:
-	var vp := get_viewport()
-	if vp == null:
-		return
-	var width := vp.get_visible_rect().size.x
-	var available := maxf(MIN_WIDTH, width - LEFT_SAFE - RIGHT_SAFE)
-	var target := minf(MAX_WIDTH, available)
-	offset_left = -target * 0.5
-	offset_right = target * 0.5
-	_last_track_w = -1.0
+func _build_marker_texture() -> ImageTexture:
+	var w := 7
+	var h := 5
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var c := Color("ECE8E0")
+	var rows: Array = [
+		[0, 0, 0, 1, 0, 0, 0],
+		[0, 0, 1, 1, 1, 0, 0],
+		[0, 1, 1, 1, 1, 1, 0],
+		[0, 0, 1, 1, 1, 0, 0],
+		[0, 0, 0, 1, 0, 0, 0],
+	]
+	for y in h:
+		for x in w:
+			if rows[y][x] == 1:
+				img.set_pixel(x, y, c)
+	return ImageTexture.create_from_image(img)
