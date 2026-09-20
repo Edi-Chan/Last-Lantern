@@ -48,6 +48,7 @@ enum BuildingPartType {
 	CRAFTING_STATION,
 	DEFENSE,
 	DECORATION,
+	BED,
 }
 
 @export var id: int = 0
@@ -236,6 +237,8 @@ static func part_type_display_name(part: BuildingPartType) -> String:
 			return "Verteidigung"
 		BuildingPartType.DECORATION:
 			return "Einrichtung"
+		BuildingPartType.BED:
+			return "Bett"
 		_:
 			return ""
 

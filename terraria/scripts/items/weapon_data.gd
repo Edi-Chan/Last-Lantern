@@ -25,7 +25,7 @@ extends Resource
 ## Schaden bei voller Rechtsklick-Ladung, relativ zu Bogen+Pfeil.
 @export var charge_damage_max: float = 1.55
 ## Pfeilschwerkraft in px/s². 0 = kein Bogen.
-@export var projectile_gravity: float = 820.0
+@export var projectile_gravity: float = 280.0
 ## 1.0 = kein Bonus. Zentraler Finsternis-Multiplikator, nicht in Gegner-Scripts.
 @export var darkness_damage_multiplier: float = 1.0
 ## 0 = 1 / attack_speed. Kampf-Laterne nutzt einen klaren Cooldown.

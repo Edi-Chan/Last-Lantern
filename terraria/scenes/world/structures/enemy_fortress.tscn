@@ -1,0 +1,107 @@
+[gd_scene format=3 uid="uid://da1il1mbiwtrr"]
+
+[ext_resource type="Script" path="res://scripts/world/structures/enemy_fortress.gd" id="1_script"]
+
+[sub_resource type="RectangleShape2D" id="Rect_placeholder"]
+size = Vector2(32, 32)
+
+[node name="EnemyFortress" type="Node2D" unique_id=1015266411]
+script = ExtResource("1_script")
+
+[node name="Approach" type="Node2D" parent="." unique_id=771686209]
+
+[node name="ApproachAnchor" type="Marker2D" parent="Approach" unique_id=1015030161]
+
+[node name="OuterWall" type="Node2D" parent="." unique_id=1755840949]
+
+[node name="Gate" type="Node2D" parent="." unique_id=1296382259]
+
+[node name="Courtyard" type="Node2D" parent="." unique_id=586681488]
+
+[node name="Interior" type="Node2D" parent="." unique_id=1391146779]
+
+[node name="Catacombs" type="Node2D" parent="." unique_id=2011972653]
+
+[node name="BossArena" type="Node2D" parent="." unique_id=619287867]
+
+[node name="BossSpawn" type="Marker2D" parent="BossArena" unique_id=260832249]
+
+[node name="ArenaEntrance" type="Marker2D" parent="BossArena" unique_id=2042296368]
+
+[node name="ArenaBounds" type="Marker2D" parent="BossArena" unique_id=1299585902]
+
+[node name="DarknessCore" type="Node2D" parent="." unique_id=475419967]
+
+[node name="HeartOfDarkness" type="Marker2D" parent="DarknessCore" unique_id=1410971953]
+
+[node name="SpawnMarkers" type="Node2D" parent="." unique_id=336651118]
+
+[node name="FORTRESS_GATE_SPAWN" type="Marker2D" parent="SpawnMarkers" unique_id=1882605952]
+
+[node name="FORTRESS_WALL_SPAWN" type="Marker2D" parent="SpawnMarkers" unique_id=124532083]
+
+[node name="FORTRESS_COURTYARD_SPAWN" type="Marker2D" parent="SpawnMarkers" unique_id=1182253628]
+
+[node name="FORTRESS_INTERIOR_SPAWN" type="Marker2D" parent="SpawnMarkers" unique_id=243512442]
+
+[node name="FORTRESS_ELITE_SPAWN" type="Marker2D" parent="SpawnMarkers" unique_id=517083839]
+
+[node name="FORTRESS_MINIBOSS_SPAWN" type="Marker2D" parent="SpawnMarkers" unique_id=1160978632]
+
+[node name="FORTRESS_BOSS_SPAWN" type="Marker2D" parent="SpawnMarkers" unique_id=2040621052]
+
+[node name="LightAnchors" type="Node2D" parent="." unique_id=1916903736]
+
+[node name="LanternMechanicA" type="Marker2D" parent="LightAnchors" unique_id=1472115934]
+
+[node name="LanternMechanicB" type="Marker2D" parent="LightAnchors" unique_id=262402784]
+
+[node name="BrokenLanternA" type="Marker2D" parent="LightAnchors" unique_id=493470904]
+
+[node name="BrokenLanternB" type="Marker2D" parent="LightAnchors" unique_id=502625564]
+
+[node name="FogAnchors" type="Node2D" parent="." unique_id=21396961]
+
+[node name="FogAnchor1" type="Marker2D" parent="FogAnchors" unique_id=1956974197]
+position = Vector2(32, -48)
+
+[node name="FogAnchor2" type="Marker2D" parent="FogAnchors" unique_id=728257585]
+position = Vector2(96, -48)
+
+[node name="Triggers" type="Node2D" parent="." unique_id=1382392832]
+
+[node name="ApproachTrigger" type="Area2D" parent="Triggers" unique_id=1982106020]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Triggers/ApproachTrigger" unique_id=999944905]
+shape = SubResource("Rect_placeholder")
+
+[node name="GateTrigger" type="Area2D" parent="Triggers" unique_id=415822665]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Triggers/GateTrigger" unique_id=1448785932]
+shape = SubResource("Rect_placeholder")
+
+[node name="ArenaTrigger" type="Area2D" parent="Triggers" unique_id=1212725460]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Triggers/ArenaTrigger" unique_id=315204456]
+shape = SubResource("Rect_placeholder")
+
+[node name="CoreTrigger" type="Area2D" parent="Triggers" unique_id=409512397]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Triggers/CoreTrigger" unique_id=100422286]
+shape = SubResource("Rect_placeholder")

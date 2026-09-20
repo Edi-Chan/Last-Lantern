@@ -18,6 +18,7 @@ func save_game() -> bool:
 	var payload := {
 		"version": 2,
 		"world_seed": _world_seed(),
+		"world_size": _world_size(),
 		"character": _character_save(),
 		"buildings": _call_save("building_manager"),
 		"structural": _call_save("structural_manager"),
@@ -126,6 +127,7 @@ func _player_save() -> Dictionary:
 	}
 	if player.stats != null:
 		payload["stats"] = player.stats.to_save_dict()
+	payload["bed_spawn"] = player.bed_to_save_dict()
 	return payload
 
 
@@ -141,6 +143,11 @@ func _player_load(data: Dictionary) -> void:
 		player.character_name = str(data.get("character_name", "")).strip_edges()
 	if data.has("stats") and player.stats != null and data["stats"] is Dictionary:
 		player.stats.from_save_dict(data["stats"])
+	if data.get("bed_spawn") is Dictionary:
+		player.bed_from_save_dict(data["bed_spawn"])
+	else:
+		player.clear_bed_spawn()
+	player.apply_spawn_after_load()
 
 
 func _world_seed() -> int:
@@ -153,6 +160,16 @@ func _world_seed() -> int:
 	if world != null and world.has_method("get_seed"):
 		return int(world.call("get_seed"))
 	return 0
+
+
+func _world_size() -> int:
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow != null and flow.has_method("resolve_world_size"):
+		return WorldSize.clamp_id(int(flow.call("resolve_world_size")))
+	var world := get_tree().get_first_node_in_group("world_generator")
+	if world != null and world.has_method("get_world_size_id"):
+		return WorldSize.clamp_id(int(world.call("get_world_size_id")))
+	return WorldSize.Id.MEDIUM
 
 
 func _character_load(data: Dictionary) -> void:

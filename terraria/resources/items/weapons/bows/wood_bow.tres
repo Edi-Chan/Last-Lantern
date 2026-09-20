@@ -2,17 +2,19 @@
 
 [ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://dyfkyrp0x4exb" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
+[ext_resource type="Script" uid="uid://dxa7sdhhpmldm" path="res://scripts/stats/stat_modifier.gd" id="3_acfi8"]
 [ext_resource type="Texture2D" uid="uid://v0fdoayh2axo" path="res://assets/items/weapons/bows/wood_bow.png" id="3_icon"]
 
 [sub_resource type="Resource" id="WeaponData_1"]
 script = ExtResource("2_weapon")
 base_damage = 8
 attack_speed = 0.7
-base_range = 54.0
+base_range = 108.0
 knockback = 35.0
 base_max_durability = 80
 ammo_item_id = 114
 projectile_speed = 297.0
+projectile_gravity = 280.0
 projectile_damage_bonus = 4
 
 [resource]

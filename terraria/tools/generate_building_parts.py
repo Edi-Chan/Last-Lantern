@@ -463,6 +463,40 @@ def draw_chest():
     return px
 
 
+def draw_bed():
+    """64x32 Holzbetten-Sprite: Rahmen, Matratze, Kissen, Decke. Palette wie Werkbank."""
+    w, h = 64, 32
+    px = blank(w, h)
+    cloth = (112, 62, 46, 255)
+    cloth_d = (78, 40, 30, 255)
+    cloth_h = (148, 88, 64, 255)
+    pillow = (186, 154, 112, 255)
+    pillow_h = (214, 188, 142, 255)
+    pillow_d = (148, 118, 84, 255)
+    grain_fill(px, 1, 18, w - 1, h - 1, WOOD, seed=11)
+    fill_rect(px, 2, 8, w - 2, 22, WOOD["light"])
+    fill_rect(px, 4, 10, w - 4, 21, (168, 132, 92, 255))
+    fill_rect(px, 4, 14, w - 4, 21, (150, 114, 78, 255))
+    fill_rect(px, 3, 8, 18, 18, pillow_d)
+    fill_rect(px, 4, 9, 17, 17, pillow)
+    fill_rect(px, 5, 10, 12, 14, pillow_h)
+    put(px, 15, 12, WOOD["dark"])
+    fill_rect(px, 18, 11, w - 4, 22, cloth_d)
+    fill_rect(px, 19, 12, w - 5, 21, cloth)
+    for x in range(20, w - 6, 5):
+        put(px, x, 13, cloth_h)
+        put(px, x + 1, 16, cloth_d)
+    fill_rect(px, 1, 20, 6, h - 1, WOOD["mid"])
+    fill_rect(px, w - 6, 20, w - 1, h - 1, WOOD["mid"])
+    fill_rect(px, 22, 22, 27, h - 1, WOOD["dark"])
+    fill_rect(px, 37, 22, 42, h - 1, WOOD["dark"])
+    outline_box(px, 1, 8, w - 1, h - 1, WOOD["outline"])
+    outline_box(px, 3, 8, 18, 18, WOOD["outline"])
+    put(px, 8, 21, WOOD["nail"])
+    put(px, w - 9, 21, WOOD["nail"])
+    return px
+
+
 def draw_wall_torch():
     px = blank(16, 16)
     fill_rect(px, 7, 7, 10, 15, WOOD["mid"])

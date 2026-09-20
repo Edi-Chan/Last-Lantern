@@ -36,6 +36,7 @@ func test_enums_exist() -> void:
 	assert_eq(int(BlockData.BuildingPartType.CRAFTING_STATION), 15)
 	assert_eq(int(BlockData.BuildingPartType.DEFENSE), 16)
 	assert_eq(int(BlockData.BuildingPartType.DECORATION), 17)
+	assert_eq(int(BlockData.BuildingPartType.BED), 18)
 	assert_eq(int(BlockData.StructuralRole.BEAM), 4)
 	assert_eq(int(BlockData.StructuralRole.ROOF), 5)
 
@@ -194,6 +195,12 @@ func test_doors_windows_furniture_stations() -> void:
 	assert_false(barricade.structural_enabled)
 	assert_eq(catalog.get_by_id(52).building_part_type, BlockData.BuildingPartType.DECORATION)
 	assert_false(catalog.get_by_id(52).structural_enabled)
+	var bed := catalog.get_by_id(64)
+	assert_ne(bed, null)
+	assert_eq(int(bed.building_part_type), int(BlockData.BuildingPartType.BED))
+	assert_eq(bed.footprint, Vector2i(4, 2))
+	assert_eq(bed.drop_item_id, 163)
+	assert_false(bed.solid)
 
 
 func test_items_link_and_categories() -> void:
@@ -204,6 +211,7 @@ func test_items_link_and_categories() -> void:
 		70: 39, 71: 40, 72: 41, 73: 42, 74: 43, 75: 44, 76: 45, 77: 46,
 		78: 56, 79: 57, 80: 47, 81: 48, 82: 63, 83: 59, 84: 50, 85: 51,
 		86: 52, 87: 53, 88: 54, 89: 55, 90: 60, 91: 61, 92: 62, 93: 49, 94: 58,
+		163: 64,
 	}
 	for item_id in expected.keys():
 		var item := items.get_item(int(item_id))

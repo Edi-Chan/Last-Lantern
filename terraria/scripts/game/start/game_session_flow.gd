@@ -14,6 +14,7 @@ var mode: Mode = Mode.IDLE
 var skip_start_loadout: bool = false
 var session: SessionRecord
 var _pending_seed: int = 0
+var _pending_world_size: int = WorldSize.Id.MEDIUM
 var _changing: bool = false
 
 
@@ -29,12 +30,22 @@ func resolve_world_seed() -> int:
 	return _pending_seed
 
 
+func resolve_world_size() -> int:
+	return WorldSize.clamp_id(_pending_world_size)
+
+
 func remember_generated_seed(used_seed: int) -> void:
 	if used_seed == 0:
 		return
 	_pending_seed = used_seed
 	if session != null:
 		session.world_seed = used_seed
+
+
+func remember_generated_world_size(size_id: int) -> void:
+	_pending_world_size = WorldSize.clamp_id(size_id)
+	if session != null:
+		session.world_size = _pending_world_size
 
 
 func peek_save() -> Dictionary:
@@ -56,14 +67,16 @@ func begin_new_game() -> void:
 	skip_start_loadout = true
 	session = null
 	_pending_seed = 0
+	_pending_world_size = WorldSize.Id.MEDIUM
 	_go(CHARACTER_CREATOR_PATH)
 
 
-func submit_character(appearance: LookRecord) -> void:
+func submit_character(appearance: LookRecord, world_size: int = WorldSize.Id.MEDIUM) -> void:
 	if appearance == null or not appearance.is_valid():
 		return
-	session = SessionFactory.create_session(appearance)
+	session = SessionFactory.create_session(appearance, world_size)
 	_pending_seed = session.world_seed
+	_pending_world_size = WorldSize.clamp_id(session.world_size)
 	skip_start_loadout = true
 	mode = Mode.NEW_GAME
 	_go(GAME_INTRO_PATH)
@@ -85,6 +98,9 @@ func continue_last_save() -> void:
 	_pending_seed = int(payload.get("world_seed", 12345))
 	if _pending_seed == 0:
 		_pending_seed = 12345
+	_pending_world_size = WorldSize.clamp_id(int(payload.get("world_size", WorldSize.Id.MEDIUM)))
+	if session != null:
+		session.world_size = _pending_world_size
 	if session.appearance == null or session.appearance.character_name.is_empty():
 		var player_data: Dictionary = payload.get("player", {})
 		session.appearance = SessionFactory.look_from_dict({
@@ -137,6 +153,7 @@ func _clear_session() -> void:
 	skip_start_loadout = false
 	session = null
 	_pending_seed = 0
+	_pending_world_size = WorldSize.Id.MEDIUM
 
 
 func _go(path: String) -> void:

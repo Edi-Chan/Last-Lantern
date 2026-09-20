@@ -51,7 +51,6 @@ func _ready() -> void:
 	_debug = (load("res://scripts/world/structural_debug_overlay.gd") as GDScript).new()
 	_debug.set("manager", self)
 	add_child(_debug)
-	call_deferred("spawn_test_house")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -177,51 +176,6 @@ func from_save_dict(data: Dictionary) -> void:
 			_placed[Vector2i(int(entry[0]), int(entry[1]))] = true
 	for key in _placed.keys():
 		_mark_dirty(key)
-
-
-func spawn_test_house() -> void:
-	var world := get_parent() as WorldGenerator
-	if world == null or _tilemap == null or block_catalog == null:
-		return
-	var stone := block_catalog.get_by_id(3)
-	var wood := block_catalog.get_by_id(7)
-	var beam := block_catalog.get_by_id(29)
-	if stone == null or wood == null or beam == null:
-		return
-	var origin_x := world.spawn_tile.x + 12
-	var ground := world.get_surface_y(origin_x)
-	var width := 15
-	var wall_h := 5
-	var left := origin_x
-	var right := origin_x + width - 1
-	for x in range(left - 1, right + 2):
-		var gy := world.get_surface_y(x)
-		_place_structural(Vector2i(x, gy), stone)
-		for y in range(gy - wall_h - 1, gy):
-			var cell := Vector2i(x, y)
-			if _tilemap.get_cell_source_id(cell) != -1:
-				var existing := _block_at(cell)
-				if existing != null and not existing.structural_enabled:
-					_tilemap.erase_cell(cell)
-	for y in range(ground - wall_h, ground):
-		_place_structural(Vector2i(left, y), wood)
-		_place_structural(Vector2i(right, y), wood)
-	for y in range(ground - 3, ground):
-		_tilemap.erase_cell(Vector2i(left, y))
-		_placed.erase(Vector2i(left, y))
-	var beam_xs: Array[int] = [left + 4, left + 7, left + 10]
-	for bx in beam_xs:
-		for y in range(ground - wall_h, ground):
-			_place_structural(Vector2i(bx, y), beam)
-	var roof_y := ground - wall_h - 1
-	for x in range(left, right + 1):
-		_place_structural(Vector2i(x, roof_y), wood)
-	_recalculate_region(Rect2i(left - 2, roof_y - 2, width + 6, wall_h + 8), false)
-
-
-func _place_structural(cell: Vector2i, block: BlockData) -> void:
-	block_catalog.set_block_cell(_tilemap, cell, block)
-	_placed[cell] = true
 
 
 func _mark_dirty(cell: Vector2i) -> void:

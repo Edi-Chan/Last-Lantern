@@ -27,12 +27,29 @@ signal fog_hurt(amount: float)
 
 @export_group("Crouch")
 @export var crouch_speed_multiplier: float = 0.45
+@export_group("Bed")
+## 1 = vollstaendig heilen. Kleinerer Wert heilt nur einen Anteil.
+@export var bed_heal_fraction: float = 1.0
 
 var world_input_enabled: bool = true
 var facing_sign: float = 1.0
 var is_sprinting: bool = false
 var is_crouching: bool = false
 var character_name: String = ""
+var is_in_bed: bool = false
+var bed_spawn_active: bool = false
+var bed_origin: Vector2i = Vector2i.ZERO
+var bed_block_id: int = -1
+var bed_spawn_position: Vector2 = Vector2.ZERO
+var bed_world_seed: int = 0
+
+var _bed_entity: BuildingEntity
+var _bed_rest: Vector2 = Vector2.ZERO
+var _bed_leave_armed: bool = false
+var _bed_lock_left: float = 0.0
+var _respawning: bool = false
+var _saved_collision_layer: int = -1
+var _saved_collision_mask: int = -1
 
 var _inventory_action_held: bool = false
 var _was_on_floor: bool = true
@@ -62,6 +79,7 @@ var _headroom_query := PhysicsShapeQueryParameters2D.new()
 @onready var _audio: PlayerAudio = $Audio
 @onready var stats: PlayerStats = $Stats
 @onready var _water: WaterInteraction = $WaterInteraction
+@onready var _lava: LavaInteraction = $LavaInteraction
 
 ## Gameplay-Collider. Beim Ducken schrumpft er nur nach oben, die Unterkante
 ## bleibt auf der Fusslinie (y = 0) und der Player sinkt nicht in den Boden.
@@ -109,10 +127,21 @@ func _ready() -> void:
 	var inventory := get_node_or_null("Inventory") as Inventory
 	if inventory != null:
 		inventory.equipment_changed.connect(_refresh_armor_visuals)
+	if stats != null and not stats.depleted.is_connected(_on_health_depleted):
+		stats.depleted.connect(_on_health_depleted)
 	call_deferred("_refresh_armor_visuals")
 
 
 func _physics_process(delta: float) -> void:
+	_bed_lock_left = maxf(_bed_lock_left - delta, 0.0)
+	if is_in_bed:
+		_handle_inventory_toggle()
+		_update_bed_state()
+		return
+	if _lava != null:
+		_lava.update_before_physics()
+	if _water != null:
+		_water.update_before_physics()
 	_handle_inventory_toggle()
 	_update_crouch()
 	_update_sprint(delta)
@@ -124,11 +153,27 @@ func _physics_process(delta: float) -> void:
 	else:
 		_dampen_horizontal(delta)
 	move_and_slide()
+	_clamp_to_world()
 	_update_facing()
 	_aim_tool()
 	_update_animation()
 	_sync_armor_layers()
 	_update_landing(delta)
+
+
+func _clamp_to_world() -> void:
+	if AdminManager != null and AdminManager.no_clip:
+		return
+	var world := get_tree().get_first_node_in_group("world_generator")
+	if world == null or not world.has_method("clamp_world_position"):
+		return
+	var next: Vector2 = world.call("clamp_world_position", global_position)
+	if not next.is_equal_approx(global_position):
+		if not is_equal_approx(next.x, global_position.x):
+			velocity.x = 0.0
+		if not is_equal_approx(next.y, global_position.y):
+			velocity.y = 0.0
+		global_position = next
 
 
 func play_sfx(sound: StringName, volume_offset_db: float = 0.0, sfx_material: StringName = &"") -> void:
@@ -172,7 +217,7 @@ func take_damage(amount: float, _source: Node = null, damage_type: Variant = nul
 
 
 func apply_damage_event(event: DamageEvent) -> void:
-	if stats == null or event == null:
+	if stats == null or event == null or _respawning:
 		return
 	var admin := get_node_or_null("/root/AdminManager")
 	if admin != null and bool(admin.call("should_block_damage")):
@@ -293,14 +338,19 @@ func _handle_gravity(delta: float) -> void:
 		return
 	if _try_ladder(delta):
 		return
-	if _water != null:
+	if _lava != null:
+		_lava.apply_swim_forces(delta)
+	elif _water != null:
 		_water.apply_swim_forces(delta)
-	if not is_on_floor():
+	var in_deep_liquid := (_lava != null and _lava.can_swim_up()) or (_water != null and _water.can_swim_up())
+	if not is_on_floor() or in_deep_liquid:
 		var g_delta := gravity * delta
-		if _water != null and _water.in_water:
+		if _lava != null and _lava.in_lava:
+			g_delta = _lava.apply_lava_gravity_multiplier(gravity, delta)
+		elif _water != null and _water.in_water:
 			g_delta = _water.apply_water_gravity_multiplier(gravity, delta)
 		var fall_cap := max_fall_speed
-		if _water != null and _water.swimming:
+		if in_deep_liquid:
 			fall_cap *= float(_water_movement_multipliers().get("max_fall", 1.0))
 		velocity.y = minf(velocity.y + g_delta, fall_cap)
 
@@ -324,7 +374,9 @@ func _handle_jump() -> void:
 		set_collision_mask_value(6, false)
 		velocity.y = 60.0
 		return
-	if _water != null and _water.swimming:
+	if _lava != null and _lava.can_swim_up():
+		return
+	if _water != null and _water.can_swim_up():
 		return
 	if is_on_floor() and Input.is_action_just_pressed("jump"):
 		var jump := jump_velocity
@@ -401,6 +453,8 @@ func get_world_mouse_position() -> Vector2:
 
 
 func _water_movement_multipliers() -> Dictionary:
+	if _lava != null and _lava.in_lava:
+		return _lava.get_movement_multipliers()
 	if _water == null:
 		return {"speed": 1.0, "gravity": 1.0, "max_fall": 1.0, "sprint_allowed": true}
 	return _water.get_movement_multipliers()
@@ -581,6 +635,224 @@ func apply_appearance(data: LookRecord) -> void:
 		return
 	data.normalize()
 	character_name = data.character_name
+
+
+func use_bed(bed: BuildingEntity) -> void:
+	if bed == null or not bed.is_bed():
+		return
+	if _bed_lock_left > 0.0:
+		return
+	if is_in_bed and _bed_entity == bed:
+		leave_bed()
+		return
+	if is_in_bed:
+		leave_bed()
+	_set_bed_spawn(bed)
+	if stats != null:
+		heal(stats.max_health * bed_heal_fraction)
+	_enter_bed(bed)
+	_show_bed_toast("Respawn-Punkt gesetzt.")
+
+
+func leave_bed() -> void:
+	if not is_in_bed:
+		return
+	is_in_bed = false
+	world_input_enabled = true
+	_bed_leave_armed = false
+	_bed_lock_left = 0.2
+	if _visuals != null:
+		_visuals.rotation = 0.0
+	if _animated_sprite != null:
+		_animated_sprite.speed_scale = 1.0
+	_restore_bed_collision()
+	var stand := Vector2.ZERO
+	if _bed_entity != null and is_instance_valid(_bed_entity):
+		stand = _bed_entity.safe_spawn_position()
+	elif bed_spawn_active:
+		stand = bed_spawn_position
+	_bed_entity = null
+	if stand != Vector2.ZERO:
+		global_position = stand
+	velocity = Vector2.ZERO
+
+
+func on_bed_removed(bed: BuildingEntity) -> void:
+	if bed == null:
+		return
+	if _bed_entity == bed:
+		leave_bed()
+	if bed_spawn_active and bed.origin == bed_origin:
+		clear_bed_spawn()
+
+
+func clear_bed_spawn() -> void:
+	bed_spawn_active = false
+	bed_origin = Vector2i.ZERO
+	bed_block_id = -1
+	bed_spawn_position = Vector2.ZERO
+	bed_world_seed = 0
+
+
+func has_valid_bed_spawn() -> bool:
+	if not bed_spawn_active:
+		return false
+	var parts := get_tree().get_first_node_in_group(BuildingPartSystem.GROUP) as BuildingPartSystem
+	if parts == null:
+		return false
+	var ent := parts.get_entity_at(bed_origin)
+	if ent == null or not ent.is_bed():
+		clear_bed_spawn()
+		return false
+	if bed_block_id >= 0 and ent.block_id != bed_block_id:
+		clear_bed_spawn()
+		return false
+	var seed_now := _current_world_seed()
+	if bed_world_seed != 0 and seed_now != 0 and bed_world_seed != seed_now:
+		return false
+	var spawn := ent.safe_spawn_position()
+	if not spawn.is_finite():
+		clear_bed_spawn()
+		return false
+	bed_spawn_position = spawn
+	return true
+
+
+func resolve_respawn_position() -> Vector2:
+	if has_valid_bed_spawn():
+		return bed_spawn_position
+	return default_world_spawn()
+
+
+func default_world_spawn() -> Vector2:
+	var world := get_tree().get_first_node_in_group("world_generator")
+	if world != null:
+		return world.player_spawn_position
+	return global_position
+
+
+func apply_spawn_after_load() -> void:
+	if has_valid_bed_spawn():
+		global_position = bed_spawn_position
+		velocity = Vector2.ZERO
+
+
+func bed_to_save_dict() -> Dictionary:
+	return {
+		"active": bed_spawn_active,
+		"origin": [bed_origin.x, bed_origin.y],
+		"block_id": bed_block_id,
+		"spawn": [bed_spawn_position.x, bed_spawn_position.y],
+		"world_seed": bed_world_seed,
+	}
+
+
+func bed_from_save_dict(data: Dictionary) -> void:
+	if data.is_empty():
+		clear_bed_spawn()
+		return
+	bed_spawn_active = bool(data.get("active", false))
+	var origin_arr: Array = data.get("origin", [0, 0])
+	bed_origin = Vector2i(int(origin_arr[0]) if origin_arr.size() > 0 else 0, int(origin_arr[1]) if origin_arr.size() > 1 else 0)
+	bed_block_id = int(data.get("block_id", -1))
+	var spawn_arr: Array = data.get("spawn", [0, 0])
+	if spawn_arr.size() >= 2:
+		bed_spawn_position = Vector2(float(spawn_arr[0]), float(spawn_arr[1]))
+	else:
+		bed_spawn_position = Vector2.ZERO
+	bed_world_seed = int(data.get("world_seed", 0))
+	if not bed_spawn_active:
+		clear_bed_spawn()
+
+
+func _set_bed_spawn(bed: BuildingEntity) -> void:
+	bed_spawn_active = true
+	bed_origin = bed.origin
+	bed_block_id = bed.block_id
+	bed_spawn_position = bed.safe_spawn_position()
+	bed_world_seed = _current_world_seed()
+
+
+func _enter_bed(bed: BuildingEntity) -> void:
+	_bed_entity = bed
+	is_in_bed = true
+	world_input_enabled = false
+	_bed_leave_armed = false
+	_bed_rest = bed.rest_position()
+	global_position = _bed_rest
+	velocity = Vector2.ZERO
+	_stash_bed_collision()
+	facing_sign = 1.0
+	if _animated_sprite != null:
+		_animated_sprite.flip_h = false
+		_animated_sprite.play("idle")
+		_animated_sprite.speed_scale = 0.0
+	_sync_armor_facing()
+	if _visuals != null:
+		_visuals.rotation = -PI * 0.5
+
+
+func _update_bed_state() -> void:
+	global_position = _bed_rest
+	velocity = Vector2.ZERO
+	if not _bed_leave_armed:
+		if not Input.is_action_pressed("interact"):
+			_bed_leave_armed = true
+		return
+	if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("jump"):
+		leave_bed()
+		return
+	if absf(Input.get_axis("move_left", "move_right")) > 0.2:
+		leave_bed()
+
+
+func _stash_bed_collision() -> void:
+	if _saved_collision_layer >= 0:
+		return
+	_saved_collision_layer = collision_layer
+	_saved_collision_mask = collision_mask
+	collision_layer = 0
+	collision_mask = 0
+
+
+func _restore_bed_collision() -> void:
+	if _saved_collision_layer < 0:
+		return
+	collision_layer = _saved_collision_layer
+	collision_mask = _saved_collision_mask
+	_saved_collision_layer = -1
+	_saved_collision_mask = -1
+
+
+func _on_health_depleted() -> void:
+	if _respawning:
+		return
+	_respawning = true
+	leave_bed()
+	if stats != null:
+		stats.set_health(stats.max_health)
+		stats.set_stamina(stats.max_stamina)
+	global_position = resolve_respawn_position()
+	velocity = Vector2.ZERO
+	_respawning = false
+
+
+func _current_world_seed() -> int:
+	var flow := get_node_or_null("/root/GameFlow")
+	if flow != null and flow.has_method("resolve_world_seed"):
+		var pending := int(flow.call("resolve_world_seed"))
+		if pending != 0:
+			return pending
+	var world := get_tree().get_first_node_in_group("world_generator")
+	if world != null and world.has_method("get_seed"):
+		return int(world.call("get_seed"))
+	return 0
+
+
+func _show_bed_toast(text: String) -> void:
+	var hud := get_tree().get_first_node_in_group("building_hud")
+	if hud != null and hud.has_method("toast"):
+		hud.call("toast", text)
 
 
 func apply_knockback(impulse: Vector2) -> void:

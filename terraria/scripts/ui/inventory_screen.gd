@@ -1177,7 +1177,12 @@ func _fill_inspect_stats(item: ItemData, inst: ItemInstanceData, amount: int) ->
 	var defense := item.defense
 	_set_inspect_row("defense", defense > 0, str(defense) if defense > 0 else "")
 	var item_range := inst.effective_range(item) if inst != null else item.get_base_range()
-	_set_inspect_row("range", item_range > 0.0, _format_de_float(item_range) if item_range > 0.0 else "")
+	var range_text := ""
+	if item_range > 0.0:
+		range_text = _format_de_float(item_range)
+		if item.is_ranged_weapon():
+			range_text = "%s Tiles" % range_text
+	_set_inspect_row("range", item_range > 0.0, range_text)
 	_set_inspect_row("amount", amount > 1, "x%d" % amount if amount > 1 else "")
 
 	var any_visible := false
@@ -1800,6 +1805,8 @@ func _build_details_text(item: ItemData, inst: ItemInstanceData, amount: int) ->
 		lines.append(item.description)
 	lines.append("Stack: %d / %d" % [amount, item.max_stack])
 	_append_stat_line(lines, "Schaden", inst.effective_damage(item), inst.damage_bonus, item.get_base_damage())
+	if item.is_ranged_weapon() and item.get_base_range() > 0.0:
+		lines.append("Reichweite: %.1f Tiles" % inst.effective_range(item))
 	if item.tool_data != null:
 		var power_label := "Spitzhacken-Power" if item.get_tool_category() == ToolData.ToolCategory.MINING else "Werkzeug-Power"
 		_append_stat_line(lines, power_label, inst.effective_tool_power(item), inst.tool_power_bonus, item.get_base_tool_power())

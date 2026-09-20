@@ -355,11 +355,12 @@ func _build_world_page() -> Control:
 	col.add_child(_row([
 		_btn("FORCE BREATH 0", func() -> void: AdminManager.force_breath_zero(), "Setzt Atem auf 0."),
 		_btn("FALL TEST", func() -> void: AdminManager.run_liquid_fall_test(), "Debug: Wasser fällt über Luft."),
+		_btn("TRACK MASS", func() -> void: AdminManager.toggle_liquid_mass_tracking(), "Misst Total Water nur im Debug. Warnt bei Massendrift."),
 	]))
 	_liquid_perf_label = RichTextLabel.new()
 	_liquid_perf_label.bbcode_enabled = true
 	_liquid_perf_label.fit_content = true
-	_liquid_perf_label.custom_minimum_size = Vector2(0, 96)
+	_liquid_perf_label.custom_minimum_size = Vector2(0, 148)
 	col.add_child(_liquid_perf_label)
 	return _scroll(col)
 

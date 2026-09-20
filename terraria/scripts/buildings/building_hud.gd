@@ -12,6 +12,7 @@ var _toast_left: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group("building_hud")
 	layer = 21
 	_build_ui()
 

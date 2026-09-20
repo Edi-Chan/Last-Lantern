@@ -192,6 +192,7 @@ func test_crafting_has_category_subfilters() -> void:
 	assert_true(src.contains("Landwirtschaft"))
 	assert_true(src.contains("Schmelzen"))
 	assert_true(src.contains("Barren"))
+	assert_true(src.contains("Betten"))
 
 
 func test_menu_tabs_exist() -> void:
@@ -232,6 +233,14 @@ func test_any_wood_type_crafts_workbench() -> void:
 		assert_eq(system.try_craft(recipe, inv, 1, []), CraftingSystem.Result.OK)
 		assert_eq(inv.get_bag_amount(wood_id), 0)
 		assert_eq(inv.get_total_amount(90), 1)
+
+
+func test_bed_recipe_is_workbench_only() -> void:
+	var recipe := _catalog().get_recipe_for_output(163)
+	assert_ne(recipe, null)
+	assert_true(recipe.requires_station_kind(RecipeData.Station.WORKBENCH))
+	assert_true(recipe.requires_station())
+	assert_eq(int(recipe.ingredient_amounts[0]), 8)
 
 
 func test_mixed_wood_types_count_together() -> void:

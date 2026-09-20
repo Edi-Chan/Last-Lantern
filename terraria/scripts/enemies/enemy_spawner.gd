@@ -163,6 +163,10 @@ func _ground_at_x(world_x: float) -> Vector2:
 	var tile_x := clampi(int(floor(world_x / TILE)), 2, _world.world_width - 3)
 	if _world.is_hut_column(tile_x):
 		return Vector2.INF
+	if _world.has_method("is_ocean_column") and bool(_world.call("is_ocean_column", tile_x)):
+		return Vector2.INF
+	if _world.has_method("is_spawn_pad_column") and _world.is_spawn_pad_column(tile_x):
+		return Vector2.INF
 	var block := _world.get_block_id(tile_x, _world.get_surface_y(tile_x) - 1)
 	if block != WorldGenerator.AIR:
 		return Vector2.INF

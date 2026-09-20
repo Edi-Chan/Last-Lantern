@@ -36,6 +36,7 @@ func setup(p_block: BlockData, p_origin: Vector2i, p_orientation: int, tile_size
 		BlockData.BuildingPartType.DEFENSE,
 		BlockData.BuildingPartType.STORAGE,
 		BlockData.BuildingPartType.CRAFTING_STATION,
+		BlockData.BuildingPartType.BED,
 	]
 	if p_block != null and p_block.building_part_type == BlockData.BuildingPartType.LIGHT:
 		_interactable = false
@@ -98,6 +99,8 @@ func _process(_delta: float) -> void:
 			toggle()
 		elif get_crafting_station_kind() != RecipeData.Station.NONE:
 			_open_station_crafting()
+		elif is_bed():
+			_use_bed()
 		elif _hint != null:
 			_hint.text = _station_hint()
 			_hint.visible = true
@@ -144,7 +147,7 @@ func _ensure_visuals() -> void:
 		area.collision_mask = 2
 		var cs := CollisionShape2D.new()
 		var circle := CircleShape2D.new()
-		circle.radius = 22.0
+		circle.radius = maxf(22.0, float(footprint.x + footprint.y) * 8.0)
 		cs.shape = circle
 		cs.position = Vector2(float(footprint.x) * 8.0, -float(footprint.y) * 8.0)
 		area.add_child(cs)
@@ -173,6 +176,7 @@ func _ensure_collision() -> void:
 		BlockData.BuildingPartType.DEFENSE,
 		BlockData.BuildingPartType.CRAFTING_STATION,
 		BlockData.BuildingPartType.STORAGE,
+		BlockData.BuildingPartType.BED,
 	]
 	if not needs_body:
 		return
@@ -221,6 +225,45 @@ func get_crafting_station_kind() -> int:
 	return RecipeData.station_from_block_id(block_id)
 
 
+func is_bed() -> bool:
+	return block_data != null and block_data.building_part_type == BlockData.BuildingPartType.BED
+
+
+func rest_position() -> Vector2:
+	var along := 50.0 if orientation == 0 else 14.0
+	return global_position + Vector2(along, -14.0)
+
+
+func safe_spawn_position() -> Vector2:
+	var parts := get_tree().get_first_node_in_group(BuildingPartSystem.GROUP) as BuildingPartSystem
+	var candidates: Array[Vector2i] = [
+		origin + Vector2i(-1, 0),
+		origin + Vector2i(footprint.x, 0),
+		origin + Vector2i(-1, -1),
+		origin + Vector2i(footprint.x, -1),
+		origin + Vector2i(int(footprint.x / 2.0), -footprint.y),
+	]
+	if parts != null:
+		for cell in candidates:
+			if parts.is_spawn_cell_blocked(cell, self):
+				continue
+			if parts.is_spawn_cell_blocked(cell + Vector2i(0, -1), self):
+				continue
+			if parts.is_spawn_cell_blocked(cell + Vector2i(0, -2), self):
+				continue
+			if not parts.has_stand_ground(cell):
+				continue
+			return Vector2(float(cell.x) * 16.0 + 8.0, float(cell.y + 1) * 16.0 - 1.0)
+	return global_position + Vector2(float(footprint.x) * 16.0 + 12.0, 0.0)
+
+
+func _use_bed() -> void:
+	var player := get_tree().get_first_node_in_group("player") as Player
+	if player == null:
+		return
+	player.use_bed(self)
+
+
 func _open_station_crafting() -> void:
 	var screen := get_tree().get_first_node_in_group("inventory_ui")
 	if screen == null:
@@ -242,6 +285,8 @@ func _default_hint() -> String:
 			return _station_hint()
 		BlockData.BuildingPartType.STORAGE:
 			return "[E] Kiste (bald)"
+		BlockData.BuildingPartType.BED:
+			return "[E] Bett benutzen"
 		_:
 			return ""
 
@@ -281,6 +326,8 @@ func _texture_for_block() -> Texture2D:
 			path = "res://assets/building/stations/furnace.png"
 		63:
 			path = "res://assets/building/lights/wall_torch.png"
+		64:
+			path = "res://assets/building/furniture/wood_bed.png"
 		_:
 			return null
 	if ResourceLoader.exists(path):

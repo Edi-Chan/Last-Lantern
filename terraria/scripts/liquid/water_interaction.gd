@@ -32,7 +32,6 @@ var _drowning: bool = false
 var _drown_timer: float = 0.0
 var _bubble_timer: float = 0.0
 var _renderer: LiquidRenderer
-var _underwater_overlay: ColorRect
 
 
 func _ready() -> void:
@@ -50,10 +49,13 @@ func _bind() -> void:
 		breath = max_breath
 
 
+func update_before_physics() -> void:
+	_update_water_state()
+
+
 func _physics_process(delta: float) -> void:
 	if _player == null or _liquid == null or _settings == null:
 		return
-	_update_water_state()
 	_update_breath(delta)
 	_update_drowning(delta)
 	_update_bubbles(delta)
@@ -77,26 +79,37 @@ func get_movement_multipliers() -> Dictionary:
 	}
 
 
+func can_swim_up() -> bool:
+	return in_water and swimming
+
+
 func apply_swim_forces(delta: float) -> void:
-	if _player == null or not swimming:
+	if _player == null or _settings == null or not can_swim_up():
 		return
 	var drag_h := _settings.water_drag_horizontal
-	var drag_v := _settings.water_drag_vertical
 	_player.velocity.x = move_toward(_player.velocity.x, 0.0, drag_h * delta * 60.0)
-	_player.velocity.y = move_toward(_player.velocity.y, 0.0, drag_v * delta * 60.0)
-	if _player.world_input_enabled and Input.is_action_pressed("jump"):
+	var wants_rise := _player.world_input_enabled and Input.is_action_pressed("jump")
+	if wants_rise:
 		_player.velocity.y -= _settings.swim_force * delta
 		_player.velocity.y = maxf(_player.velocity.y, -_settings.swim_max_up_speed)
 		if _player.stats != null and _settings.swim_stamina_cost > 0.0:
 			_player.stats.drain_stamina(_settings.swim_stamina_cost * delta)
+		return
+	# Langsam sinken, wenn Leertaste nicht gedrueckt wird.
+	if _player.velocity.y < _settings.swim_sink_speed:
+		_player.velocity.y = move_toward(_player.velocity.y, _settings.swim_sink_speed, 80.0 * delta)
+	else:
+		_player.velocity.y = move_toward(_player.velocity.y, _settings.swim_sink_speed, 40.0 * delta)
 
 
 func apply_water_gravity_multiplier(base_gravity: float, delta: float) -> float:
 	if not in_water:
-		return base_gravity
+		return base_gravity * delta
+	if can_swim_up() and Input.is_action_pressed("jump"):
+		return base_gravity * _settings.water_gravity_multiplier * 0.15 * delta
 	var mult := get_movement_multipliers()
 	var g := base_gravity * float(mult["gravity"])
-	if swimming and not Input.is_action_pressed("jump"):
+	if swimming:
 		g *= 0.85
 	return g * delta
 
@@ -107,6 +120,8 @@ func force_breath(value: float) -> void:
 
 
 func _update_water_state() -> void:
+	if _player == null or _liquid == null or _settings == null:
+		return
 	var sample := _liquid.sample_submersion(_player.global_position, head_offset_y, body_offset_y)
 	in_water = bool(sample["in_water"])
 	swimming = bool(sample["swimming"])

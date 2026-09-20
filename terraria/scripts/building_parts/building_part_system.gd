@@ -16,6 +16,7 @@ const ENTITY_TYPES := [
 	BlockData.BuildingPartType.LIGHT,
 	BlockData.BuildingPartType.STORAGE,
 	BlockData.BuildingPartType.CRAFTING_STATION,
+	BlockData.BuildingPartType.BED,
 ]
 const TILE_SIZE := 16
 
@@ -80,6 +81,37 @@ func get_block_at(cell: Vector2i) -> BlockData:
 
 func is_entity_cell(cell: Vector2i) -> bool:
 	return _occupancy.has(cell)
+
+
+func get_entity_at(cell: Vector2i) -> BuildingEntity:
+	return _occupancy.get(cell) as BuildingEntity
+
+
+func is_spawn_cell_blocked(cell: Vector2i, ignore: BuildingEntity = null) -> bool:
+	var ent: BuildingEntity = _occupancy.get(cell)
+	if ent != null and ent != ignore:
+		return true
+	if _fg == null or block_catalog == null:
+		return false
+	if _fg.get_cell_source_id(cell) == -1:
+		return false
+	var block := block_catalog.get_cell_block(_fg, cell)
+	if block == null:
+		return true
+	return block.solid
+
+
+func has_stand_ground(cell: Vector2i) -> bool:
+	var below := get_block_at(cell + Vector2i(0, 1))
+	if below == null:
+		return false
+	if below.solid:
+		return true
+	return below.building_part_type in [
+		BlockData.BuildingPartType.FLOOR,
+		BlockData.BuildingPartType.FOUNDATION,
+		BlockData.BuildingPartType.PLATFORM,
+	]
 
 
 func is_climbable_at_world(world_pos: Vector2) -> bool:
@@ -421,6 +453,10 @@ func _spawn_entity(block: BlockData, origin: Vector2i, orientation: int) -> Buil
 func _remove_entity(ent: BuildingEntity) -> void:
 	if ent == null:
 		return
+	if ent.is_bed():
+		var player := get_tree().get_first_node_in_group("player") as Player
+		if player != null:
+			player.on_bed_removed(ent)
 	for cell in ent.occupied_cells():
 		_occupancy.erase(cell)
 	_entities.erase(ent.origin)

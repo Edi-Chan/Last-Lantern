@@ -728,7 +728,7 @@ func _compute_bow_shot(item: ItemData, weapon: Resource, charge: float, quick: b
 		dir = Vector2(_player.facing_sign, 0.0)
 	var t := clampf(charge, 0.0, 1.0)
 	var speed := float(weapon.get("projectile_speed")) if weapon != null else 297.0
-	var gravity := 820.0
+	var gravity := 280.0
 	var max_distance := item.get_base_range() * float(tile_size) if item != null else 864.0
 	if weapon != null and weapon.has_method("get_projectile_gravity"):
 		gravity = float(weapon.call("get_projectile_gravity"))
@@ -1288,7 +1288,7 @@ func _handle_placement(tile: Vector2i, place_state: Dictionary) -> void:
 			return
 	else:
 		var liquid := _liquid()
-		if liquid != null and block.solid and liquid.has_water(tile):
+		if liquid != null and liquid.has_liquid(tile):
 			if not liquid.displace_for_placement(tile):
 				return
 		if block_catalog != null:

@@ -1,0 +1,42 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/liquid/lava.gd" id="1_lava"]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleMaterial_lava"]
+particle_flag_disable_z = true
+direction = Vector3(0, -1, 0)
+spread = 55.0
+initial_velocity_min = 12.0
+initial_velocity_max = 38.0
+gravity = Vector3(0, 40, 0)
+scale_min = 1.0
+scale_max = 2.0
+color = Color(1, 0.55, 0.12, 0.85)
+
+[node name="Lava" type="Node2D"]
+z_index = 4
+script = ExtResource("1_lava")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Light" type="Node2D" parent="Visual"]
+
+[node name="Particles" type="GPUParticles2D" parent="Visual"]
+emitting = false
+amount = 8
+lifetime = 0.55
+one_shot = true
+explosiveness = 0.85
+process_material = SubResource("ParticleMaterial_lava")
+
+[node name="AmbientAudio" type="AudioStreamPlayer2D" parent="."]
+bus = &"SFX"
+
+[node name="BubbleAudio" type="AudioStreamPlayer2D" parent="."]
+bus = &"SFX"
+
+[node name="ReactionAudio" type="AudioStreamPlayer2D" parent="."]
+bus = &"SFX"
+
+[node name="BurnAudio" type="AudioStreamPlayer2D" parent="."]
+bus = &"SFX"

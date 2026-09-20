@@ -20,6 +20,8 @@ var _tilemap: TileMapLayer
 var _world: WorldGenerator
 var _player: Player
 var _catalog: BlockCatalog
+var _liquid: LiquidSystem
+var _lava_light := PackedFloat32Array()
 var _image: Image
 var _texture: ImageTexture
 var _pixels := PackedByteArray()
@@ -85,6 +87,8 @@ func _process(delta: float) -> void:
 		_world = get_tree().get_first_node_in_group("world_generator") as WorldGenerator
 		if _world != null:
 			_catalog = _world.block_catalog
+	if _liquid == null or not is_instance_valid(_liquid):
+		_liquid = get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
 	if _player == null or _tilemap == null:
 		return
 	_rebuild_cooldown = maxf(0.0, _rebuild_cooldown - delta)
@@ -97,6 +101,8 @@ func _process(delta: float) -> void:
 	)
 	var size := _quantized_size(_view_size)
 	var need := _dirty or player_tile != _last_player or aligned != _last_origin or size != _last_size or cell != _last_cell
+	if not need and _liquid != null and _liquid.get_active_cell_count() > 0:
+		need = true
 	if not need:
 		return
 	if not _dirty and _rebuild_cooldown > 0.0:
@@ -157,6 +163,7 @@ func _rebuild(player_tile: Vector2i, origin: Vector2i, view_size: Vector2i, cell
 	_fill_occlusion(origin, gw, gh, cell)
 	var t2 := Time.get_ticks_usec()
 	_flood(player_tile, origin, gw, gh, cell)
+	_fill_lava_light(origin, gw, gh, cell)
 	var t3 := Time.get_ticks_usec()
 	_fill_combined_pixels(player_tile, origin, gw, gh, cell)
 	_apply_texture(origin, cell)
@@ -219,6 +226,18 @@ func _fill_combined_pixels(player_tile: Vector2i, origin: Vector2i, gw: int, gh:
 				cost = 0.0
 			var player_dark := _wall_darkness(cost)
 			var darkness := sky_dark if sky_dark < player_dark else player_dark
+			var lava_dark := 1.0
+			if _lava_light.size() == gw * gh:
+				lava_dark = _lava_light[i]
+				darkness = minf(darkness, lava_dark)
+			if lava_dark < 0.95:
+				_pixels[i * 4 + 0] = 32
+				_pixels[i * 4 + 1] = 10
+				_pixels[i * 4 + 2] = 2
+			else:
+				_pixels[i * 4 + 0] = 0
+				_pixels[i * 4 + 1] = 0
+				_pixels[i * 4 + 2] = 0
 			_pixels[i * 4 + 3] = clampi(int(darkness * 255.0), 0, 255)
 			gy += 1
 		gx += 1
@@ -444,6 +463,64 @@ func _prefill_open_sky(start: Vector2i, origin: Vector2i, gw: int, gh: int, cell
 			_costs[gy * gw + gx] = 0.0
 			gy += 1
 		gx += 1
+
+
+func _fill_lava_light(origin: Vector2i, gw: int, gh: int, cell: int) -> void:
+	var n := gw * gh
+	if _lava_light.size() != n:
+		_lava_light.resize(n)
+	_lava_light.fill(1.0)
+	if _liquid == null:
+		return
+	var light_range := 7
+	if _liquid.settings != null:
+		light_range = maxi(_liquid.settings.lava_light_range, 1)
+	var queue: Array[int] = []
+	var gy := 0
+	while gy < gh:
+		var gx := 0
+		while gx < gw:
+			var wx := origin.x + gx * cell
+			var wy := origin.y + gy * cell
+			if _liquid.get_type(Vector2i(wx, wy)) == LiquidTypes.Type.LAVA:
+				var idx := gy * gw + gx
+				_lava_light[idx] = 0.0
+				queue.append(idx)
+			gx += 1
+		gy += 1
+	var head := 0
+	while head < queue.size():
+		var idx := queue[head]
+		head += 1
+		var current := _lava_light[idx]
+		if current >= 1.0:
+			continue
+		var cx := idx % gw
+		var cy := int(idx / gw)
+		var d := 0
+		while d < 4:
+			var nx := cx
+			var ny := cy
+			if d == 0:
+				nx -= 1
+			elif d == 1:
+				nx += 1
+			elif d == 2:
+				ny -= 1
+			else:
+				ny += 1
+			d += 1
+			if nx < 0 or ny < 0 or nx >= gw or ny >= gh:
+				continue
+			var add := 1.0 / float(light_range)
+			if _occ.size() == n:
+				add += _occ[ny * gw + nx] * 0.25
+			var next_cost := current + add
+			var ni := ny * gw + nx
+			if next_cost >= 1.0 or next_cost + 0.001 >= _lava_light[ni]:
+				continue
+			_lava_light[ni] = next_cost
+			queue.append(ni)
 
 
 func _occlusion_at(cell: Vector2i) -> float:

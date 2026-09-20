@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://c1lgjlnwtp2i" path="res://scripts/world/world_generator.gd" id="1_worldgen"]
 [ext_resource type="Resource" path="res://resources/blocks/block_catalog.tres" id="2_catalog"]
 [ext_resource type="Resource" path="res://resources/ores/ore_catalog.tres" id="2_orecat"]
-[ext_resource type="PackedScene" uid="uid://b6elyf6jgq50" path="res://scenes/test/combat_dummy.tscn" id="2_sl2e5"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/zombie.tscn" id="28_zombie"]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_spawner.gd" id="29_spawner"]
 [ext_resource type="Resource" path="res://resources/enemies/zombie_data.tres" id="30_zdata"]
@@ -42,6 +41,8 @@
 [ext_resource type="Script" path="res://scripts/liquid/liquid_system.gd" id="37_liquid"]
 [ext_resource type="Resource" path="res://resources/systems/liquid_settings.tres" id="38_liquid_settings"]
 [ext_resource type="Script" path="res://scripts/liquid/liquid_renderer.gd" id="39_liquid_renderer"]
+[ext_resource type="Resource" path="res://resources/world/world_generation_settings.tres" id="40_worldgen_settings"]
+[ext_resource type="PackedScene" path="res://scenes/world/lava.tscn" id="41_lava"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleMaterial_splash"]
 direction = Vector3(0, -1, 0)
@@ -55,6 +56,7 @@ color = Color(0.45, 0.72, 0.95, 0.85)
 
 [node name="World" type="Node2D" unique_id=762429514]
 script = ExtResource("1_worldgen")
+generation_settings = ExtResource("40_worldgen_settings")
 block_catalog = ExtResource("2_catalog")
 ore_catalog = ExtResource("2_orecat")
 
@@ -201,6 +203,8 @@ bus = &"SFX"
 [node name="FlowAudio" type="AudioStreamPlayer2D" parent="Terrain/LiquidSystem/LiquidRenderer"]
 bus = &"SFX"
 
+[node name="Lava" parent="Terrain/LiquidSystem" instance=ExtResource("41_lava")]
+
 [node name="TreeSystem" type="Node2D" parent="." unique_id=2132218927]
 script = ExtResource("7_trees")
 oak = ExtResource("8_oak")
@@ -258,9 +262,6 @@ item_catalog = ExtResource("11_items")
 script = ExtResource("29_spawner")
 zombie_scene = ExtResource("28_zombie")
 data = ExtResource("30_zdata")
-
-[node name="CombatDummy" parent="Enemies" unique_id=1473583841 instance=ExtResource("2_sl2e5")]
-position = Vector2(176, 128)
 
 [node name="BlockHighlight" type="Node2D" parent="." unique_id=799758890 groups=["block_highlight"]]
 visible = false

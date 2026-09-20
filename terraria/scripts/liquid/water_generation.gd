@@ -25,6 +25,53 @@ static func generate(world: WorldGenerator, liquid: LiquidSystem) -> Dictionary:
 	return stats
 
 
+static func generate_ocean(world: WorldGenerator, liquid: LiquidSystem) -> int:
+	if world == null or liquid == null or not world.has_method("is_ocean_column"):
+		return 0
+	var sea := world.sea_level() if world.has_method("sea_level") else world.base_surface_y + 1
+	var filled := 0
+	for x in world.world_width:
+		if not world.is_ocean_column(x):
+			continue
+		var floor_y := world.get_surface_y(x)
+		for y in range(sea, floor_y):
+			var cell := Vector2i(x, y)
+			if not _can_place_water(world, liquid, cell):
+				continue
+			liquid.set_cell(cell, LiquidTypes.Type.WATER, LiquidTypes.FULL, false)
+			filled += 1
+	return filled
+
+
+static func generate_danger_water(world: WorldGenerator, liquid: LiquidSystem) -> int:
+	if world == null or liquid == null or liquid.settings == null or not world.has_method("get_depth_layer"):
+		return 0
+	var rng := _make_rng(world, 8806)
+	var count := 0
+	var attempts := 36
+	for _i in attempts:
+		if count >= 12:
+			break
+		var x := rng.randi_range(10, world.world_width - 11)
+		if _is_excluded_column(world, x):
+			continue
+		var y := rng.randi_range(world.world_height - 40, world.world_height - 10)
+		if world.get_depth_layer(x, y) != DepthLayer.Id.DANGER:
+			continue
+		if world.is_fire_region(x, y):
+			continue
+		if _try_cave_pool(world, liquid, Vector2i(x, y), rng, liquid.settings):
+			count += 1
+	return count
+
+
+static func _is_excluded_column(world: WorldGenerator, x: int) -> bool:
+	if world.has_method("should_skip_ambient_water"):
+		return bool(world.should_skip_ambient_water(x))
+	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else world.world_width / 2
+	return abs(x - spawn_x) < 24
+
+
 static func _generate_surface_ponds(world: WorldGenerator, liquid: LiquidSystem, settings: LiquidSettings, rng: RandomNumberGenerator) -> int:
 	var count := 0
 	var attempts := settings.max_surface_ponds * 4
@@ -35,6 +82,8 @@ static func _generate_surface_ponds(world: WorldGenerator, liquid: LiquidSystem,
 		if rng.randf() > settings.surface_water_frequency:
 			continue
 		var x := rng.randi_range(8, world.world_width - 9)
+		if _is_excluded_column(world, x):
+			continue
 		if abs(x - spawn_x) < settings.spawn_water_exclusion_radius:
 			continue
 		if _try_surface_pond(world, liquid, x, rng, settings):
@@ -83,6 +132,8 @@ static func _generate_cave_pools(world: WorldGenerator, liquid: LiquidSystem, se
 		if rng.randf() > settings.cave_water_frequency:
 			continue
 		var x := rng.randi_range(10, world.world_width - 11)
+		if _is_excluded_column(world, x):
+			continue
 		var y := rng.randi_range(int(world.base_surface_y) + 20, world.world_height - 12)
 		if Vector2(x, y).distance_to(Vector2(spawn_x, world.get_surface_y(spawn_x) + 8)) < float(settings.spawn_water_exclusion_radius):
 			continue
@@ -119,6 +170,8 @@ static func _generate_ravine_pools(world: WorldGenerator, liquid: LiquidSystem, 
 	var count := 0
 	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else world.world_width / 2
 	for x in range(20, world.world_width - 20, 7):
+		if _is_excluded_column(world, x):
+			continue
 		if abs(x - spawn_x) < settings.spawn_water_exclusion_radius:
 			continue
 		if rng.randf() > settings.ravine_water_frequency:
@@ -151,6 +204,10 @@ static func _generate_ravine_pools(world: WorldGenerator, liquid: LiquidSystem, 
 
 static func _can_place_water(world: WorldGenerator, liquid: LiquidSystem, cell: Vector2i) -> bool:
 	if world.get_block_id(cell.x, cell.y) != WorldGenerator.AIR:
+		return false
+	if world.has_method("is_fire_region") and world.is_fire_region(cell.x, cell.y):
+		return false
+	if liquid.has_liquid(cell):
 		return false
 	return liquid.can_hold_liquid(cell)
 

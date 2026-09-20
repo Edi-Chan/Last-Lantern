@@ -111,8 +111,24 @@ func test_world_generator_uses_pending_seed() -> void:
 	var src := _read("res://scripts/world/world_generator.gd")
 	assert_true(src.contains("func _apply_pending_seed"))
 	assert_true(src.contains("resolve_world_seed"))
+	assert_true(src.contains("resolve_world_size"))
 	assert_true(src.contains("func generate_world"))
 	assert_true(src.contains("func find_spawn_position"))
+
+
+func test_new_game_stores_world_size() -> void:
+	var appearance := LookRecord.new()
+	appearance.character_name = "Test"
+	var session := SessionFactory.create_session(appearance, WorldSize.Id.SMALL)
+	assert_eq(session.world_size, WorldSize.Id.SMALL)
+	var src := _read("res://scripts/ui/start/character_creator_screen.gd")
+	assert_true(src.contains("Weltgröße") or src.contains("Weltgroesse") or src.contains("_setup_world_size"))
+	assert_true(src.contains("WorldSize.Id.SMALL"))
+	var flow := _read("res://scripts/game/start/game_session_flow.gd")
+	assert_true(flow.contains("resolve_world_size"))
+	assert_true(flow.contains("remember_generated_world_size"))
+	var save := _read("res://scripts/save/save_manager.gd")
+	assert_true(save.contains("world_size"))
 
 
 func test_enemy_spawner_keeps_safe_distance() -> void:

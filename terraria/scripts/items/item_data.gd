@@ -156,6 +156,14 @@ func is_weapon() -> bool:
 	return item_type == ItemType.WEAPON or weapon_kind != WeaponKind.NONE
 
 
+func is_ranged_weapon() -> bool:
+	if weapon_kind == WeaponKind.BOW:
+		return true
+	if weapon_data != null and weapon_data.has_method("uses_projectile"):
+		return bool(weapon_data.call("uses_projectile"))
+	return false
+
+
 func is_tool() -> bool:
 	if is_weapon():
 		return false

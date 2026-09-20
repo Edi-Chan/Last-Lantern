@@ -200,6 +200,10 @@ func _try_place_generated(world: WorldGenerator, rng: RandomNumberGenerator, til
 		return false
 	if world.is_spawn_pad_column(tile_x):
 		return false
+	if world.has_method("is_ocean_column") and bool(world.call("is_ocean_column", tile_x)):
+		return false
+	if world.has_method("is_fortress_column") and bool(world.call("is_fortress_column", tile_x)):
+		return false
 	var ground_y := world.get_surface_y(tile_x)
 	var ground_id := world.get_block_id(tile_x, ground_y)
 	if not plant.allows_ground(ground_id):

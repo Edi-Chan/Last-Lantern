@@ -129,9 +129,19 @@ func test_combat_resolver_combined_bow_damage() -> void:
 	assert_eq(CombatResolver.charged_ranged_damage(bow.weapon_data, arrow, 0.0), 10)
 	assert_eq(CombatResolver.charged_ranged_damage(bow.weapon_data, arrow, 1.0), 19)
 	assert_eq(float(bow.weapon_data.get("projectile_speed")), 297.0)
-	assert_eq(float(bow.weapon_data.get("base_range")), 54.0)
-	assert_eq(float(_items().get_item(112).weapon_data.get("base_range")), 66.0)
-	assert_eq(float(_items().get_item(113).weapon_data.get("base_range")), 78.0)
+	assert_eq(float(bow.weapon_data.get("base_range")), 108.0)
+	assert_eq(float(bow.weapon_data.get("projectile_gravity")), 280.0)
+	assert_true(bow.is_ranged_weapon())
+	var cobalt := _items().get_item(112)
+	var astralith := _items().get_item(113)
+	assert_eq(float(cobalt.weapon_data.get("base_range")), 132.0)
+	assert_eq(float(astralith.weapon_data.get("base_range")), 156.0)
+	assert_true(float(cobalt.weapon_data.get("projectile_speed")) > float(bow.weapon_data.get("projectile_speed")))
+	assert_true(float(astralith.weapon_data.get("projectile_speed")) > float(cobalt.weapon_data.get("projectile_speed")))
+	assert_true(float(cobalt.weapon_data.get("projectile_gravity")) < float(bow.weapon_data.get("projectile_gravity")))
+	assert_true(float(astralith.weapon_data.get("projectile_gravity")) < float(cobalt.weapon_data.get("projectile_gravity")))
+	assert_eq(float(cobalt.weapon_data.get("draw_time")), 0.45)
+	assert_eq(float(astralith.weapon_data.get("draw_time")), 0.38)
 
 
 func test_bow_draw_and_arrow_physics() -> void:

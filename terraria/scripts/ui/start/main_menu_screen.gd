@@ -105,7 +105,8 @@ func _build_save_status_text(flow: Node) -> String:
 		name_text = "Unbenannt"
 	var day_data: Dictionary = payload.get("day_cycle", {})
 	var day := int(day_data.get("current_day", 1))
-	return "✓ Spielstand verfügbar — %s, Tag %d" % [name_text, day]
+	var size_name := WorldSize.display_name(int(payload.get("world_size", WorldSize.Id.MEDIUM)))
+	return "✓ Spielstand verfügbar — %s, Tag %d, Welt %s" % [name_text, day, size_name]
 
 
 func _ensure_options() -> void:
@@ -197,7 +198,11 @@ func _show_load_overlay() -> void:
 		name_text = "Unbenannt"
 	var day_data: Dictionary = payload.get("day_cycle", {})
 	var day := int(day_data.get("current_day", 1))
-	_load_info.text = "Charakter: %s\nTag: %d\nEin Spielstand." % [name_text, day]
+	_load_info.text = "Charakter: %s\nTag: %d\nWeltgröße: %s\nEin Spielstand." % [
+		name_text,
+		day,
+		WorldSize.display_name(int(payload.get("world_size", WorldSize.Id.MEDIUM))),
+	]
 	_load_overlay.visible = true
 	_load_confirm.grab_focus()
 

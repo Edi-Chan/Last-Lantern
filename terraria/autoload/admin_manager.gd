@@ -782,6 +782,12 @@ func run_liquid_fall_test() -> void:
 	liquid.debug_run_falling_water_test(cell.x, cell.y - 12, 12)
 
 
+func toggle_liquid_mass_tracking() -> void:
+	var liquid := _liquid()
+	if liquid != null:
+		liquid.debug_toggle_mass_tracking()
+
+
 func get_liquid_debug_text() -> String:
 	var liquid := _liquid()
 	if liquid == null:
@@ -794,7 +800,7 @@ func get_liquid_debug_text() -> String:
 			"water_cells": liquid.get_water_cell_count(),
 			"queue_size": liquid.get_queue_size(),
 		}
-	return "[color=#D8D8DF]LIQUID PERFORMANCE[/color]\nActive Cells:  %s\nSleeping Cells:  %s\nWater Cells:  %s\nQueue Size:  %s\nUpdates/Tick:  %s / %s\nSim Time:  %.2f ms\nSim Rate:  %.0f Hz\nDirty Cells:  %s" % [
+	var text := "[color=#D8D8DF]LIQUID DEBUG[/color]\nActive Cells:  %s\nSleeping Cells:  %s\nWater Cells:  %s\nQueue Size:  %s\nUpdates/Tick:  %s / %s\nSim Time:  %.2f ms\nSim Rate:  %.0f Hz\nDirty Cells:  %s\nDirty Chunks:  %s" % [
 		str(stats.get("active_cells", 0)),
 		str(stats.get("sleeping_cells", 0)),
 		str(stats.get("water_cells", 0)),
@@ -804,4 +810,16 @@ func get_liquid_debug_text() -> String:
 		float(stats.get("simulation_ms", 0.0)),
 		float(stats.get("simulation_hz", 0.0)),
 		str(stats.get("dirty_cells_last_tick", 0)),
+		str(stats.get("dirty_chunks_last_tick", 0)),
 	]
+	if bool(stats.get("mass_tracking", liquid.is_debug_mass_tracking())):
+		var err := bool(stats.get("mass_error", false))
+		var mass_color := "#E07070" if err else "#7DCEA0"
+		text += "\n[color=%s]TOTAL WATER:  %s  (delta %s)[/color]" % [
+			mass_color,
+			str(stats.get("total_water", liquid.get_total_water_amount())),
+			str(stats.get("mass_delta", 0)),
+		]
+	else:
+		text += "\n[color=#8D8D9A]TOTAL WATER:  off (TRACK MASS)[/color]"
+	return text

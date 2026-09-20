@@ -214,6 +214,10 @@ func test_liquid_system_integration() -> void:
 	assert_true(liquid_src.contains("sleep_after_stable_ticks"))
 	var renderer_src := _read("res://scripts/liquid/liquid_renderer.gd")
 	assert_false(renderer_src.contains("for y in _system.world_height"))
+	assert_true(renderer_src.contains("is_surface_cell"))
+	assert_true(renderer_src.contains("_body_color"))
+	assert_true(liquid_src.contains("_wake_cell_and_neighbors"))
+	assert_true(liquid_src.contains("get_total_water_amount"))
 
 
 func _read(path: String) -> String:

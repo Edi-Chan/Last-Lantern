@@ -34,6 +34,8 @@ const ATTACK_DAMAGE_FRAMES := [2, 3]
 @export var start_in_darkness: bool = false
 ## Debug-Spawns bleiben in ihrer Form, bis ein echtes Finsternis-Event kommt.
 @export var lock_form: bool = false
+@export var lava_immune: bool = false
+@export var fire_resistant: bool = false
 
 var max_health: int = 50
 var current_health: int = 50
@@ -51,6 +53,7 @@ var _idle_sound_left: float = 2.5
 var _detected_once: bool = false
 var _strike_on: bool = false
 var _on_screen: bool = true
+var _lava_hurt_timer: float = 0.0
 var frozen: bool = false
 var _flash_tween: Tween
 
@@ -156,6 +159,7 @@ func _physics_process(delta: float) -> void:
 	_attack_cd = maxf(_attack_cd - delta, 0.0)
 	_hurt_left = maxf(_hurt_left - delta, 0.0)
 	_apply_gravity(delta)
+	_tick_lava(delta)
 	match _state:
 		State.IDLE:
 			_tick_idle(delta)
@@ -282,11 +286,15 @@ func current_speed() -> float:
 	var speed := data.scaled_darkness_speed(_fog_cycle()) if darkness_active else data.move_speed
 	var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
 	if liquid != null and liquid.settings != null:
-		var sample := liquid.sample_submersion(global_position, -28.0, -14.0)
-		if bool(sample.get("swimming", false)):
-			speed *= liquid.settings.enemy_deep_speed_multiplier
-		elif bool(sample.get("in_water", false)):
-			speed *= liquid.settings.enemy_shallow_speed_multiplier
+		var lava := liquid.sample_submersion(global_position, -28.0, -14.0, LiquidTypes.Type.LAVA)
+		if bool(lava.get("in_lava", false)):
+			speed *= liquid.settings.enemy_lava_speed_multiplier
+		else:
+			var sample := liquid.sample_submersion(global_position, -28.0, -14.0)
+			if bool(sample.get("swimming", false)):
+				speed *= liquid.settings.enemy_deep_speed_multiplier
+			elif bool(sample.get("in_water", false)):
+				speed *= liquid.settings.enemy_shallow_speed_multiplier
 	return speed
 
 
@@ -607,7 +615,7 @@ func _sync_range_shapes() -> void:
 	_set_circle(_attack_range, current_attack_range())
 
 
-func _set_circle(area: Area2D, radius: float) -> void:
+func _apply_gravity(delta: float) -> void:
 	if area == null:
 		return
 	var node := area.get_node_or_null("CollisionShape2D") as CollisionShape2D
@@ -623,12 +631,17 @@ func _apply_gravity(delta: float) -> void:
 	var cap := data.max_fall_speed if data != null else 600.0
 	var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
 	if liquid != null:
-		var sample := liquid.sample_submersion(global_position, -28.0, -14.0)
-		if bool(sample.get("swimming", false)):
-			g *= liquid.settings.enemy_water_gravity_multiplier
-			cap *= 0.5
-		elif bool(sample.get("in_water", false)):
-			g *= 0.85
+		var lava := liquid.sample_submersion(global_position, -28.0, -14.0, LiquidTypes.Type.LAVA)
+		if bool(lava.get("in_lava", false)):
+			g *= liquid.settings.enemy_lava_gravity_multiplier
+			cap *= 0.4
+		else:
+			var sample := liquid.sample_submersion(global_position, -28.0, -14.0)
+			if bool(sample.get("swimming", false)):
+				g *= liquid.settings.enemy_water_gravity_multiplier
+				cap *= 0.5
+			elif bool(sample.get("in_water", false)):
+				g *= 0.85
 	if not is_on_floor():
 		velocity.y = minf(velocity.y + g * delta, cap)
 	elif velocity.y > 0.0:

@@ -509,7 +509,8 @@ func _is_forge_foreground_prop(block: BlockData, role: int) -> bool:
 			or part == BlockData.BuildingPartType.STORAGE \
 			or part == BlockData.BuildingPartType.CRAFTING_STATION \
 			or part == BlockData.BuildingPartType.DEFENSE \
-			or part == BlockData.BuildingPartType.DECORATION:
+			or part == BlockData.BuildingPartType.DECORATION \
+			or part == BlockData.BuildingPartType.BED:
 		return true
 	return block.footprint.x > 1 or block.footprint.y > 1
 

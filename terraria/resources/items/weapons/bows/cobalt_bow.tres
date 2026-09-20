@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://dyfkyrp0x4exb" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
+[ext_resource type="Script" uid="uid://dxa7sdhhpmldm" path="res://scripts/stats/stat_modifier.gd" id="3_bfirj"]
 [ext_resource type="Texture2D" uid="uid://bwqkqf64jppo7" path="res://assets/items/weapons/bows/cobalt_bow.png" id="3_icon"]
 
 [sub_resource type="Resource" id="WeaponData_1"]
@@ -9,12 +10,14 @@ script = ExtResource("2_weapon")
 tier = 6
 base_damage = 22
 attack_speed = 0.8
-base_range = 66.0
+base_range = 132.0
 knockback = 50.0
 base_max_durability = 180
 ammo_item_id = 114
 projectile_speed = 351.0
+projectile_gravity = 220.0
 projectile_damage_bonus = 4
+draw_time = 0.45
 
 [resource]
 script = ExtResource("1_script")

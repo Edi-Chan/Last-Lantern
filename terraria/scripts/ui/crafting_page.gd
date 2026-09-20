@@ -568,6 +568,7 @@ func _subfilters_for(category: int) -> Array:
 				[SUB_ALL, "Alle"],
 				[int(BlockData.BuildingPartType.STORAGE), "Lager"],
 				[int(BlockData.BuildingPartType.DECORATION), "Möbel"],
+				[int(BlockData.BuildingPartType.BED), "Betten"],
 				[SUB_BAR, "Theke"],
 			]
 		RecipeData.UiCategory.STATIONS:
@@ -1088,7 +1089,10 @@ func _fill_stats(item: ItemData) -> void:
 		_stat_row("Rüstung", "+%d" % item.defense)
 	var item_range := item.get_base_range()
 	if item_range > 0.0:
-		_stat_row("Reichweite", _fmt(item_range))
+		var range_text := _fmt(item_range)
+		if item.is_ranged_weapon():
+			range_text = "%s Tiles" % range_text
+		_stat_row("Reichweite", range_text)
 	if item.building_material != BlockData.BuildingMaterial.NONE:
 		_stat_row("Material", BlockData.material_display_name(item.building_material))
 	if item.building_part_type != BlockData.BuildingPartType.NONE:

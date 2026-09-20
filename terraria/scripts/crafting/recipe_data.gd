@@ -145,7 +145,8 @@ static func resolve_ui_category(item: ItemData) -> int:
 		or item.id == 30 or item.id == 31:
 		return UiCategory.LIGHT
 	if item.building_part_type == BlockData.BuildingPartType.DECORATION \
-		or item.building_part_type == BlockData.BuildingPartType.STORAGE:
+		or item.building_part_type == BlockData.BuildingPartType.STORAGE \
+		or item.building_part_type == BlockData.BuildingPartType.BED:
 		return UiCategory.DECORATION
 	if item.category == ItemData.ItemCategory.WEAPON or item.is_weapon():
 		return UiCategory.WEAPONS

@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://ch56cf1pvxsqh" path="res://scripts/items/tool_data.gd" id="2_tool"]
 [ext_resource type="Texture2D" uid="uid://0ihhxratppq1" path="res://assets/items/tools/woodcutting/stone_axe.png" id="3_icon"]
+[ext_resource type="Script" uid="uid://dxa7sdhhpmldm" path="res://scripts/stats/stat_modifier.gd" id="3_j6slw"]
 
 [sub_resource type="Resource" id="ToolData_1"]
 script = ExtResource("2_tool")

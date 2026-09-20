@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://conqb4kymqxj2"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/items/tool_data.gd" id="2_tool"]
-[ext_resource type="Texture2D" path="res://assets/items/tools/mining/pickaxes/wood_pickaxe.png" id="3_icon"]
+[ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://ch56cf1pvxsqh" path="res://scripts/items/tool_data.gd" id="2_tool"]
+[ext_resource type="Texture2D" uid="uid://ddr348nymv26w" path="res://assets/items/tools/mining/pickaxes/wood_pickaxe.png" id="3_icon"]
+[ext_resource type="Script" uid="uid://dxa7sdhhpmldm" path="res://scripts/stats/stat_modifier.gd" id="3_nu0hg"]
 
 [sub_resource type="Resource" id="ToolData_1"]
 script = ExtResource("2_tool")
@@ -11,9 +12,7 @@ base_damage = 5
 base_tool_power = 6
 base_use_speed = 0.8
 base_max_durability = 60
-base_range = 2.5
 special = "Holz"
-pickaxe_tier = 0
 
 [resource]
 script = ExtResource("1_script")

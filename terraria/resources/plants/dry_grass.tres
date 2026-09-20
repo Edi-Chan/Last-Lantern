@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="PlantData" format=3]
+[gd_resource type="Resource" script_class="PlantData" format=3 uid="uid://5qyyuiu14e3"]
 
-[ext_resource type="Script" path="res://scripts/world/plant_data.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/world/vegetation/dry_grass.png" id="2"]
+[ext_resource type="Script" uid="uid://ccyowoslwhyk5" path="res://scripts/world/plant_data.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cgvla87w515yb" path="res://assets/world/vegetation/dry_grass.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -11,11 +11,7 @@ plant_category = 1
 valid_biomes = Array[StringName]([&"sand"])
 spawn_weight = 1.2
 cluster_chance = 0.25
-min_cluster_size = 2
-max_cluster_size = 4
 valid_ground_types = Array[int]([4])
-can_be_harvested = true
-can_be_planted = true
 item_id = 59
 world_texture = ExtResource("2")
 wind_strength = 0.85

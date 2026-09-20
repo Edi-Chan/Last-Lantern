@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://ch56cf1pvxsqh" path="res://scripts/items/tool_data.gd" id="2_tool"]
+[ext_resource type="Script" uid="uid://dxa7sdhhpmldm" path="res://scripts/stats/stat_modifier.gd" id="3_7notq"]
 [ext_resource type="Texture2D" uid="uid://d18ppocgsiljc" path="res://assets/items/tools/dismantling/simple_wrench.png" id="3_icon"]
 
 [sub_resource type="Resource" id="ToolData_1"]

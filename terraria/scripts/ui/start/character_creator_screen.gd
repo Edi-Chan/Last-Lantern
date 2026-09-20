@@ -19,6 +19,8 @@ const PREVIEW_SCALE := 4.0
 
 var _preview_sprite: AnimatedSprite2D
 var _default_name: String = ""
+var _world_size: int = WorldSize.Id.MEDIUM
+var _size_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -26,6 +28,7 @@ func _ready() -> void:
 	theme = AdminTheme.make_theme()
 	_setup_copy()
 	_setup_preview()
+	_setup_world_size()
 	_name_edit.max_length = LookRecord.NAME_MAX_LENGTH
 	_name_edit.placeholder_text = "Name"
 	_name_edit.text_changed.connect(_on_name_changed)
@@ -68,6 +71,46 @@ func _setup_preview() -> void:
 	_preview_host.add_child(_preview_sprite)
 	_preview_host.resized.connect(_center_preview)
 	call_deferred("_center_preview")
+
+
+func _setup_world_size() -> void:
+	var details := get_node_or_null("Center/Panel/Margin/Layout/Body/Details") as VBoxContainer
+	if details == null:
+		return
+	var title := Label.new()
+	title.text = "Weltgröße"
+	details.add_child(title)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	details.add_child(row)
+	for size_id in [WorldSize.Id.SMALL, WorldSize.Id.MEDIUM, WorldSize.Id.LARGE]:
+		var button := Button.new()
+		button.text = WorldSize.display_name(size_id)
+		button.toggle_mode = true
+		button.custom_minimum_size = Vector2(70, 28)
+		button.tooltip_text = WorldSize.description(size_id)
+		button.set_meta("world_size", size_id)
+		button.pressed.connect(_on_world_size_pressed.bind(size_id))
+		row.add_child(button)
+		_size_buttons[size_id] = button
+	var hint := Label.new()
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.text = "Klein, Mittel oder Groß. Gleicher Seed und gleiche Größe erzeugen dieselbe Welt."
+	details.add_child(hint)
+	_refresh_world_size_buttons()
+
+
+func _on_world_size_pressed(size_id: int) -> void:
+	_world_size = WorldSize.clamp_id(size_id)
+	_refresh_world_size_buttons()
+
+
+func _refresh_world_size_buttons() -> void:
+	for size_id in _size_buttons.keys():
+		var button := _size_buttons[size_id] as Button
+		if button == null:
+			continue
+		button.set_pressed_no_signal(int(size_id) == _world_size)
 
 
 func _center_preview() -> void:
@@ -113,7 +156,7 @@ func _on_create() -> void:
 		return
 	var flow := _flow()
 	if flow != null and flow.has_method("submit_character"):
-		flow.call("submit_character", appearance)
+		flow.call("submit_character", appearance, _world_size)
 
 
 func _on_back() -> void:

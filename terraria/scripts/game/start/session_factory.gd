@@ -25,6 +25,7 @@ static func session_from_dict(data: Dictionary) -> SessionRecord:
 		session.appearance = LookRecord.new()
 		return session
 	session.world_seed = int(data.get("world_seed", 0))
+	session.world_size = WorldSize.clamp_id(int(data.get("world_size", WorldSize.Id.MEDIUM)))
 	var character_raw: Variant = data.get("character", {})
 	if character_raw is Dictionary:
 		session.appearance = look_from_dict(character_raw)
@@ -33,7 +34,7 @@ static func session_from_dict(data: Dictionary) -> SessionRecord:
 	return session
 
 
-static func create_session(appearance: LookRecord) -> SessionRecord:
+static func create_session(appearance: LookRecord, world_size: int = WorldSize.Id.MEDIUM) -> SessionRecord:
 	var session := SessionRecord.new()
 	var copy := LookRecord.new()
 	if appearance != null:
@@ -41,4 +42,5 @@ static func create_session(appearance: LookRecord) -> SessionRecord:
 	copy.normalize()
 	session.appearance = copy
 	session.world_seed = make_random_seed()
+	session.world_size = WorldSize.clamp_id(world_size)
 	return session

@@ -3,18 +3,21 @@
 [ext_resource type="Script" uid="uid://c24iyjg83frs4" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://dyfkyrp0x4exb" path="res://scripts/items/weapon_data.gd" id="2_weapon"]
 [ext_resource type="Texture2D" uid="uid://bptl4oce2vbc" path="res://assets/items/weapons/bows/astralith_bow.png" id="3_icon"]
+[ext_resource type="Script" uid="uid://dxa7sdhhpmldm" path="res://scripts/stats/stat_modifier.gd" id="3_uc6yl"]
 
 [sub_resource type="Resource" id="WeaponData_1"]
 script = ExtResource("2_weapon")
 tier = 11
 base_damage = 48
 attack_speed = 0.9
-base_range = 78.0
+base_range = 156.0
 knockback = 70.0
 base_max_durability = 280
 ammo_item_id = 114
 projectile_speed = 432.0
+projectile_gravity = 160.0
 projectile_damage_bonus = 4
+draw_time = 0.38
 
 [resource]
 script = ExtResource("1_script")

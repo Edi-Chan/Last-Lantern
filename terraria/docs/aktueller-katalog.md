@@ -149,9 +149,9 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 | 108 | Kupferspeer | WEAPON | WEAPON | 1 | -1 | NONE | 14 | 0 | 120 | 0 | 0.95 | 3.5 | 0 | 0 | UNCOMMON | `resources/items/weapons/spears/copper_spear.tres` |
 | 109 | Kobaltspeer | WEAPON | WEAPON | 1 | -1 | NONE | 28 | 0 | 200 | 0 | 1.05 | 3.8 | 0 | 0 | RARE | `resources/items/weapons/spears/cobalt_spear.tres` |
 | 110 | Voidiumspeer | WEAPON | WEAPON | 1 | -1 | NONE | 56 | 0 | 300 | 0 | 1.15 | 4.1 | 0 | 0 | EPIC | `resources/items/weapons/spears/voidium_spear.tres` |
-| 111 | Holzbogen | WEAPON | WEAPON | 1 | -1 | NONE | 8 | 0 | 80 | 0 | 0.7 | 54.0 | 0 | 0 | COMMON | `resources/items/weapons/bows/wood_bow.tres` |
-| 112 | Kobaltbogen | WEAPON | WEAPON | 1 | -1 | NONE | 22 | 0 | 180 | 0 | 0.8 | 66.0 | 0 | 0 | RARE | `resources/items/weapons/bows/cobalt_bow.tres` |
-| 113 | Astralithbogen | WEAPON | WEAPON | 1 | -1 | NONE | 48 | 0 | 280 | 0 | 0.9 | 78.0 | 0 | 0 | LEGENDARY | `resources/items/weapons/bows/astralith_bow.tres` |
+| 111 | Holzbogen | WEAPON | WEAPON | 1 | -1 | NONE | 8 | 0 | 80 | 0 | 0.7 | 108.0 | 0 | 0 | COMMON | `resources/items/weapons/bows/wood_bow.tres` |
+| 112 | Kobaltbogen | WEAPON | WEAPON | 1 | -1 | NONE | 22 | 0 | 180 | 0 | 0.8 | 132.0 | 0 | 0 | RARE | `resources/items/weapons/bows/cobalt_bow.tres` |
+| 113 | Astralithbogen | WEAPON | WEAPON | 1 | -1 | NONE | 48 | 0 | 280 | 0 | 0.9 | 156.0 | 0 | 0 | LEGENDARY | `resources/items/weapons/bows/astralith_bow.tres` |
 | 114 | Holzpfeil | MATERIAL | AMMUNITION | 999 | -1 | NONE | 4 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/ammunition/wood_arrow.tres` |
 | 115 | Alte Kampflaterne | WEAPON | WEAPON | 1 | -1 | NONE | 15 | 0 | 120 | 0 | 0.85 | 2.2 | 0 | 0 | UNCOMMON | `resources/items/weapons/lanterns/old_combat_lantern.tres` |
 
@@ -209,9 +209,9 @@ Bögen: Linksklick schießt sofort mit voller Reichweite und halbem Schaden. Rec
 | 108 | Kupferspeer | SPEAR | 2 | 14 | 0.95 | 3.5 | 155 | 120 | Amboss | `resources/items/weapons/spears/copper_spear.tres` |
 | 109 | Kobaltspeer | SPEAR | 6 | 28 | 1.05 | 3.8 | 185 | 200 | Amboss | `resources/items/weapons/spears/cobalt_spear.tres` |
 | 110 | Voidiumspeer | SPEAR | 10 | 56 | 1.15 | 4.1 | 215 | 300 | Amboss | `resources/items/weapons/spears/voidium_spear.tres` |
-| 111 | Holzbogen | BOW | 1 | 8+4 Pfeil | 0.7 | 54.0 | 35 | 80 | Werkbank | `resources/items/weapons/bows/wood_bow.tres` |
-| 112 | Kobaltbogen | BOW | 6 | 22+4 Pfeil | 0.8 | 66.0 | 50 | 180 | Amboss | `resources/items/weapons/bows/cobalt_bow.tres` |
-| 113 | Astralithbogen | BOW | 11 | 48+4 Pfeil | 0.9 | 78.0 | 70 | 280 | Amboss | `resources/items/weapons/bows/astralith_bow.tres` |
+| 111 | Holzbogen | BOW | 1 | 8+4 Pfeil | 0.7 | 108.0 | 35 | 80 | Werkbank | `resources/items/weapons/bows/wood_bow.tres` |
+| 112 | Kobaltbogen | BOW | 6 | 22+4 Pfeil | 0.8 | 132.0 | 50 | 180 | Amboss | `resources/items/weapons/bows/cobalt_bow.tres` |
+| 113 | Astralithbogen | BOW | 11 | 48+4 Pfeil | 0.9 | 156.0 | 70 | 280 | Amboss | `resources/items/weapons/bows/astralith_bow.tres` |
 | 114 | Holzpfeil | AMMUNITION | — | 4 | — | — | — | — | Werkbank (8 Stück) | `resources/items/ammunition/wood_arrow.tres` |
 | 115 | Alte Kampflaterne | LANTERN | 1 | 15 (×1.5 Finsternis) | Cooldown 1.2 s | 2.2 | 70 | 120 | Werkbank | `resources/items/weapons/lanterns/old_combat_lantern.tres` |
 
