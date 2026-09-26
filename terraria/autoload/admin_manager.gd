@@ -1,11 +1,12 @@
 extends Node
 
-## Debug-Dienst. Spricht nur bestehende Last-Lantern-Systeme an.
+## Debug-Dienst. Spricht nur bestehende Last-Lantern-Systeme an. Map-Performance-Toggles.
 
 signal menu_visibility_changed(is_open: bool)
 signal modifiers_changed
 
 const ENEMY_CATALOG_PATH := "res://resources/enemies/enemy_catalog.tres"
+const ANIMAL_CATALOG_PATH := "res://resources/animals/animal_catalog.tres"
 const ITEM_CATALOG_PATH := "res://resources/items/item_catalog.tres"
 const CYCLE_LENGTH := 7
 const PHASE_PRESETS := {
@@ -23,14 +24,26 @@ var infinite_stamina: bool = false
 var infinite_energy: bool = false
 var freeze_ai: bool = false
 var inspect_enemy: bool = false
+var show_animal_ai: bool = false
 var speed_multiplier: float = 1.0
 var debug_spawn: Vector2 = Vector2.INF
 var selected_enemy: Node = null
+var perf_overlay: bool = false
+var perf_map_updates: bool = true
+var perf_minimap: bool = true
+var perf_world_map: bool = true
+var perf_discovery: bool = true
+var perf_map_markers: bool = true
+var perf_liquid_map: bool = true
+var last_map_benchmark: String = ""
+var show_weapon_debug: bool = false
+var _perf_worst_ms: float = 0.0
 
 var _saved_collision_layer: int = -1
 var _saved_collision_mask: int = -1
 var _saved_calendar_scale: float = 1.0
 var _enemy_catalog: Resource
+var _animal_catalog: Resource
 var _item_catalog: ItemCatalog
 var _menu: Node = null
 var _hud_input_locked: bool = false
@@ -42,6 +55,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_enemy_catalog = load(ENEMY_CATALOG_PATH) as Resource
+	_animal_catalog = load(ANIMAL_CATALOG_PATH) as Resource
 	_item_catalog = load(ITEM_CATALOG_PATH) as ItemCatalog
 
 
@@ -52,6 +66,9 @@ func _input(event: InputEvent) -> void:
 		var key := event as InputEventKey
 		if key.physical_keycode == KEY_F8:
 			toggle_menu()
+			get_viewport().set_input_as_handled()
+		elif key.physical_keycode == KEY_F7:
+			show_weapon_debug = not show_weapon_debug
 			get_viewport().set_input_as_handled()
 
 
@@ -170,6 +187,10 @@ func get_enemy_spawner() -> EnemySpawner:
 	return get_tree().get_first_node_in_group("enemy_spawner") as EnemySpawner
 
 
+func get_animal_spawner() -> AnimalSpawner:
+	return get_tree().get_first_node_in_group("animal_spawner") as AnimalSpawner
+
+
 func get_save_manager() -> SaveManager:
 	return get_tree().get_first_node_in_group(SaveManager.GROUP) as SaveManager
 
@@ -183,6 +204,77 @@ func get_item_catalog() -> ItemCatalog:
 
 func get_enemy_catalog() -> Resource:
 	return _enemy_catalog
+
+
+func get_animal_catalog() -> Resource:
+	if _animal_catalog == null:
+		_animal_catalog = load(ANIMAL_CATALOG_PATH) as Resource
+	return _animal_catalog
+
+
+func get_all_animals() -> Array:
+	var catalog := get_animal_catalog()
+	if catalog == null or not catalog.has_method("get_all"):
+		return []
+	return catalog.call("get_all")
+
+
+func spawn_animal(definition: Resource, amount: int, mode: StringName) -> int:
+	if definition == null or amount <= 0:
+		return 0
+	var spawner := get_animal_spawner()
+	if spawner == null:
+		return 0
+	var manager: Node = get_tree().get_first_node_in_group(&"spawn_manager")
+	var animal_id := StringName(str(definition.get("id")))
+	var spawned := 0
+	for i in amount:
+		if manager != null and manager.has_method("can_debug_spawn_animal"):
+			if not bool(manager.call("can_debug_spawn_animal")):
+				break
+		var pos := _spawn_position(mode) + Vector2(float(i % 5) * 18.0 - 36.0, 0.0)
+		var instance := spawner.spawn_animal(animal_id, pos, true)
+		if instance == null:
+			continue
+		if freeze_ai:
+			instance.frozen = true
+		spawned += 1
+	return spawned
+
+
+func spawn_one_of_each_animal() -> int:
+	var spawner := get_animal_spawner()
+	var player := get_player()
+	if spawner == null or player == null:
+		return 0
+	var manager: Node = get_tree().get_first_node_in_group(&"spawn_manager")
+	if manager != null and manager.has_method("population_snapshot"):
+		var snap: Dictionary = manager.call("population_snapshot")
+		var max_debug := 48
+		var settings_res = manager.get("settings")
+		if settings_res != null:
+			max_debug = int(settings_res.max_debug_animals)
+		var remaining := max_debug - int(snap.get("debug_animals", 0))
+		if remaining <= 0:
+			return 0
+	return spawner.spawn_one_of_each(player.global_position + Vector2(48.0 * player.facing_sign, 0.0)).size()
+
+
+func clear_animals() -> void:
+	var spawner := get_animal_spawner()
+	if spawner != null:
+		spawner.clear_animals()
+		return
+	for node in get_tree().get_nodes_in_group("animals"):
+		if node is AnimalBase:
+			(node as AnimalBase).remove_silent()
+
+
+func get_animal_population_stats() -> Dictionary:
+	var spawner := get_animal_spawner()
+	if spawner != null:
+		return spawner.population_stats()
+	return {"active": 0, "sleeping": 0, "flying": 0, "water": 0, "darkness": 0, "total": 0}
 
 
 func get_all_items() -> Array[ItemData]:
@@ -267,6 +359,9 @@ func set_freeze_ai(enabled: bool) -> void:
 	for enemy in get_live_enemies():
 		if "frozen" in enemy:
 			enemy.frozen = enabled
+	for node in get_tree().get_nodes_in_group("animals"):
+		if "frozen" in node:
+			node.frozen = enabled
 	modifiers_changed.emit()
 
 
@@ -279,6 +374,7 @@ func reset_all_modifiers() -> void:
 	set_freeze_ai(false)
 	set_speed_multiplier(1.0)
 	inspect_enemy = false
+	show_animal_ai = false
 	set_calendar_time_scale(1.0)
 	Engine.time_scale = 1.0
 	modifiers_changed.emit()
@@ -341,6 +437,56 @@ func reload_world() -> void:
 	var saver := get_save_manager()
 	if saver != null:
 		saver.load_game()
+
+
+func get_world_map_data() -> WorldMapData:
+	return get_tree().get_first_node_in_group("world_map_data") as WorldMapData
+
+
+func reveal_full_map() -> void:
+	var map_data := get_world_map_data()
+	if map_data != null:
+		map_data.reveal_full_map()
+
+
+func reset_map_discovery() -> void:
+	var map_data := get_world_map_data()
+	if map_data != null:
+		map_data.reset_discovery(true)
+
+
+func run_map_benchmark() -> String:
+	var live := get_world_map_data()
+	var data := WorldMapData.new()
+	data.setup_test_world(320, 180, 40)
+	for x in 320:
+		data.test_set_block(Vector2i(x, 40), 3, true)
+	var t0 := Time.get_ticks_usec()
+	data.discover_around(Vector2i(160, 38), 16)
+	var partial_ms := (Time.get_ticks_usec() - t0) / 1000.0
+	var partial_count := data.discovered_count()
+	data.map_flush_count = 0
+	for _i in 120:
+		data._process(0.016)
+	var partial_flushes := data.map_flush_count
+	var t1 := Time.get_ticks_usec()
+	data.reveal_full_map()
+	var reveal_ms := (Time.get_ticks_usec() - t1) / 1000.0
+	var t2 := Time.get_ticks_usec()
+	data.discover_around(Vector2i(200, 38), 16)
+	var post_discover_ms := (Time.get_ticks_usec() - t2) / 1000.0
+	data.map_flush_count = 0
+	for _i in 120:
+		data._process(0.016)
+	var full_flushes := data.map_flush_count
+	var save_partial := MapExploration.byte_size_for(320, 180)
+	var save_full := str(data.to_save_dict()).length()
+	last_map_benchmark = "Partial discover: %.2f ms (%d tiles)\nPartial hidden flushes/120: %d\nFull reveal: %.2f ms (%d tiles)\nDiscover after full: %.3f ms\nFull hidden flushes/120: %d\nSave compact: %d chars (mask would be %d bytes)\nDiscover ms live: %.2f\nFlush ms live: %.2f" % [
+		partial_ms, partial_count, partial_flushes, reveal_ms, data.discovered_count(), post_discover_ms, full_flushes, save_full, save_partial,
+		live.last_discover_ms if live != null else 0.0,
+		live.last_flush_ms if live != null else 0.0,
+	]
+	return last_map_benchmark
 
 
 func remove_all_drops() -> void:
@@ -422,7 +568,11 @@ func spawn_enemy(definition: Resource, amount: int, mode: StringName) -> int:
 		var pos := _spawn_position(mode) + Vector2(float(i % 5) * 16.0 - 32.0, 0.0)
 		var instance: Node2D
 		if enemy_id == &"zombie" and spawner != null:
-			instance = spawner.spawn_zombie_at(pos, darkness, true)
+			var manager: Node = get_tree().get_first_node_in_group(&"spawn_manager")
+			if manager != null and manager.has_method("can_debug_spawn_enemy"):
+				if not bool(manager.call("can_debug_spawn_enemy")):
+					break
+			instance = spawner.spawn_zombie_at(pos, darkness, true, true)
 		else:
 			instance = scene.instantiate() as Node2D
 			if instance == null:
@@ -539,6 +689,20 @@ func give_all_of(filter: Callable) -> int:
 	return given
 
 
+func give_items(items: Array[ItemData], amount: int) -> int:
+	var inventory := get_inventory()
+	if inventory == null:
+		return 0
+	var given := 0
+	var qty := maxi(amount, 1)
+	for item in items:
+		if item == null:
+			continue
+		if inventory.add_item(item.id, qty):
+			given += 1
+	return given
+
+
 func get_cycle_day() -> int:
 	var day := get_day_cycle()
 	if day == null:
@@ -552,7 +716,7 @@ func set_cycle_day(cycle: int) -> void:
 	if day == null:
 		return
 	cycle = clampi(cycle, 1, CYCLE_LENGTH)
-	var week := int((maxi(day.current_day, 1) - 1) / CYCLE_LENGTH)
+	var week := int((maxi(day.current_day, 1) - 1) / float(CYCLE_LENGTH))
 	day.set_day_and_time(week * CYCLE_LENGTH + cycle, day.time_of_day)
 
 
@@ -748,6 +912,15 @@ func spawn_water_at_player() -> void:
 	liquid.debug_fill_area(cell - Vector2i(2, 1), Vector2i(5, 4))
 
 
+func spawn_lava_at_player() -> void:
+	var liquid := _liquid()
+	var player := get_player()
+	if liquid == null or player == null:
+		return
+	var cell := liquid.world_to_cell(player.global_position)
+	liquid.debug_fill_lava(cell - Vector2i(2, 1), Vector2i(5, 4))
+
+
 func remove_water_at_player() -> void:
 	var liquid := _liquid()
 	var player := get_player()
@@ -755,6 +928,10 @@ func remove_water_at_player() -> void:
 		return
 	var cell := liquid.world_to_cell(player.global_position)
 	liquid.debug_clear_area(cell - Vector2i(3, 2), Vector2i(7, 5))
+
+
+func remove_liquid_at_player() -> void:
+	remove_water_at_player()
 
 
 func toggle_infinite_breath() -> void:
@@ -782,10 +959,135 @@ func run_liquid_fall_test() -> void:
 	liquid.debug_run_falling_water_test(cell.x, cell.y - 12, 12)
 
 
+func run_lava_fall_test() -> void:
+	var liquid := _liquid()
+	var player := get_player()
+	if liquid == null or player == null:
+		return
+	var cell := liquid.world_to_cell(player.global_position)
+	liquid.debug_run_falling_lava_test(cell.x, cell.y - 12, 12)
+
+
+func teleport_to_depth_layer(layer_id: int, fire_only: bool = false) -> void:
+	var player := get_player()
+	var world := get_world()
+	if player == null or world == null or not world.has_method("find_open_cell_in_layer"):
+		return
+	var around_x := int(player.global_position.x / 16.0)
+	var cell: Vector2i = world.call("find_open_cell_in_layer", layer_id, around_x, fire_only)
+	if cell.x < 0:
+		return
+	player.global_position = Vector2(float(cell.x) * 16.0 + 8.0, float(cell.y + 1) * 16.0 - 1.0)
+
+
+func teleport_to_deep_caves() -> void:
+	teleport_to_depth_layer(DepthLayer.Id.DEEP_CAVES)
+
+
+func teleport_to_danger_layer() -> void:
+	teleport_to_depth_layer(DepthLayer.Id.DANGER, false)
+
+
+func teleport_to_fire_region() -> void:
+	teleport_to_depth_layer(DepthLayer.Id.DANGER, true)
+
+
 func toggle_liquid_mass_tracking() -> void:
 	var liquid := _liquid()
 	if liquid != null:
 		liquid.debug_toggle_mass_tracking()
+
+
+func _lava() -> Lava:
+	var liquid := _liquid()
+	if liquid == null:
+		return null
+	return liquid.get_node_or_null("Lava") as Lava
+
+
+func set_lava_lights_enabled(enabled: bool) -> void:
+	var lava := _lava()
+	if lava != null:
+		lava.lights_enabled = enabled
+
+
+func are_lava_lights_enabled() -> bool:
+	var lava := _lava()
+	return lava == null or lava.lights_enabled
+
+
+func set_lava_particles_enabled(enabled: bool) -> void:
+	var lava := _lava()
+	if lava != null:
+		lava.particles_enabled = enabled
+
+
+func are_lava_particles_enabled() -> bool:
+	var lava := _lava()
+	return lava == null or lava.particles_enabled
+
+
+func get_performance_overlay_text(compact: bool = false) -> String:
+	var fps := Engine.get_frames_per_second()
+	var frame_ms := 1000.0 / maxf(fps, 0.001)
+	_perf_worst_ms = maxf(_perf_worst_ms * 0.98, frame_ms)
+	var process_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	var physics_ms := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	var objects := int(Performance.get_monitor(Performance.OBJECT_COUNT))
+	var draw_calls := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+	var mem_mb := Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
+	var liquid := _liquid()
+	var vis := get_tree().get_first_node_in_group("visibility_overlay")
+	var renderer: LiquidRenderer = liquid.get_node_or_null("LiquidRenderer") as LiquidRenderer if liquid != null else null
+	var lights := 0
+	var lava := _lava()
+	if lava != null:
+		var light_root := lava.get_node_or_null("Visual/Light")
+		if light_root != null:
+			for child in light_root.get_children():
+				if child is PointLight2D and child.visible:
+					lights += 1
+	var sim_ms := 0.0
+	var active := 0
+	var water := 0
+	var lava_cells := 0
+	var queue := 0
+	var drawn := 0
+	if liquid != null:
+		var stats := liquid.get_debug_stats()
+		sim_ms = float(stats.get("simulation_ms", 0.0))
+		active = int(stats.get("active_cells", liquid.get_active_cell_count()))
+		water = liquid.get_water_cell_count()
+		lava_cells = liquid.get_lava_cell_count()
+		queue = liquid.get_queue_size()
+		if renderer != null:
+			drawn = renderer.last_drawn_cells
+	var vis_ms := 0.0
+	if vis != null and "last_rebuild_ms" in vis:
+		vis_ms = float(vis.get("last_rebuild_ms"))
+	var map := get_world_map_data()
+	var disc_ms := 0.0
+	var flush_ms := 0.0
+	var disc_pct := 0.0
+	var dirty := 0
+	if map != null:
+		disc_ms = map.last_discover_ms
+		flush_ms = map.last_flush_ms
+		disc_pct = map.discovered_percent()
+		dirty = map.dirty_chunk_count()
+	if compact:
+		return "FPS %d   %.1f ms (worst %.1f)   proc %.1f phy %.1f   vis %.1f liq %.1f\nW %d L %d act %d q %d draw %d lights %d   nodes %d obj %d   %.0f MB  dc %d\nmap disc %.2fms flush %.2fms  %.0f%% dirty %d" % [
+			roundi(fps), frame_ms, _perf_worst_ms, process_ms, physics_ms, vis_ms, sim_ms,
+			water, lava_cells, active, queue, drawn, lights, nodes, objects, mem_mb, draw_calls,
+			disc_ms, flush_ms, disc_pct, dirty,
+		]
+	return "FPS:  %d     Frame:  %.1f ms     Worst:  %.1f ms\nProcess:  %.1f ms     Physics:  %.1f ms     Overlay:  %.1f ms     Liquid:  %.1f ms\nWater:  %d     Lava:  %d     Active:  %d     Queue:  %d     Drawn:  %d     Lights:  %d\nNodes:  %d     Objects:  %d     Memory:  %.0f MB     DrawCalls:  %d     Enemies:  %d     Drops:  %d\nMap Discover:  %.2f ms     Map Flush:  %.2f ms     Discovered:  %.1f %%     Dirty Chunks:  %d" % [
+		roundi(fps), frame_ms, _perf_worst_ms, process_ms, physics_ms, vis_ms, sim_ms,
+		water, lava_cells, active, queue, drawn, lights, nodes, objects, mem_mb, draw_calls,
+		get_live_enemies().size(), get_dropped_item_count(),
+		disc_ms, flush_ms, disc_pct, dirty,
+	]
 
 
 func get_liquid_debug_text() -> String:
@@ -800,10 +1102,11 @@ func get_liquid_debug_text() -> String:
 			"water_cells": liquid.get_water_cell_count(),
 			"queue_size": liquid.get_queue_size(),
 		}
-	var text := "[color=#D8D8DF]LIQUID DEBUG[/color]\nActive Cells:  %s\nSleeping Cells:  %s\nWater Cells:  %s\nQueue Size:  %s\nUpdates/Tick:  %s / %s\nSim Time:  %.2f ms\nSim Rate:  %.0f Hz\nDirty Cells:  %s\nDirty Chunks:  %s" % [
+	var text := "[color=#D8D8DF]LIQUID DEBUG[/color]\nActive Cells:  %s\nSleeping Cells:  %s\nWater Cells:  %s\nLava Cells:  %s\nQueue Size:  %s\nUpdates/Tick:  %s / %s\nSim Time:  %.2f ms\nSim Rate:  %.0f Hz\nDirty Cells:  %s\nDirty Chunks:  %s" % [
 		str(stats.get("active_cells", 0)),
 		str(stats.get("sleeping_cells", 0)),
 		str(stats.get("water_cells", 0)),
+		str(stats.get("lava_cells", liquid.get_lava_cell_count() if liquid.has_method("get_lava_cell_count") else 0)),
 		str(stats.get("queue_size", 0)),
 		str(stats.get("updates_last_tick", 0)),
 		str(stats.get("update_budget", 0)),
@@ -822,4 +1125,39 @@ func get_liquid_debug_text() -> String:
 		]
 	else:
 		text += "\n[color=#8D8D9A]TOTAL WATER:  off (TRACK MASS)[/color]"
+	text += "\n\n" + get_map_debug_text()
 	return text
+
+
+func get_map_debug_text() -> String:
+	var map := get_world_map_data()
+	if map == null:
+		return "[color=#8D8D9A]MAP PERFORMANCE:  WorldMapData nicht geladen.[/color]"
+	var minimap_ui := get_tree().get_first_node_in_group("minimap_ui") as CanvasItem
+	var world_map := get_tree().get_first_node_in_group("world_map_ui") as CanvasItem
+	var extra := last_map_benchmark
+	if extra.is_empty():
+		extra = "RUN MAP BENCHMARK fuer Synthetic-Zahlen."
+	return "[color=#D8D8DF]MAP PERFORMANCE[/color]\nDiscovered:  %.1f %%  (%d)\nDiscover:  %.2f ms     Paint:  %.2f ms     Flush:  %.2f ms     Reveal:  %.2f ms\nDirty Chunks:  %d     Liquid Dirty:  %d     Flushes:  %d\nTexture:  %d KB     Discovery:  %d B     Full:  %s     Revealing:  %s\nMinimap:  %s     World Map:  %s\nToggles:  mini %s  world %s  disc %s  liquid-map %s  markers %s\n%s" % [
+		map.discovered_percent(),
+		map.discovered_count(),
+		map.last_discover_ms,
+		map.last_paint_ms,
+		map.last_flush_ms,
+		map.last_reveal_ms,
+		map.dirty_chunk_count(),
+		map.dirty_liquid_count(),
+		map.map_flush_count,
+		int(map.map_texture_bytes() / 1024.0),
+		map.discovery_byte_size(),
+		str(map.full_revealed),
+		str(map.is_revealing()),
+		"ON" if minimap_ui != null and minimap_ui.visible else "off",
+		"ON" if world_map != null and world_map.visible else "off",
+		str(perf_minimap),
+		str(perf_world_map),
+		str(perf_discovery),
+		str(perf_liquid_map),
+		str(perf_map_markers),
+		extra,
+	]

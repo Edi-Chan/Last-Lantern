@@ -37,12 +37,28 @@ enum ToolKind {
 }
 ## SHOVEL kann spaeter an dieses Enum angehaengt werden. Dirt/Sand bleiben vorerst NONE.
 
-## Weitere Waffenarten (DAGGER, CROSSBOW, ...) koennen hier angehaengt werden.
+## Weitere Waffenarten (CROSSBOW, ...) koennen hier angehaengt werden.
 enum WeaponKind {
 	NONE,
 	SWORD,
 	SPEAR,
 	BOW,
+	LANTERN,
+	DAGGER,
+}
+
+## Universelle Player-Action. Keine item-spezifische Koerperanimation.
+enum ActionType {
+	NONE,
+	SWING,
+	OVERHEAD,
+	THRUST,
+	CHOP,
+	MINE,
+	STAB,
+	BOW,
+	PLACE,
+	INTERACT,
 	LANTERN,
 }
 
@@ -88,6 +104,8 @@ enum Rarity {
 @export var equipment_slot: EquipmentSlot = EquipmentSlot.NONE
 @export var tool_kind: ToolKind = ToolKind.NONE
 @export var weapon_kind: WeaponKind = WeaponKind.NONE
+## Leer = automatisch aus weapon_kind / tool_kind.
+@export var action_type: ActionType = ActionType.NONE
 ## Optionale Werkzeug-Basiswerte. Leer = kein ToolData.
 @export var tool_data: ToolData
 ## Optionale Waffen-Basiswerte. Leer = keine Waffe. Typ: WeaponData.
@@ -105,13 +123,12 @@ enum Rarity {
 @export var tree_type: StringName = &""
 ## Nur fuer Pflanzen: Verweis auf PlantData.plant_id.
 @export var plant_id: StringName = &""
-## 1.0 heisst: das 16x16-Icon wird in der Hand 1:1 gezeichnet, ohne Subpixel.
+## 1.0 = automatische Groesse zum 40x56-Spieler. Anderer Wert ueberschreibt.
 @export var held_scale: float = 1.0
 ## Zusatzdrehung nur fuer das Held-Item-Sprite, nicht fuer Pivot oder Hitbox.
 @export var held_rotation_degrees: float = 0.0
-## Basis-Spiegelung der Held-Textur. Facing kommt vom ToolPivot (scale.x).
-## Werkzeuge und Waffen werden in der Hand zusaetzlich horizontal gespiegelt,
-## weil die Icons den Griff links haben. held_flip_h bleibt fuer Spezialfaelle.
+## Basis-Spiegelung der Held-Textur. Facing und Aim kommen vom Weapon Controller.
+## 360°-Aim nutzt flip_v, nicht ToolPivot.scale.x. held_flip_h/v sind Extra-Offsets.
 @export var held_flip_h: bool = false
 @export var held_flip_v: bool = false
 ## Optionale Held-Textur. Leer = Inventory-Icon.
@@ -130,8 +147,15 @@ enum Rarity {
 @export var defense: int = 0
 ## Zusaetzliche Stat-Boni. `defense` bleibt der einfache Ruestungswert.
 @export var stat_modifiers: Array[StatModifier] = []
+## Leeres Set = Einzelteil ohne Setbonus. Datengetrieben, keine Namensabfrage.
+@export var armor_set_id: StringName = &""
 ## Optionale Overlay-Frames fuer HEAD/CHEST/LEGS. Leer = kein Player-Overlay.
 @export var armor_sprite_frames: SpriteFrames
+
+## Optional. Ueberschreibt Frames, Modulate und Haar-Policy, ohne Player-Code.
+@export var equipment_visual: Resource
+## Fallback-Tint, falls keine visuelle Equipment-Resource gesetzt ist.
+@export var armor_modulate: Color = Color.WHITE
 
 static var _unassigned_warned: Dictionary = {}
 
@@ -313,6 +337,56 @@ func get_weapon_knockback() -> float:
 	return knockback
 
 
+func resolve_action_type() -> ActionType:
+	if action_type != ActionType.NONE:
+		return action_type
+	match weapon_kind:
+		WeaponKind.SWORD:
+			return ActionType.SWING
+		WeaponKind.SPEAR:
+			return ActionType.THRUST
+		WeaponKind.BOW:
+			return ActionType.BOW
+		WeaponKind.LANTERN:
+			return ActionType.LANTERN
+		WeaponKind.DAGGER:
+			return ActionType.STAB
+	match get_tool_kind():
+		ToolKind.PICKAXE:
+			return ActionType.MINE
+		ToolKind.AXE:
+			return ActionType.CHOP
+		ToolKind.HAMMER:
+			return ActionType.SWING
+	if is_weapon():
+		return ActionType.SWING
+	if is_tool():
+		return ActionType.MINE
+	return ActionType.NONE
+
+
+func resolve_armor_frames() -> SpriteFrames:
+	if equipment_visual != null and equipment_visual.get("sprite_frames") != null:
+		return equipment_visual.get("sprite_frames") as SpriteFrames
+	return armor_sprite_frames
+
+
+func resolve_armor_modulate() -> Color:
+	if equipment_visual != null:
+		var tint: Variant = equipment_visual.get("modulate")
+		if tint is Color and tint != Color.WHITE:
+			return tint
+	return armor_modulate
+
+
+func resolve_hair_policy() -> int:
+	if equipment_visual != null:
+		return int(equipment_visual.get("hair_policy"))
+	if equipment_slot == EquipmentSlot.HEAD and resolve_armor_frames() != null:
+		return 1
+	return 0
+
+
 func resolve_attack_cooldown() -> float:
 	if weapon_data != null and weapon_data.has_method("get_attack_cooldown"):
 		return float(weapon_data.call("get_attack_cooldown"))
@@ -333,6 +407,18 @@ func get_held_texture() -> Texture2D:
 	return icon
 
 
+func follows_live_aim() -> bool:
+	match resolve_action_type():
+		ActionType.THRUST, ActionType.STAB, ActionType.BOW:
+			return true
+		_:
+			return false
+
+
+func should_flip_held() -> bool:
+	return held_flip_h
+
+
 func get_held_offset() -> Vector2:
 	return Vector2(1, 0) + held_offset
 
@@ -344,9 +430,40 @@ func get_held_pivot_offset() -> Vector2:
 
 
 func get_held_scale() -> float:
-	if is_placeable() and not is_tool() and is_equal_approx(held_scale, 1.0):
+	if not is_equal_approx(held_scale, 1.0):
+		return held_scale
+	if is_placeable() and not is_tool():
 		return 0.75
+	if is_weapon() or is_tool():
+		return _default_held_scale()
 	return held_scale
+
+
+func _default_held_scale() -> float:
+	## 16x16-Icons am 40x56-Spieler: Schwerter/Tools etwa Arm- bis Torsolaenge.
+	match get_tool_kind():
+		ToolKind.PICKAXE, ToolKind.AXE, ToolKind.HAMMER, ToolKind.HOE, ToolKind.SICKLE, ToolKind.NET:
+			return 2.25
+		ToolKind.FISHING_ROD:
+			return 2.5
+		ToolKind.WRENCH:
+			return 2.0
+		_:
+			if is_weapon():
+				match weapon_kind:
+					WeaponKind.SWORD:
+						return 2.25
+					WeaponKind.SPEAR:
+						return 2.5
+					WeaponKind.BOW:
+						return 2.25
+					WeaponKind.LANTERN, WeaponKind.DAGGER:
+						return 1.75
+					_:
+						return 2.25
+			if is_tool():
+				return 2.0
+			return 1.0
 
 
 func _default_held_pivot() -> Vector2:
@@ -367,11 +484,13 @@ func _default_held_pivot() -> Vector2:
 					WeaponKind.SWORD:
 						return Vector2(2, -5)
 					WeaponKind.SPEAR:
-						return Vector2(1, -2)
+						return Vector2(6, 0)
 					WeaponKind.BOW:
 						return Vector2(1, -3)
 					WeaponKind.LANTERN:
 						return Vector2(0, -3)
+					WeaponKind.DAGGER:
+						return Vector2(1, -3)
 					_:
 						return Vector2(0, -4)
 			if is_placeable():
@@ -413,6 +532,8 @@ static func get_weapon_kind_display_name(kind: int) -> String:
 			return "Bogen"
 		WeaponKind.LANTERN:
 			return "Kampflaterne"
+		WeaponKind.DAGGER:
+			return "Dolch"
 		_:
 			return ""
 
@@ -421,6 +542,21 @@ func get_ore_metal_category() -> OreData.OreMetalCategory:
 	if ore_data != null:
 		return ore_data.metal_category
 	return ore_metal_category
+
+
+## Crafting-relevante Rohstoffe, Erze und Barren.
+func is_discovery_material() -> bool:
+	if is_tool() or is_weapon() or category == ItemCategory.ARMOR or category == ItemCategory.TOOL:
+		return false
+	if building_part_type != BlockData.BuildingPartType.NONE:
+		return false
+	if get_ore_metal_category() != OreData.OreMetalCategory.NONE:
+		return true
+	match category:
+		ItemCategory.BUILDING_MATERIAL, ItemCategory.RESOURCE, ItemCategory.ORE_METAL, ItemCategory.MONSTER_MATERIAL:
+			return true
+		_:
+			return item_type == ItemType.MATERIAL
 
 
 func get_pickaxe_tier() -> int:

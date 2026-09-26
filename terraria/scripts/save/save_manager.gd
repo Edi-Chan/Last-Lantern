@@ -16,7 +16,7 @@ func _ready() -> void:
 
 func save_game() -> bool:
 	var payload := {
-		"version": 2,
+		"version": 3,
 		"world_seed": _world_seed(),
 		"world_size": _world_size(),
 		"character": _character_save(),
@@ -28,6 +28,7 @@ func save_game() -> bool:
 		"lantern": _call_save("lantern"),
 		"vegetation": _call_save("vegetation_system"),
 		"liquid": _call_save("liquid_system"),
+		"map_discovery": _call_save("world_map_data"),
 		"inventory": _inventory_save(),
 		"player": _player_save(),
 	}
@@ -53,6 +54,7 @@ func load_game() -> bool:
 	_call_load("lantern", data.get("lantern", {}))
 	_call_load("vegetation_system", data.get("vegetation", {}))
 	_call_load("liquid_system", data.get("liquid", {}))
+	_call_load("world_map_data", data.get("map_discovery", {}))
 	_call_load("structural_manager", data.get("structural", {}))
 	_call_load("building_part_system", data.get("building_parts", {}))
 	_call_load("building_manager", data.get("buildings", {}))
@@ -183,6 +185,10 @@ func _character_load(data: Dictionary) -> void:
 
 func _character_save() -> Dictionary:
 	var player := get_tree().get_first_node_in_group("player") as Player
+	if player != null and player.has_method("appearance_to_dict"):
+		var payload: Dictionary = player.call("appearance_to_dict")
+		if not payload.is_empty():
+			return payload
 	if player != null and not player.character_name.is_empty():
 		return {"character_name": player.character_name}
 	var flow := get_node_or_null("/root/GameFlow")

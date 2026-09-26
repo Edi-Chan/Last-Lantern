@@ -10,7 +10,7 @@ const MAX_COST := 6.0
 const MIN_REBUILD_INTERVAL := 0.05
 const TARGET_CELLS := 10000
 ## Bis zu diesem zoom_out bleibt die feine 1-Tile-Sicht (wie bei Zoom 1–1.5).
-const FINE_VISION_ZOOM_OUT := 1.75
+const FINE_VISION_ZOOM_OUT := 1.25
 const OCC_UNKNOWN := 255
 const OCC_SCALE := 20.0
 ## Terraria-artig: so viele Tiles reicht Himmelslicht in den Boden.
@@ -102,7 +102,7 @@ func _process(delta: float) -> void:
 	var size := _quantized_size(_view_size)
 	var need := _dirty or player_tile != _last_player or aligned != _last_origin or size != _last_size or cell != _last_cell
 	if not need and _liquid != null and _liquid.get_active_cell_count() > 0:
-		need = true
+		need = _liquid.has_active_in_rect(_origin, _view_size)
 	if not need:
 		return
 	if not _dirty and _rebuild_cooldown > 0.0:
@@ -472,6 +472,8 @@ func _fill_lava_light(origin: Vector2i, gw: int, gh: int, cell: int) -> void:
 	_lava_light.fill(1.0)
 	if _liquid == null:
 		return
+	if _liquid.get_lava_cell_count() <= 0:
+		return
 	var light_range := 7
 	if _liquid.settings != null:
 		light_range = maxi(_liquid.settings.lava_light_range, 1)
@@ -496,7 +498,7 @@ func _fill_lava_light(origin: Vector2i, gw: int, gh: int, cell: int) -> void:
 		if current >= 1.0:
 			continue
 		var cx := idx % gw
-		var cy := int(idx / gw)
+		var cy := int(idx / float(gw))
 		var d := 0
 		while d < 4:
 			var nx := cx

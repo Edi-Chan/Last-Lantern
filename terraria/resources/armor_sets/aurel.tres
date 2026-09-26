@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="ArmorSetData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/armor_set_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 11
+value = 0.03
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2_mod")
+stat = 12
+value = 0.1
+modifier_type = 1
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2_mod")
+stat = 10
+value = 0.02
+modifier_type = 1
+source_kind = 8
+
+[resource]
+script = ExtResource("1_script")
+set_id = &"AUREL"
+display_name = "Aurel"
+required_piece_count = 3
+piece_item_ids = Array[int]([142, 143, 144])
+set_bonus_name = "Goldener Schlag"
+set_bonus_description = "Leichtere offensive Rüstung mit Fokus auf kritische Treffer."
+modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])

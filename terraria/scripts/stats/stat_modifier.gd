@@ -18,6 +18,7 @@ enum SourceKind {
 	BUFF,
 	DEBUFF,
 	UPGRADE,
+	SET_BONUS,
 }
 
 @export var stat: int = 0

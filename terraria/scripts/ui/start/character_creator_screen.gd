@@ -52,7 +52,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _setup_copy() -> void:
 	if _hint != null:
-		_hint.text = "Der Survivor steckt in den bestehenden Player-Sprites.\nGetrennte Haar-, Haut- oder Kleidungsschichten gibt es noch nicht.\nDu bestimmst den Namen. Das Aussehen folgt dem echten Charakter."
+		_hint.text = "Name festlegen, dann in die Welt.\nAussehen, Haar und Kleidung folgen dem Player-Layer-System.\nDer Charakter-Editor fuer Farben kommt spaeter."
 
 
 func _setup_preview() -> void:

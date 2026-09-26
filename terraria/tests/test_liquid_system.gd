@@ -10,6 +10,11 @@ func test_liquid_files_exist() -> void:
 	assert_true(FileAccess.file_exists("res://scripts/liquid/liquid_system.gd"))
 	assert_true(FileAccess.file_exists("res://scripts/liquid/water_generation.gd"))
 	assert_true(FileAccess.file_exists("res://scripts/liquid/water_interaction.gd"))
+	assert_true(FileAccess.file_exists("res://scripts/liquid/lava.gd"))
+	assert_true(FileAccess.file_exists("res://scripts/liquid/lava_generation.gd"))
+	assert_true(FileAccess.file_exists("res://scripts/liquid/lava_interaction.gd"))
+	assert_true(FileAccess.file_exists("res://scripts/liquid/liquid_basin.gd"))
+	assert_true(FileAccess.file_exists("res://scenes/world/lava.tscn"))
 	assert_true(FileAccess.file_exists("res://resources/systems/liquid_settings.tres"))
 
 
@@ -17,16 +22,30 @@ func test_world_integrates_liquid() -> void:
 	var scene := _read("res://scenes/world/world.tscn")
 	assert_true(scene.contains("LiquidSystem"))
 	assert_true(scene.contains("liquid_system.gd"))
+	assert_true(scene.contains("lava.tscn"))
 	var world_src := _read("res://scripts/world/world_generator.gd")
 	assert_true(world_src.contains("_generate_water"))
-	assert_true(world_src.contains("_finalize_water"))
+	assert_true(world_src.contains("_generate_lava"))
+	assert_true(world_src.contains("_finalize_liquids"))
 
 
 func test_player_has_water_interaction() -> void:
 	var scene := _read("res://scenes/player/player.tscn")
 	assert_true(scene.contains("WaterInteraction"))
+	assert_true(scene.contains("LavaInteraction"))
 	var src := _read("res://scripts/player/player.gd")
 	assert_true(src.contains("_water_movement_multipliers"))
+	assert_true(src.contains("_lava"))
+
+
+func test_liquid_perf_budget_exists() -> void:
+	var settings := _read("res://scripts/liquid/liquid_settings.gd")
+	assert_true(settings.contains("max_simulation_ticks_per_frame"))
+	assert_true(settings.contains("simulation_budget_ms"))
+	var src := _read("res://scripts/liquid/liquid_system.gd")
+	assert_true(src.contains("has_active_in_rect"))
+	var renderer := _read("res://scripts/liquid/liquid_renderer.gd")
+	assert_true(renderer.contains("_view_rect_cells"))
 
 
 func test_save_manager_persists_liquid() -> void:
@@ -157,6 +176,72 @@ func test_quantized_fill_height_is_pixel_perfect() -> void:
 	assert_eq(liquid.quantized_fill_height(LiquidTypes.FULL), 16)
 	assert_eq(liquid.quantized_fill_height(LiquidTypes.HALF), 8)
 	assert_eq(liquid.quantized_fill_height(1), 1)
+
+
+func test_lava_falls_slower_than_water() -> void:
+	var water := _make_shaft()
+	var lava := _make_shaft()
+	water.set_cell(Vector2i(3, 1), LiquidTypes.Type.WATER, LiquidTypes.FULL)
+	lava.set_cell(Vector2i(3, 1), LiquidTypes.Type.LAVA, LiquidTypes.FULL)
+	for _i in 4:
+		water.stabilize(1)
+		lava.stabilize(1)
+	assert_true(water.get_amount(Vector2i(3, 1)) < lava.get_amount(Vector2i(3, 1)), "Lava muss oben laenger bleiben.")
+	var lava_type := lava.get_type(Vector2i(3, 1))
+	if lava.get_amount(Vector2i(3, 1)) <= 0:
+		lava_type = lava.get_type(Vector2i(3, 2))
+	assert_eq(lava_type, LiquidTypes.Type.LAVA)
+
+
+func test_lava_save_restores_type() -> void:
+	var liquid := _make_liquid(8, 8)
+	for x in range(2, 6):
+		liquid.debug_set_solid(Vector2i(x, 6), true)
+	liquid.set_cell(Vector2i(3, 5), LiquidTypes.Type.LAVA, LiquidTypes.FULL)
+	var payload := liquid.to_save_dict()
+	liquid.remove_liquid(Vector2i(3, 5))
+	assert_eq(liquid.get_amount(Vector2i(3, 5)), 0)
+	liquid.from_save_dict(payload)
+	assert_eq(liquid.get_type(Vector2i(3, 5)), LiquidTypes.Type.LAVA)
+	assert_eq(liquid.get_amount(Vector2i(3, 5)), LiquidTypes.FULL)
+	assert_eq(liquid.get_lava_cell_count(), 1)
+	assert_eq(liquid.get_water_cell_count(), 0)
+
+
+func test_water_lava_reaction_creates_solid_and_stops() -> void:
+	var liquid := _make_liquid(8, 8)
+	for x in range(1, 7):
+		liquid.debug_set_solid(Vector2i(x, 6), true)
+	liquid.debug_set_solid(Vector2i(1, 5), true)
+	liquid.debug_set_solid(Vector2i(6, 5), true)
+	liquid.set_cell(Vector2i(2, 5), LiquidTypes.Type.WATER, LiquidTypes.FULL)
+	liquid.set_cell(Vector2i(3, 5), LiquidTypes.Type.LAVA, LiquidTypes.FULL)
+	liquid.stabilize(20)
+	assert_eq(liquid.get_amount(Vector2i(2, 5)), 0)
+	assert_eq(liquid.get_amount(Vector2i(3, 5)), 0)
+	assert_true(liquid.is_cell_solid(Vector2i(3, 5)))
+	assert_eq(liquid.get_active_cell_count(), 0)
+
+
+func test_lava_sleeps_after_settle() -> void:
+	var liquid := _make_liquid(10, 8)
+	for x in range(2, 8):
+		liquid.debug_set_solid(Vector2i(x, 6), true)
+	liquid.debug_set_solid(Vector2i(1, 5), true)
+	liquid.debug_set_solid(Vector2i(8, 5), true)
+	liquid.set_cell(Vector2i(4, 5), LiquidTypes.Type.LAVA, LiquidTypes.FULL)
+	liquid.stabilize(400)
+	assert_gt(liquid.get_lava_cell_count(), 0)
+	assert_eq(liquid.get_total_lava_amount(), LiquidTypes.FULL)
+	assert_eq(liquid.get_active_cell_count(), 0)
+
+
+func _make_shaft() -> LiquidSystem:
+	var liquid := _make_liquid(8, 12)
+	for y in range(0, 12):
+		liquid.debug_set_solid(Vector2i(2, y), true)
+		liquid.debug_set_solid(Vector2i(4, y), true)
+	return liquid
 
 
 func _make_liquid(width: int, height: int) -> LiquidSystem:

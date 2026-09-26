@@ -30,9 +30,19 @@ signal fog_hurt(amount: float)
 @export_group("Bed")
 ## 1 = vollstaendig heilen. Kleinerer Wert heilt nur einen Anteil.
 @export var bed_heal_fraction: float = 1.0
+@export_group("Visual")
+@export var death_respawn_delay: float = 0.75
+@export var hurt_flash_time: float = 0.12
 
 var world_input_enabled: bool = true
 var facing_sign: float = 1.0
+var aim_direction := Vector2.RIGHT
+var aim_angle: float = 0.0
+var aiming_left: bool = false
+var is_attacking: bool = false
+var attack_direction := Vector2.RIGHT
+var attack_angle: float = 0.0
+var attack_action: int = 0
 var is_sprinting: bool = false
 var is_crouching: bool = false
 var character_name: String = ""
@@ -61,19 +71,25 @@ var _stamina_regen_left: float = 0.0
 var _sprint_exhausted: bool = false
 var _drop_through_left: float = 0.0
 var _step_gate: float = 0.0
+var is_climbing: bool = false
+var _jump_start_left: float = 0.0
+var _hurt_left: float = 0.0
+var _flash_left: float = 0.0
+var _idle_hold: float = 0.0
+var _look: LookRecord
 ## Wird nur beim Aufstehversuch gebraucht, deshalb einmalig angelegt statt
 ## pro Frame neu erzeugt.
 var _headroom_shape := RectangleShape2D.new()
 var _headroom_query := PhysicsShapeQueryParameters2D.new()
 
 @onready var _visuals: Node2D = $Visuals
+@onready var _visual = $Visuals
 @onready var _animated_sprite: AnimatedSprite2D = $Visuals/BaseSprite
 @onready var _leg_armor: AnimatedSprite2D = $Visuals/LegArmorSprite
 @onready var _chest_armor: AnimatedSprite2D = $Visuals/ChestArmorSprite
 @onready var _helmet: AnimatedSprite2D = $Visuals/HelmetSprite
 @onready var _collision: CollisionShape2D = $CollisionShape2D
-## ToolPivot spiegelt nur (scale.x). Die Rotation sitzt eine Ebene tiefer, sonst
-## dreht der Swing beim Blick nach links nach oben statt nach unten.
+## ToolPivot bleibt ungespiegelt. Aim und Flip sitzen auf HeldItem/Sprites.
 @onready var _tool_pivot: Node2D = $ToolPivot
 @onready var _anim: AnimationPlayer = $AnimationPlayer
 @onready var _audio: PlayerAudio = $Audio
@@ -122,8 +138,14 @@ func _ready() -> void:
 	_headroom_query.collide_with_areas = false
 	_headroom_query.exclude = [get_rid()]
 	_animated_sprite.play("idle")
+	if _visual != null:
+		_visual.play(&"idle", true)
 	if _animated_sprite != null and not _animated_sprite.frame_changed.is_connected(_on_sprite_frame_changed):
 		_animated_sprite.frame_changed.connect(_on_sprite_frame_changed)
+	if _visual != null and not _visual.pose_changed.is_connected(_on_visual_pose_changed):
+		_visual.pose_changed.connect(_on_visual_pose_changed)
+	if _anim != null and not _anim.animation_finished.is_connected(_on_tool_anim_finished):
+		_anim.animation_finished.connect(_on_tool_anim_finished)
 	var inventory := get_node_or_null("Inventory") as Inventory
 	if inventory != null:
 		inventory.equipment_changed.connect(_refresh_armor_visuals)
@@ -134,6 +156,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_bed_lock_left = maxf(_bed_lock_left - delta, 0.0)
+	_jump_start_left = maxf(_jump_start_left - delta, 0.0)
+	_hurt_left = maxf(_hurt_left - delta, 0.0)
+	_flash_left = maxf(_flash_left - delta, 0.0)
+	if _visuals != null:
+		_visuals.modulate = Color(1.55, 1.55, 1.55, 1.0) if _flash_left > 0.0 else Color.WHITE
 	if is_in_bed:
 		_handle_inventory_toggle()
 		_update_bed_state()
@@ -154,9 +181,11 @@ func _physics_process(delta: float) -> void:
 		_dampen_horizontal(delta)
 	move_and_slide()
 	_clamp_to_world()
+	_refresh_aim()
 	_update_facing()
 	_aim_tool()
-	_update_animation()
+	_update_animation(delta)
+	_update_tool_depth()
 	_sync_armor_layers()
 	_update_landing(delta)
 
@@ -231,10 +260,12 @@ func apply_damage_event(event: DamageEvent) -> void:
 	event.amount = int(round(float(result["applied"])))
 	event.reduced = bool(result["reduced"])
 	event.blocked = bool(result["blocked"])
-	print("Player hp=%.0f/%.0f (-%d) type=%d" % [stats.health, stats.max_health, event.amount, event.damage_type])
 	CombatTextSystem.present(event)
 	if event.is_dot and event.damage_type == DamageTypes.Type.DARKNESS:
 		fog_hurt.emit(float(event.incoming_amount))
+	elif event.amount > 0 and not event.is_dot:
+		_hurt_left = 0.14
+		_flash_left = hurt_flash_time
 
 
 func heal(amount: float) -> float:
@@ -335,8 +366,11 @@ func _current_move_speed() -> float:
 
 func _handle_gravity(delta: float) -> void:
 	if _is_admin_noclip():
+		is_climbing = false
 		return
+	is_climbing = false
 	if _try_ladder(delta):
+		is_climbing = true
 		return
 	if _lava != null:
 		_lava.apply_swim_forces(delta)
@@ -383,6 +417,7 @@ func _handle_jump() -> void:
 		if stats != null:
 			jump *= stats.jump_multiplier()
 		velocity.y = jump
+		_jump_start_left = 0.10
 		play_sfx(&"Jump")
 	elif Input.is_action_just_released("jump") and velocity.y < 0.0:
 		velocity.y *= jump_cut_multiplier
@@ -405,20 +440,21 @@ func _dampen_horizontal(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, air_acceleration * delta)
 
 
-## Bewegung bestimmt die Blickrichtung. Steht der Player still, bleibt die
-## letzte Richtung erhalten - ausser er benutzt oder zielt gerade mit dem Tool,
-## dann uebernimmt die Maus. Eine Richtung fuer Sprite, Hand und Werkzeug.
+## Die Maus bestimmt die Blickrichtung. Bewegung bleibt unabhaengig (Backpedal).
 func _update_facing() -> void:
 	if world_input_enabled:
-		var input_direction := Input.get_axis("move_left", "move_right")
-		if input_direction != 0.0:
-			facing_sign = signf(input_direction)
-		elif _is_aiming():
-			facing_sign = _mouse_facing()
-	_animated_sprite.flip_h = facing_sign < 0.0
+		var origin := get_aim_origin()
+		var delta_x := get_world_mouse_position().x - origin.x
+		facing_sign = PlayerAim.facing_sign_from_delta_x(delta_x, facing_sign, MOUSE_FACING_DEADZONE)
+	aiming_left = facing_sign < 0.0
+	_animated_sprite.flip_h = aiming_left
+	if _visual != null:
+		_visual.set_facing(aiming_left)
 	_sync_armor_facing()
-	_tool_pivot.scale.x = facing_sign
-	_tool_pivot.position = Vector2(TOOL_PIVOT_X * facing_sign, _tool_hand_y())
+	if _tool_pivot != null:
+		_tool_pivot.scale = Vector2.ONE
+		_tool_pivot.rotation = 0.0
+		_tool_pivot.position = Vector2(TOOL_PIVOT_X * facing_sign, _tool_hand_y())
 
 
 func _is_aiming() -> bool:
@@ -443,8 +479,7 @@ func is_auto_tool_held() -> bool:
 func _is_swinging() -> bool:
 	if _anim == null or not _anim.is_playing():
 		return false
-	var current := _anim.current_animation
-	return current == &"tool_swing" or current == &"sword_swing" or current == &"spear_thrust" or current == &"bow_shot" or current == &"lantern_burst"
+	return PlayerAnimationContract.is_combat_clip(_anim.current_animation)
 
 
 ## Weltposition unter dem Systemcursor, im selben Canvas wie der Spieler.
@@ -465,11 +500,40 @@ func _is_admin_noclip() -> bool:
 	return admin != null and bool(admin.get("no_clip"))
 
 
+func get_aim_origin() -> Vector2:
+	if _tool_pivot != null:
+		return _tool_pivot.global_position
+	return global_position + Vector2(TOOL_PIVOT_X * facing_sign, TOOL_PIVOT_Y)
+
+
+func _refresh_aim() -> void:
+	var fallback := aim_direction if aim_direction.length_squared() > 0.0001 else Vector2(facing_sign, 0.0)
+	aim_direction = PlayerAim.world_direction(get_aim_origin(), get_world_mouse_position(), fallback)
+	aim_angle = aim_direction.angle()
+
+
+func visual_aim_direction() -> Vector2:
+	if is_attacking and not PlayerAim.uses_live_aim(attack_action):
+		return attack_direction
+	if is_attacking and PlayerAim.uses_thrust(attack_action):
+		return attack_direction
+	return aim_direction
+
+
+func lock_attack_aim(action: int) -> void:
+	is_attacking = true
+	attack_action = action
+	attack_direction = aim_direction if aim_direction.length_squared() > 0.0001 else Vector2(facing_sign, 0.0)
+	attack_angle = attack_direction.angle()
+
+
+func clear_attack_aim() -> void:
+	is_attacking = false
+	attack_action = 0
+
+
 func _mouse_facing() -> float:
-	var offset_x := get_world_mouse_position().x - global_position.x
-	if absf(offset_x) < MOUSE_FACING_DEADZONE:
-		return facing_sign
-	return 1.0 if offset_x > 0.0 else -1.0
+	return PlayerAim.facing_sign_from_delta_x(get_world_mouse_position().x - get_aim_origin().x, facing_sign, MOUSE_FACING_DEADZONE)
 
 
 func _tool_hand_y() -> float:
@@ -485,21 +549,153 @@ func _aim_tool() -> void:
 	pass
 
 
-## Reihenfolge: airborne > crouch > Tool-Swing > sprint > walk > idle.
-func _update_animation() -> void:
-	var moving := absf(velocity.x) > MOVING_SPEED_EPSILON
+## Reihenfolge: dead > hurt > action > swim > ladder > air > crouch > run > walk > idle.
+func _update_animation(delta: float = 0.0) -> void:
+	var anim := _select_visual_animation()
+	if _visual != null:
+		if _visual.current_animation != anim:
+			_visual.play(anim)
+		if _is_swinging() or (_anim != null and _anim.is_playing() and (_anim.current_animation == &"block_place" or _anim.current_animation == &"interact")):
+			_visual.sync_action_from_player(_anim)
+		elif _is_drawing_bow():
+			_visual.sync_bow_draw(_bow_charge())
+		else:
+			_visual.advance_locomotion(delta)
+		if _animated_sprite != null:
+			_animated_sprite.animation = _visual.current_animation
+			_animated_sprite.frame = _visual.current_frame
+			_animated_sprite.speed_scale = 0.0
+		return
+	if _animated_sprite != null:
+		_animated_sprite.play(anim)
+
+
+func _select_visual_animation() -> StringName:
+	if _respawning:
+		return &"death"
+	if is_in_bed:
+		return &"sleep"
+	if _hurt_left > 0.0:
+		return &"hurt"
+	if _is_drawing_bow():
+		return &"bow_draw"
+	if _is_swinging() and _anim != null:
+		return PlayerAnimationContract.body_anim_for_clip(_anim.current_animation)
+	if _anim != null and _anim.is_playing() and _anim.current_animation == &"block_place":
+		return &"block_place"
+	if _is_mining():
+		return &"use_mine"
+	if _is_swimming():
+		var watery := absf(velocity.x) > MOVING_SPEED_EPSILON or absf(velocity.y) > MOVING_SPEED_EPSILON
+		return &"swim" if watery else &"swim_idle"
+	if is_climbing:
+		return &"ladder_climb" if absf(velocity.y) > 8.0 else &"ladder_idle"
 	if not is_on_floor():
-		_animated_sprite.play("jump" if velocity.y < 0.0 else "fall")
-	elif is_crouching:
-		_animated_sprite.play("crouch_walk" if moving else "crouch_idle")
-	elif _is_swinging():
-		_animated_sprite.play("use_tool")
-	elif is_sprinting and moving:
-		_animated_sprite.play("run")
-	elif moving:
-		_animated_sprite.play("walk")
+		if _jump_start_left > 0.0:
+			return &"jump_start"
+		return &"jump" if velocity.y < 0.0 else &"fall"
+	if _land_lock > 0.0:
+		return &"land"
+	if is_crouching:
+		return &"crouch_walk" if absf(velocity.x) > MOVING_SPEED_EPSILON else &"crouch_idle"
+	if is_sprinting and absf(velocity.x) > MOVING_SPEED_EPSILON:
+		_idle_hold = 0.0
+		return &"run"
+	if absf(velocity.x) > MOVING_SPEED_EPSILON:
+		_idle_hold = 0.0
+		return &"walk"
+	_idle_hold += get_physics_process_delta_time()
+	if _idle_hold > 5.0:
+		return &"idle_alt"
+	return &"idle"
+
+
+func _is_swimming() -> bool:
+	return (_water != null and _water.can_swim_up()) or (_lava != null and _lava.can_swim_up())
+
+
+func _is_mining() -> bool:
+	var interaction := get_node_or_null("Interaction") as PlayerInteraction
+	if interaction == null:
+		return false
+	return interaction.current_mining_tile != Vector2i(9999, 9999)
+
+
+func _is_drawing_bow() -> bool:
+	var interaction := get_node_or_null("Interaction")
+	return interaction != null and interaction.has_method("is_drawing_bow") and bool(interaction.call("is_drawing_bow"))
+
+
+func _bow_charge() -> float:
+	var interaction := get_node_or_null("Interaction")
+	if interaction != null and interaction.has_method("get_bow_charge"):
+		return float(interaction.call("get_bow_charge"))
+	return 0.0
+
+
+func _update_tool_depth() -> void:
+	if _tool_pivot == null:
+		return
+	if not _is_swinging() or _anim == null:
+		_tool_pivot.z_index = 4
+		return
+	var action := PlayerAnimationContract.body_anim_for_clip(_anim.current_animation)
+	var spec := PlayerAnimationContract.action_spec(_action_from_body_anim(action))
+	var front_after := float(spec.get("item_front_after", 0.0))
+	_tool_pivot.z_index = 4 if _anim.current_animation_position >= front_after else -1
+
+
+func _action_from_body_anim(anim: StringName) -> int:
+	match anim:
+		&"use_swing":
+			return PlayerAnimationContract.ActionType.SWING
+		&"use_overhead":
+			return PlayerAnimationContract.ActionType.OVERHEAD
+		&"use_thrust":
+			return PlayerAnimationContract.ActionType.THRUST
+		&"use_chop":
+			return PlayerAnimationContract.ActionType.CHOP
+		&"use_mine", &"use_tool":
+			return PlayerAnimationContract.ActionType.MINE
+		&"use_stab":
+			return PlayerAnimationContract.ActionType.STAB
+		&"bow_release", &"bow_draw":
+			return PlayerAnimationContract.ActionType.BOW
+		&"block_place":
+			return PlayerAnimationContract.ActionType.PLACE
+		_:
+			return PlayerAnimationContract.ActionType.NONE
+
+
+func _on_tool_anim_finished(_anim_name: StringName) -> void:
+	if _anim != null:
+		_anim.speed_scale = 1.0
+	if _tool_pivot != null:
+		_tool_pivot.z_index = 4
+		if _tool_pivot.has_method("clear_aim"):
+			_tool_pivot.call("clear_aim")
+	clear_attack_aim()
+
+
+func _on_visual_pose_changed(anim: StringName, frame: int, _flip: bool) -> void:
+	if _land_lock > 0.0 or not is_on_floor():
+		return
+	if anim != &"walk" and anim != &"run" and anim != &"crouch_walk":
+		return
+	if absf(velocity.x) < MOVING_SPEED_EPSILON:
+		return
+	if _step_gate > 0.0:
+		return
+	if frame % 2 != 0:
+		return
+	var vol := CROUCH_FOOTSTEP_VOLUME if is_crouching else (SPRINT_FOOTSTEP_VOLUME if is_sprinting else 0.0)
+	play_sfx(&"Footstep", vol, _ground_material())
+	if is_crouching:
+		_step_gate = 0.14
+	elif is_sprinting:
+		_step_gate = 0.08
 	else:
-		_animated_sprite.play("idle")
+		_step_gate = 0.11
 
 
 func _update_landing(delta: float) -> void:
@@ -585,12 +781,17 @@ func _armor_sprites() -> Array[AnimatedSprite2D]:
 
 
 func _sync_armor_facing() -> void:
+	if _visual != null:
+		_visual.set_facing(facing_sign < 0.0)
+		return
 	var flip := facing_sign < 0.0
 	for sprite in _armor_sprites():
 		sprite.flip_h = flip
 
 
 func _sync_armor_layers() -> void:
+	if _visual != null:
+		return
 	if _animated_sprite == null:
 		return
 	var anim := _animated_sprite.animation
@@ -611,10 +812,13 @@ func _refresh_armor_visuals() -> void:
 	var inventory := get_node_or_null("Inventory") as Inventory
 	if inventory == null:
 		return
-	_apply_armor_item(_leg_armor, inventory.get_equipment_item("legs"))
-	_apply_armor_item(_chest_armor, inventory.get_equipment_item("chest"))
-	_apply_armor_item(_helmet, inventory.get_equipment_item("head"))
-	_sync_armor_layers()
+	if _visual != null:
+		_visual.apply_equipment(inventory)
+	else:
+		_apply_armor_item(_leg_armor, inventory.get_equipment_item("legs"))
+		_apply_armor_item(_chest_armor, inventory.get_equipment_item("chest"))
+		_apply_armor_item(_helmet, inventory.get_equipment_item("head"))
+		_sync_armor_layers()
 	if stats != null:
 		stats.rebuild_from_inventory(inventory)
 
@@ -634,7 +838,19 @@ func apply_appearance(data: LookRecord) -> void:
 	if data == null:
 		return
 	data.normalize()
+	_look = data.duplicate_look() if data.has_method("duplicate_look") else data
 	character_name = data.character_name
+	if _visual != null:
+		_visual.apply_appearance(_look)
+
+
+func appearance_to_dict() -> Dictionary:
+	if _look != null:
+		_look.character_name = character_name
+		return _look.to_dict()
+	if character_name.is_empty():
+		return {}
+	return {"character_name": character_name}
 
 
 func use_bed(bed: BuildingEntity) -> void:
@@ -663,6 +879,8 @@ func leave_bed() -> void:
 	_bed_lock_left = 0.2
 	if _visuals != null:
 		_visuals.rotation = 0.0
+	if _visual != null:
+		_visual.play(&"idle", true)
 	if _animated_sprite != null:
 		_animated_sprite.speed_scale = 1.0
 	_restore_bed_collision()
@@ -783,9 +1001,12 @@ func _enter_bed(bed: BuildingEntity) -> void:
 	velocity = Vector2.ZERO
 	_stash_bed_collision()
 	facing_sign = 1.0
+	if _visual != null:
+		_visual.set_facing(false)
+		_visual.play(&"sleep", true)
 	if _animated_sprite != null:
 		_animated_sprite.flip_h = false
-		_animated_sprite.play("idle")
+		_animated_sprite.play("sleep" if _animated_sprite.sprite_frames != null and _animated_sprite.sprite_frames.has_animation("sleep") else "idle")
 		_animated_sprite.speed_scale = 0.0
 	_sync_armor_facing()
 	if _visuals != null:
@@ -829,12 +1050,21 @@ func _on_health_depleted() -> void:
 		return
 	_respawning = true
 	leave_bed()
+	world_input_enabled = false
+	velocity = Vector2.ZERO
+	if _visual != null:
+		_visual.play(&"death", true)
+	if death_respawn_delay > 0.0:
+		await get_tree().create_timer(death_respawn_delay).timeout
 	if stats != null:
 		stats.set_health(stats.max_health)
 		stats.set_stamina(stats.max_stamina)
 	global_position = resolve_respawn_position()
 	velocity = Vector2.ZERO
+	world_input_enabled = true
 	_respawning = false
+	if _visual != null:
+		_visual.play(&"idle", true)
 
 
 func _current_world_seed() -> int:
@@ -856,13 +1086,15 @@ func _show_bed_toast(text: String) -> void:
 
 
 func apply_knockback(impulse: Vector2) -> void:
-	var scale := 1.0
+	var knockback_scale := 1.0
 	if stats != null:
-		scale = 1.0 - stats.knockback_resistance()
-	velocity += impulse * scale
+		knockback_scale = 1.0 - stats.knockback_resistance()
+	velocity += impulse * knockback_scale
 
 
 func compose_preview_texture() -> Texture2D:
+	if _visual != null:
+		return _visual.compose_preview_texture()
 	if _animated_sprite == null or _animated_sprite.sprite_frames == null:
 		return null
 	if not _animated_sprite.sprite_frames.has_animation(&"idle"):

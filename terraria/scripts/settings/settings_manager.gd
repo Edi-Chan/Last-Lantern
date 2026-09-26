@@ -13,6 +13,7 @@ signal display_reverted
 const SETTINGS_PATH := "user://settings.cfg"
 const SETTINGS_VERSION := 1
 const DISPLAY_CONFIRM_SECONDS := 15
+const CONTENT_SIZE := Vector2i(1920, 1080)
 
 const BUS_MASTER := "Master"
 const BUS_MUSIC := "Music"
@@ -498,7 +499,7 @@ func _apply_graphics() -> void:
 				windowed = _safe_resolution(requested, usable)
 			win.size = windowed
 			_center_window(win, windowed)
-	call_deferred("_force_stretch_refresh")
+	call_deferred("_schedule_stretch_refresh")
 
 
 func _screen_usable_size() -> Vector2i:
@@ -519,12 +520,22 @@ func _connect_window_signals() -> void:
 func _on_window_size_changed() -> void:
 	if _stretch_refreshing:
 		return
-	var win := get_window()
-	if win != null:
-		win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	call_deferred("_force_stretch_refresh")
 
 
 ## Baut die Canvas-Stretch-Transform neu, sobald die echte Clientgroesse feststeht.
+func _schedule_stretch_refresh() -> void:
+	_force_stretch_refresh()
+	_deferred_stretch_pass()
+
+
+func _deferred_stretch_pass() -> void:
+	await get_tree().process_frame
+	_force_stretch_refresh()
+	await get_tree().process_frame
+	_force_stretch_refresh()
+
+
 func _force_stretch_refresh() -> void:
 	if _stretch_refreshing:
 		return
@@ -532,12 +543,11 @@ func _force_stretch_refresh() -> void:
 	if win == null:
 		return
 	_stretch_refreshing = true
-	var mode := win.content_scale_mode
-	if mode == Window.CONTENT_SCALE_MODE_DISABLED:
-		mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
-	win.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	win.content_scale_size = CONTENT_SIZE
 	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
-	win.content_scale_mode = mode
+	win.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
+	win.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	win.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	_stretch_refreshing = false
 
 

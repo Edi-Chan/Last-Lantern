@@ -445,6 +445,8 @@ func _visible_recipes() -> Array[RecipeData]:
 			if not _item_matches_subfilter(item, _category, _subfilter):
 				continue
 		if not _search.is_empty():
+			if not _is_recipe_revealed(recipe):
+				continue
 			var q := _search.to_lower()
 			var name_ok := item != null and item.display_name.to_lower().find(q) >= 0
 			var id_ok := str(recipe.output_item_id).find(q) >= 0
@@ -834,7 +836,7 @@ func _configure_tile(tile: RecipeTile, recipe: RecipeData) -> void:
 				missing_mats = true
 				break
 	var missing_station := recipe.requires_station() and not _stations_ok(recipe)
-	var locked := not recipe.unlocked
+	var locked := not _is_recipe_revealed(recipe)
 	var selected := _selected != null and recipe.recipe_id == _selected.recipe_id
 	tile.apply(recipe, item, selected, missing_mats, missing_station, locked)
 	if not tile.tile_pressed.is_connected(_on_tile_pressed):
@@ -855,7 +857,14 @@ func _on_tile_pressed(tile: RecipeTile) -> void:
 
 
 func _on_tile_hovered(tile: RecipeTile) -> void:
-	if tile.item == null or _tooltip == null:
+	if _tooltip == null:
+		return
+	if tile.recipe == null or not _is_recipe_revealed(tile.recipe):
+		_tooltip_label.text = "???\nNoch nicht entdeckt"
+		_tooltip.visible = true
+		_position_tooltip()
+		return
+	if tile.item == null:
 		return
 	var station := "Handwerk"
 	if tile.recipe != null and tile.recipe.requires_station():
@@ -892,6 +901,14 @@ func _position_tooltip() -> void:
 	_tooltip.position = pos
 
 
+func _is_recipe_known(recipe: RecipeData) -> bool:
+	return _crafting != null and _crafting.is_recipe_known(recipe, _inventory)
+
+
+func _is_recipe_revealed(recipe: RecipeData) -> bool:
+	return _crafting != null and _crafting.is_recipe_revealed(recipe, _inventory)
+
+
 func _item_of(recipe: RecipeData) -> ItemData:
 	if recipe == null:
 		return null
@@ -926,7 +943,7 @@ func _craft_block_reason(result: int) -> String:
 		CraftingSystem.Result.NO_SPACE:
 			return "Kein Inventarplatz."
 		CraftingSystem.Result.LOCKED:
-			return "Rezept noch gesperrt."
+			return "Noch nicht entdeckt — sammle zuerst das passende Material."
 		CraftingSystem.Result.INVALID_AMOUNT:
 			return "Ungültige Menge."
 		_:
@@ -971,8 +988,23 @@ func _update_details() -> void:
 		if not _craft_feedback_playing:
 			_craft_btn.text = "Herstellen"
 		return
+	var revealed := _is_recipe_revealed(_selected)
 	var item := _item_of(_selected)
-	if item != null:
+	if not revealed:
+		_detail_icon.texture = null
+		_detail_icon.visible = false
+		_detail_name.text = "???"
+		_detail_sub.text = "Noch nicht entdeckt"
+		_detail_sub.add_theme_color_override("font_color", MUTED)
+		if _owned_label != null:
+			_owned_label.text = ""
+		if _is_recipe_known(_selected):
+			_detail_desc.text = "Stelle das Item her, um es zu enthüllen."
+		else:
+			_detail_desc.text = "Sammle das passende Material, um dieses Rezept zu enthüllen."
+		_detail_desc.visible = true
+		_clear_box(_stats_box)
+	elif item != null:
 		_detail_icon.texture = item.icon if item.icon != null else item.get_held_texture()
 		_detail_icon.visible = _detail_icon.texture != null
 		_detail_name.text = item.display_name
@@ -991,7 +1023,10 @@ func _update_details() -> void:
 			_owned_label.text = ""
 		_detail_desc.text = ""
 		_clear_box(_stats_box)
-	_fill_materials()
+	if revealed or _is_recipe_known(_selected):
+		_fill_materials()
+	else:
+		_clear_box(_mats_box)
 	_fill_station()
 	var max_q := 1
 	if _crafting != null:
@@ -1085,7 +1120,18 @@ func _fill_stats(item: ItemData) -> void:
 	if item.tool_data != null and power > 0:
 		var power_name := "Spitzhacken-Power" if item.get_tool_category() == ToolData.ToolCategory.MINING else "Werkzeug-Power"
 		_stat_row(power_name, str(power))
-	if item.defense > 0:
+	if item.item_type == ItemData.ItemType.ARMOR:
+		for mod in item.collect_stat_modifiers():
+			var line := StatId.format_modifier_line(mod)
+			if line.contains(":"):
+				var parts := line.split(": ", false, 1)
+				if parts.size() == 2:
+					_stat_row(parts[0], parts[1])
+		var catalog := ArmorSetCatalog.load_default()
+		var set_data := catalog.get_set(catalog.set_id_for_item(item)) if catalog != null else null
+		if set_data != null:
+			_stat_row("Set", "%s – %s" % [set_data.display_name, set_data.set_bonus_name])
+	elif item.defense > 0:
 		_stat_row("Rüstung", "+%d" % item.defense)
 	var item_range := item.get_base_range()
 	if item_range > 0.0:

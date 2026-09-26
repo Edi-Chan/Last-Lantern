@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/player/sheets/armor_sets_preview.png" id="1_tex"]
+
+[node name="ArmorSetPreview" type="Node2D"]
+
+[node name="Background" type="ColorRect" parent="."]
+z_index = -1
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 560.0
+offset_bottom = 120.0
+mouse_filter = 2
+color = Color(0.07, 0.06, 0.09, 1)
+
+[node name="Sets" type="Sprite2D" parent="."]
+texture_filter = 0
+position = Vector2(264, 48)
+texture = ExtResource("1_tex")
+centered = true
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(264, 48)
+zoom = Vector2(2.5, 2.5)

@@ -2,17 +2,29 @@
 
 [ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/items/equipment/veyrite_leggings.png" id="2_icon"]
-[ext_resource type="SpriteFrames" path="res://resources/player/armor_legs_frames.tres" id="3_frames"]
+[ext_resource type="SpriteFrames" path="res://resources/player/armor_veyrite_legs_frames.tres" id="3_frames"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 0
+value = 8.0
+modifier_type = 0
+source_kind = 1
 
 [resource]
 script = ExtResource("1_script")
 id = 150
 display_name = "Veyritbeinschutz"
-description = "Metallruestung aus Veyritbarren. Verteidigung 6."
+description = "Mystische Survival-Rüstung. Mehr maximales Leben."
+rarity = 2
 icon = ExtResource("2_icon")
 max_stack = 1
 item_type = 3
 category = 2
 equipment_slot = 3
 defense = 6
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0")])
+armor_set_id = &"VEYRITE"
 armor_sprite_frames = ExtResource("3_frames")
+armor_modulate = Color(1, 1, 1, 1)

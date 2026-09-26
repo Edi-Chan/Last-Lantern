@@ -1,0 +1,86 @@
+[gd_resource type="SpriteFrames" load_steps=15 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/idle_0.png" id="1_idle0"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/idle_1.png" id="2_idle1"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/idle_2.png" id="3_idle2"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/idle_3.png" id="4_idle3"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/fly_0.png" id="5_fly0"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/fly_1.png" id="6_fly1"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/fly_2.png" id="7_fly2"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/fly_3.png" id="8_fly3"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/hurt_0.png" id="9_hurt0"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/hurt_1.png" id="10_hurt1"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/death_0.png" id="11_death0"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/death_1.png" id="12_death1"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/death_2.png" id="13_death2"]
+[ext_resource type="Texture2D" path="res://assets/animals/firefly/death_3.png" id="14_death3"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_idle0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_idle1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_idle2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_idle3")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.3
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_fly0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_fly1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_fly2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_fly3")
+}],
+"loop": true,
+"name": &"fly",
+"speed": 9.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_hurt0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_hurt1")
+}],
+"loop": false,
+"name": &"hurt",
+"speed": 12.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_death0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_death1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_death2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_death3")
+}],
+"loop": false,
+"name": &"death",
+"speed": 7.0
+}
+]

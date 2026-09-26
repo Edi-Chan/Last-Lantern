@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="ArmorSetData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/armor_set_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 8
+value = 3.0
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2_mod")
+stat = 0
+value = 10.0
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2_mod")
+stat = 15
+value = 0.08
+modifier_type = 0
+source_kind = 8
+
+[resource]
+script = ExtResource("1_script")
+set_id = &"FERRITE"
+display_name = "Ferrit"
+required_piece_count = 3
+piece_item_ids = Array[int]([139, 140, 141])
+set_bonus_name = "Eisenwille"
+set_bonus_description = "Schwere physische Rüstung für Spieler, die Treffer einstecken."
+modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])

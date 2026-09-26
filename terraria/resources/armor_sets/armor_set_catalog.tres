@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ArmorSetCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/armor_set_catalog.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/armor_sets/wood.tres" id="2_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/copper.tres" id="3_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/tin.tres" id="4_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/ferrite.tres" id="5_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/aurel.tres" id="6_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/cobalt.tres" id="7_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/veyrite.tres" id="8_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/cryonite.tres" id="9_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/ignitium.tres" id="10_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/voidium.tres" id="11_set"]
+[ext_resource type="Resource" path="res://resources/armor_sets/astralith.tres" id="12_set"]
+
+[resource]
+script = ExtResource("1_script")
+sets = [ExtResource("2_set"), ExtResource("3_set"), ExtResource("4_set"), ExtResource("5_set"), ExtResource("6_set"), ExtResource("7_set"), ExtResource("8_set"), ExtResource("9_set"), ExtResource("10_set"), ExtResource("11_set"), ExtResource("12_set")]

@@ -61,6 +61,7 @@ func test_all_ore_resource_files() -> void:
 		assert_true(catalog.contains("%s_ore.tres" % key), key)
 		if key == "astralith":
 			assert_true(ore.contains("metal_category = 4"))
+			assert_true(item.contains("ore_metal_category = 4"))
 			assert_true(ore.contains("special_spawn = true"))
 		else:
 			assert_true(ore.contains("metal_category = 1"), key)
@@ -147,3 +148,12 @@ func test_upgrades_and_start_loadout_text() -> void:
 	assert_true(details.contains("Spitzhacken-Power"))
 	assert_true(details.contains("Benötigte Spitzhacken-Power"))
 	assert_true(details.contains("XP:"))
+
+
+func test_astralith_uses_special_ore_category() -> void:
+	var ore := load("res://resources/ores/astralith_ore.tres") as OreData
+	var item := load("res://resources/items/materials/ores/astralith_ore_item.tres") as ItemData
+	assert_eq(ore.metal_category, OreData.OreMetalCategory.SPECIAL_ORE)
+	assert_eq(item.ore_metal_category, OreData.OreMetalCategory.SPECIAL_ORE)
+	assert_eq(item.get_ore_metal_category(), OreData.OreMetalCategory.SPECIAL_ORE)
+	assert_eq(OreData.get_metal_category_display_name(item.get_ore_metal_category()), "Spezialerz")

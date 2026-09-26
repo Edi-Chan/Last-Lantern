@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="SpawnSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/spawn/spawn_settings.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+max_dynamic_entities = 36
+max_enemies = 8
+max_animals = 16
+max_critters = 12
+max_debug_animals = 48
+max_debug_enemies = 24
+local_radius = 1400.0
+max_local_enemies_normal = 4
+max_local_enemies_darkness = 8
+max_local_animals = 10
+max_local_critters = 8
+enemy_min_spawn = 380.0
+enemy_max_spawn = 920.0
+enemy_near = 480.0
+enemy_sleep = 1000.0
+enemy_despawn = 1680.0
+animal_min_spawn = 720.0
+animal_max_spawn = 1280.0
+animal_near = 480.0
+animal_sleep = 900.0
+animal_despawn = 1680.0
+critter_min_spawn = 640.0
+critter_max_spawn = 1100.0
+critter_near = 400.0
+critter_sleep = 800.0
+critter_despawn = 1400.0
+enemy_interval_normal = 22.0
+enemy_interval_darkness = 10.0
+animal_interval = 3.2
+critter_interval = 2.8
+darkness_wildlife_interval = 2.0
+lod_update_interval = 0.28
+camera_reject_margin = 72.0
+initial_animals = 4
+initial_critters = 3

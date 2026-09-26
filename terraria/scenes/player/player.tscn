@@ -1,7 +1,8 @@
 [gd_scene format=3 uid="uid://bvhr8a3hur358"]
 
 [ext_resource type="Script" uid="uid://c76abs143guhl" path="res://scripts/player/player.gd" id="1_player"]
-[ext_resource type="SpriteFrames" path="res://resources/player/player_frames.tres" id="2_gmlin"]
+[ext_resource type="SpriteFrames" path="res://resources/player/body_frames.tres" id="2_gmlin"]
+[ext_resource type="Script" path="res://scripts/player/player_visual_controller.gd" id="24_visual"]
 [ext_resource type="Script" uid="uid://b041sqws5px2m" path="res://scripts/player/held_item.gd" id="3_5gtgg"]
 [ext_resource type="Script" uid="uid://bql5ht2tcgy23" path="res://scripts/player/player_camera.gd" id="3_lgqa7"]
 [ext_resource type="Script" uid="uid://cuivigo5ubk06" path="res://scripts/inventory/inventory.gd" id="4_qek5x"]
@@ -192,14 +193,178 @@ tracks/2/keys = {
 "values": [false, true, false]
 }
 
+[sub_resource type="Animation" id="Animation_use_swing"]
+length = 0.36
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.14, 0.22, 0.3, 0.36),
+"transitions": PackedFloat32Array(0.5, 0.4, 1.8, 1, 0.8, 1),
+"update": 0,
+"values": [-1.15, -1.35, 0.15, 1.25, 0.7, -0.08]
+}
+
+[sub_resource type="Animation" id="Animation_use_mine"]
+length = 0.38
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.18, 0.28, 0.38),
+"transitions": PackedFloat32Array(0.5, 0.4, 1.8, 1, 0.8),
+"update": 0,
+"values": [-1.35, -1.6, 0.35, 1.05, -0.08]
+}
+
+[sub_resource type="Animation" id="Animation_use_chop"]
+length = 0.38
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.18, 0.28, 0.38),
+"transitions": PackedFloat32Array(0.45, 0.35, 1.9, 1, 0.8),
+"update": 0,
+"values": [-1.55, -1.85, 0.25, 1.2, -0.08]
+}
+
+[sub_resource type="Animation" id="Animation_use_overhead"]
+length = 0.36
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.16, 0.24, 0.36),
+"transitions": PackedFloat32Array(0.5, 0.35, 1.8, 1, 0.8),
+"update": 0,
+"values": [-1.7, -2.0, 0.1, 1.15, -0.08]
+}
+
+[sub_resource type="Animation" id="Animation_use_thrust"]
+length = 0.42
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.14, 0.22, 0.42),
+"transitions": PackedFloat32Array(1, 1.6, 1, 0.8),
+"update": 0,
+"values": [-0.08, -0.22, 0.04, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm:position")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.14, 0.22, 0.42),
+"transitions": PackedFloat32Array(1, 1.8, 1, 0.8),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(-8, 1), Vector2(16, 0), Vector2(0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_use_stab"]
+length = 0.22
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.05, 0.1, 0.22),
+"transitions": PackedFloat32Array(1, 1.6, 1, 0.8),
+"update": 0,
+"values": [-0.05, -0.12, 0.04, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm:position")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.05, 0.1, 0.22),
+"transitions": PackedFloat32Array(1, 1.8, 1, 0.8),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(-4, 1), Vector2(11, 0), Vector2(0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_bow_release"]
+length = 0.28
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.14, 0.28),
+"transitions": PackedFloat32Array(1, 1.4, 1, 0.8),
+"update": 0,
+"values": [-0.45, 0.18, 0.06, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("ToolPivot/ToolArm:position")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.14, 0.28),
+"transitions": PackedFloat32Array(1, 1.2, 1, 0.8),
+"update": 0,
+"values": [Vector2(-4, 0), Vector2(3, 0), Vector2(1, 0), Vector2(0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_interact"]
+length = 0.24
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("ToolPivot/ToolArm:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.24),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(3, -2), Vector2(0, 0)]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_fm80t"]
 _data = {
 &"block_place": SubResource("Animation_gx1jg"),
+&"bow_release": SubResource("Animation_bow_release"),
 &"bow_shot": SubResource("Animation_bow"),
+&"interact": SubResource("Animation_interact"),
 &"lantern_burst": SubResource("Animation_lantern"),
 &"spear_thrust": SubResource("Animation_spear"),
 &"sword_swing": SubResource("Animation_sword"),
-&"tool_swing": SubResource("Animation_ugbui")
+&"tool_swing": SubResource("Animation_ugbui"),
+&"use_chop": SubResource("Animation_use_chop"),
+&"use_mine": SubResource("Animation_use_mine"),
+&"use_overhead": SubResource("Animation_use_overhead"),
+&"use_stab": SubResource("Animation_use_stab"),
+&"use_swing": SubResource("Animation_use_swing"),
+&"use_thrust": SubResource("Animation_use_thrust")
 }
 
 [node name="Player" type="CharacterBody2D" unique_id=1843147423]
@@ -212,6 +377,7 @@ floor_constant_speed = true
 script = ExtResource("1_player")
 
 [node name="Visuals" type="Node2D" parent="." unique_id=1701954950]
+script = ExtResource("24_visual")
 
 [node name="BaseSprite" type="AnimatedSprite2D" parent="Visuals" unique_id=171951721]
 position = Vector2(0, -28)

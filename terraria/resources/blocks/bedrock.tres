@@ -10,4 +10,5 @@ atlas_coords = Vector2i(4, 1)
 hardness = 999.0
 drop_item_id = -1
 solid = true
+map_color = Color(0.08, 0.07, 0.09, 1)
 is_unbreakable = true

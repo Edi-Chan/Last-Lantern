@@ -3,11 +3,11 @@ extends Control
 
 ## Gehoert an: HUD/AdminMenu. Baut die Debug-Seiten zur Laufzeit aus echten Daten.
 
-const WINDOW_SIZE := Vector2i(780, 540)
-const SIDEBAR_W := 156
+const WINDOW_SIZE := Vector2i(1100, 720)
+const SIDEBAR_W := 180
 const REFRESH_INTERVAL := 0.15
 
-enum Page { PLAYER, WORLD, TIME, EVENTS, SPAWN, ITEMS, DEBUG }
+enum Page { PLAYER, WORLD, TIME, EVENTS, SPAWN, ANIMALS, ITEMS, DEBUG }
 
 var _theme: Theme
 var _panel: PanelContainer
@@ -45,6 +45,13 @@ var _spawn_selected: Resource
 var _spawn_count_label: Label
 var _mode_buttons: Dictionary = {}
 
+var _animal_search: LineEdit
+var _animal_list: VBoxContainer
+var _animal_selected: Resource
+var _animal_count_label: Label
+var _animal_ai_button: Button
+var _animal_pop_label: RichTextLabel
+
 var _item_search: LineEdit
 var _item_filter: int = -1
 var _item_list: VBoxContainer
@@ -52,16 +59,19 @@ var _item_qty: int = 1
 var _item_qty_label: Label
 var _item_selected: ItemData
 var _item_detail: RichTextLabel
+var _item_give_all_btn: Button
 var _filter_buttons: Dictionary = {}
 var _filter_host: HFlowContainer
 
 var _fps_label: Label
+var _stat_breakdown: RichTextLabel
 var _debug_player: RichTextLabel
 var _inspect_label: RichTextLabel
 var _inspect_button: Button
 var _collision_check: CheckBox
 var _nav_check: CheckBox
 var _liquid_perf_label: RichTextLabel
+var _map_perf_label: RichTextLabel
 
 var _built: bool = false
 
@@ -234,6 +244,7 @@ func _make_sidebar() -> Control:
 		[Page.TIME, "TIME"],
 		[Page.EVENTS, "EVENTS"],
 		[Page.SPAWN, "SPAWN"],
+		[Page.ANIMALS, "ANIMALS"],
 		[Page.ITEMS, "ITEMS"],
 		[Page.DEBUG, "DEBUG"],
 	]
@@ -262,6 +273,7 @@ func _make_pages() -> Control:
 	_pages[Page.TIME] = _build_time_page()
 	_pages[Page.EVENTS] = _build_events_page()
 	_pages[Page.SPAWN] = _build_spawn_page()
+	_pages[Page.ANIMALS] = _build_animals_page()
 	_pages[Page.ITEMS] = _build_items_page()
 	_pages[Page.DEBUG] = _build_debug_page()
 	for page in _pages.values():
@@ -318,6 +330,14 @@ func _build_player_page() -> Control:
 		speeds.add_child(button)
 	col.add_child(speeds)
 	col.add_child(_danger("RESET ALL ADMIN MODIFIERS", func() -> void: AdminManager.reset_all_modifiers(), "Setzt alle temporären Cheats zurück."))
+	col.add_child(_heading("STAT BREAKDOWN"))
+	_stat_breakdown = RichTextLabel.new()
+	_stat_breakdown.bbcode_enabled = false
+	_stat_breakdown.fit_content = true
+	_stat_breakdown.scroll_active = false
+	_stat_breakdown.custom_minimum_size = Vector2(0, 220)
+	_stat_breakdown.add_theme_font_size_override("normal_font_size", 11)
+	col.add_child(_stat_breakdown)
 	return _scroll(col)
 
 
@@ -327,6 +347,11 @@ func _build_world_page() -> Control:
 	col.add_child(_row([
 		_btn("SAVE WORLD", func() -> void: AdminManager.save_world(), "Speichert über SaveManager.save_game()."),
 		_danger("RELOAD WORLD", func() -> void: _ask("Welt laden?", "Lädt den Spielstand über SaveManager.load_game().", func() -> void: AdminManager.reload_world()), "Lädt den Spielstand."),
+	]))
+	col.add_child(_heading("MAP"))
+	col.add_child(_row([
+		_btn("GANZE KARTE AUFDECKEN", func() -> void: _ask("Reveal the entire map?", "Deckt alle gültigen Kartenbereiche der aktuellen Welt auf.", func() -> void: AdminManager.reveal_full_map()), "Setzt die Discovery-Maske der aktuellen Welt vollständig."),
+		_danger("RESET MAP DISCOVERY", func() -> void: _ask("Karten-Entdeckung zurücksetzen?", "Versteckt die Karte wieder, außer dem Startgebiet.", func() -> void: AdminManager.reset_map_discovery()), "Debug: Discovery zurücksetzen, Startgebiet bleibt sichtbar."),
 	]))
 	col.add_child(_row([
 		_btn("TELEPORT TO SPAWN", func() -> void: AdminManager.teleport_to_spawn(), "Teleportiert zum Welt- oder Debug-Spawn."),
@@ -343,19 +368,28 @@ func _build_world_page() -> Control:
 	]))
 	col.add_child(_heading("LIQUID DEBUG"))
 	col.add_child(_row([
-		_btn("SIM ON/OFF", func() -> void: AdminManager.toggle_liquid_simulation(), "Schaltet die Wassersimulation um."),
-		_btn("SHOW ACTIVE", func() -> void: AdminManager.toggle_liquid_active_overlay(), "Markiert aktive Wasserzellen."),
+		_btn("SIM ON/OFF", func() -> void: AdminManager.toggle_liquid_simulation(), "Schaltet die Fluessigkeitssimulation um."),
+		_btn("SHOW ACTIVE", func() -> void: AdminManager.toggle_liquid_active_overlay(), "Markiert aktive Fluessigkeitszellen."),
 		_btn("SHOW AMOUNTS", func() -> void: AdminManager.toggle_liquid_amount_overlay(), "Zeigt Liquid Amount pro Zelle."),
 	]))
 	col.add_child(_row([
-		_btn("SPAWN WATER", func() -> void: AdminManager.spawn_water_at_player(), "Füllt Wasser um den Spieler."),
-		_btn("REMOVE WATER", func() -> void: AdminManager.remove_water_at_player(), "Entfernt Wasser um den Spieler."),
-		_btn("INFINITE BREATH", func() -> void: AdminManager.toggle_infinite_breath(), "Unendlich Luft unter Wasser."),
+		_btn("SPAWN WATER", func() -> void: AdminManager.spawn_water_at_player(), "Fuellt Wasser um den Spieler."),
+		_btn("SPAWN LAVA", func() -> void: AdminManager.spawn_lava_at_player(), "Fuellt Lava um den Spieler."),
+		_btn("REMOVE LIQUID", func() -> void: AdminManager.remove_liquid_at_player(), "Entfernt Fluessigkeit um den Spieler."),
 	]))
 	col.add_child(_row([
+		_btn("INFINITE BREATH", func() -> void: AdminManager.toggle_infinite_breath(), "Unendlich Luft unter Wasser."),
 		_btn("FORCE BREATH 0", func() -> void: AdminManager.force_breath_zero(), "Setzt Atem auf 0."),
-		_btn("FALL TEST", func() -> void: AdminManager.run_liquid_fall_test(), "Debug: Wasser fällt über Luft."),
-		_btn("TRACK MASS", func() -> void: AdminManager.toggle_liquid_mass_tracking(), "Misst Total Water nur im Debug. Warnt bei Massendrift."),
+		_btn("TRACK MASS", func() -> void: AdminManager.toggle_liquid_mass_tracking(), "Misst Total Water nur im Debug."),
+	]))
+	col.add_child(_row([
+		_btn("WATER FALL", func() -> void: AdminManager.run_liquid_fall_test(), "Debug: Wasser faellt ueber Luft."),
+		_btn("LAVA FALL", func() -> void: AdminManager.run_lava_fall_test(), "Debug: Lava faellt langsam nach unten."),
+	]))
+	col.add_child(_row([
+		_btn("TP DEEP CAVES", func() -> void: AdminManager.teleport_to_deep_caves(), "Teleportiert in Deep Caves."),
+		_btn("TP DANGER", func() -> void: AdminManager.teleport_to_danger_layer(), "Teleportiert in den Danger Layer."),
+		_btn("TP FIRE REGION", func() -> void: AdminManager.teleport_to_fire_region(), "Teleportiert in die Fire Region."),
 	]))
 	_liquid_perf_label = RichTextLabel.new()
 	_liquid_perf_label.bbcode_enabled = true
@@ -464,8 +498,40 @@ func _build_spawn_page() -> Control:
 	return _scroll(col)
 
 
+func _build_animals_page() -> Control:
+	var col := _page_column()
+	col.add_child(_heading("ANIMALS / WILDLIFE"))
+	_animal_search = LineEdit.new()
+	_animal_search.placeholder_text = "Suche Name / ID"
+	_animal_search.text_changed.connect(func(_t: String) -> void: _rebuild_animal_list())
+	col.add_child(_animal_search)
+	var list_wrap := ScrollContainer.new()
+	list_wrap.custom_minimum_size = Vector2(0, 170)
+	list_wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_animal_list = VBoxContainer.new()
+	_animal_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list_wrap.add_child(_animal_list)
+	col.add_child(list_wrap)
+	col.add_child(_btn("SPAWN", _on_animal_spawn_pressed, "Spawnt das gewählte Tier nahe am Spieler."))
+	col.add_child(_row([
+		_btn("SPAWN ONE OF EACH", func() -> void: AdminManager.spawn_one_of_each_animal(), "Debug: alle 24 Tiere nebeneinander."),
+		_danger("CLEAR ANIMALS", func() -> void: AdminManager.clear_animals(), "Entfernt Wildlife, nicht Gegner/Player."),
+	]))
+	_animal_ai_button = _toggle("SHOW ANIMAL AI  OFF", func() -> void: AdminManager.show_animal_ai = not AdminManager.show_animal_ai; _refresh_toggles(), "Debug-Text über Tieren.")
+	col.add_child(_animal_ai_button)
+	_animal_count_label = _muted("Active Animals:  0")
+	col.add_child(_animal_count_label)
+	_animal_pop_label = RichTextLabel.new()
+	_animal_pop_label.bbcode_enabled = true
+	_animal_pop_label.fit_content = true
+	_animal_pop_label.custom_minimum_size = Vector2(0, 90)
+	col.add_child(_animal_pop_label)
+	return _scroll(col)
+
+
 func _build_items_page() -> Control:
 	var col := _page_column()
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(_heading("ITEMS"))
 	_item_search = LineEdit.new()
 	_item_search.placeholder_text = "Suche Name / ID / Kategorie"
@@ -479,8 +545,9 @@ func _build_items_page() -> Control:
 	_filter_host = filters
 	var split := HBoxContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var list_wrap := ScrollContainer.new()
-	list_wrap.custom_minimum_size = Vector2(280, 180)
+	list_wrap.custom_minimum_size = Vector2(280, 220)
 	list_wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_item_list = VBoxContainer.new()
@@ -489,31 +556,34 @@ func _build_items_page() -> Control:
 	split.add_child(list_wrap)
 	_item_detail = RichTextLabel.new()
 	_item_detail.bbcode_enabled = true
-	_item_detail.fit_content = true
-	_item_detail.custom_minimum_size = Vector2(200, 180)
+	_item_detail.fit_content = false
+	_item_detail.custom_minimum_size = Vector2(200, 220)
+	_item_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_item_detail.scroll_active = true
 	split.add_child(_item_detail)
 	col.add_child(split)
+	var bottom := VBoxContainer.new()
+	bottom.add_theme_constant_override("separation", 4)
+	bottom.size_flags_vertical = Control.SIZE_SHRINK_END
 	_item_qty_label = _muted("Quantity:  1")
-	col.add_child(_item_qty_label)
-	col.add_child(_row([
-		_btn("-", func() -> void: _set_item_qty(_item_qty - 1), ""),
-		_btn("1", func() -> void: _set_item_qty(1), ""),
-		_btn("10", func() -> void: _set_item_qty(10), ""),
-		_btn("100", func() -> void: _set_item_qty(100), ""),
-		_btn("MAX", func() -> void: _give_selected(true), "Gibt einen vollen Stack."),
-		_btn("+", func() -> void: _set_item_qty(_item_qty + 1), ""),
-	]))
-	col.add_child(_row([
-		_btn("GIVE", func() -> void: _give_selected(false), "Legt das Item ins Inventar."),
-		_btn("GIVE MAX STACK", func() -> void: _give_selected(true), "Gibt max_stack."),
-	]))
-	col.add_child(_row([
-		_danger("CLEAR INVENTORY", func() -> void: _ask("Inventar leeren?", "Löscht alle Slots über Inventory.clear_all().", func() -> void: AdminManager.clear_inventory()), "Leert das Inventar."),
-		_btn("GIVE ALL RESOURCES", func() -> void: AdminManager.give_all_of(func(item: ItemData) -> bool: return _is_resource_item(item)), "Gibt je 1 Stück aller Rohstoffe."),
-		_btn("GIVE ALL TOOLS", func() -> void: AdminManager.give_all_of(func(item: ItemData) -> bool: return item.is_tool()), "Gibt je 1 Stück aller Werkzeuge."),
-	]))
-	return _scroll(col)
+	_item_qty_label.add_theme_font_size_override("font_size", 9)
+	bottom.add_child(_item_qty_label)
+	var qty_row := _row([
+		_qty_btn("-", func() -> void: _set_item_qty(_item_qty - 1)),
+		_qty_btn("1", func() -> void: _set_item_qty(1)),
+		_qty_btn("10", func() -> void: _set_item_qty(10)),
+		_qty_btn("100", func() -> void: _set_item_qty(100)),
+		_qty_btn("+", func() -> void: _set_item_qty(_item_qty + 1)),
+		_btn("GIVE MAX STACK", func() -> void: _give_selected(true), "Gibt einen vollen Stack des gewählten Items."),
+	])
+	bottom.add_child(qty_row)
+	_item_give_all_btn = _btn("GIVE ALL ITEMS", _give_all_filtered, "Gibt die aktuelle Quantity jedes Items aus Suche/Kategorie.")
+	_item_give_all_btn.custom_minimum_size = Vector2(0, 26)
+	bottom.add_child(_item_give_all_btn)
+	col.add_child(bottom)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	return col
 
 
 func _build_debug_page() -> Control:
@@ -521,6 +591,31 @@ func _build_debug_page() -> Control:
 	col.add_child(_heading("PERFORMANCE"))
 	_fps_label = _muted("FPS:  -")
 	col.add_child(_fps_label)
+	col.add_child(_row([
+		_toggle("PERF OVERLAY", func() -> void: AdminManager.perf_overlay = not AdminManager.perf_overlay; _refresh_toggles(), "FPS, Frame Time, Liquid, Overlay, Nodes."),
+		_toggle("MAP UPDATES", func() -> void: AdminManager.perf_map_updates = not AdminManager.perf_map_updates; _refresh_toggles(), "Minimap/World-Map Liquid-Flush. Nur Debug."),
+	]))
+	col.add_child(_heading("MAP PERFORMANCE"))
+	col.add_child(_row([
+		_toggle("MINIMAP", func() -> void: AdminManager.perf_minimap = not AdminManager.perf_minimap; _refresh_toggles(), "Minimap-Rendering. Nur Debug."),
+		_toggle("WORLD MAP", func() -> void: AdminManager.perf_world_map = not AdminManager.perf_world_map; _refresh_toggles(), "World-Map-Rendering. Nur Debug."),
+		_toggle("DISCOVERY", func() -> void: AdminManager.perf_discovery = not AdminManager.perf_discovery; _refresh_toggles(), "Player-Discovery. Nur Debug."),
+	]))
+	col.add_child(_row([
+		_toggle("LIQUID MAP", func() -> void: AdminManager.perf_liquid_map = not AdminManager.perf_liquid_map; _refresh_toggles(), "Liquid zu Map-Updates. Nur Debug."),
+		_toggle("MAP MARKERS", func() -> void: AdminManager.perf_map_markers = not AdminManager.perf_map_markers; _refresh_toggles(), "Marker-Updates. Nur Debug."),
+		_btn("RUN MAP BENCHMARK", func() -> void: AdminManager.run_map_benchmark(); _refresh_liquid_perf(), "Partial vs Full Discovery, ohne Live-Welt zu aendern."),
+	]))
+	_map_perf_label = RichTextLabel.new()
+	_map_perf_label.bbcode_enabled = true
+	_map_perf_label.fit_content = true
+	_map_perf_label.custom_minimum_size = Vector2(0, 160)
+	col.add_child(_map_perf_label)
+	col.add_child(_row([
+		_toggle("LAVA LIGHTS", func() -> void: AdminManager.set_lava_lights_enabled(not AdminManager.are_lava_lights_enabled()); _refresh_toggles(), "Cluster-Lights an/aus."),
+		_toggle("LAVA PARTICLES", func() -> void: AdminManager.set_lava_particles_enabled(not AdminManager.are_lava_particles_enabled()); _refresh_toggles(), "Lava-Partikel an/aus."),
+		_btn("SIM ON/OFF", func() -> void: AdminManager.toggle_liquid_simulation(), "Fluessigkeitssimulation an/aus."),
+	]))
 	col.add_child(_heading("VISUAL DEBUG"))
 	_collision_check = CheckBox.new()
 	_collision_check.text = "Collision Shapes"
@@ -566,6 +661,8 @@ func _show_page(page: Page) -> void:
 		button.add_theme_stylebox_override("normal", AdminTheme.box(AdminTheme.COL_GOLD_DIM if active else AdminTheme.COL_PANEL_INNER, AdminTheme.COL_GOLD if active else AdminTheme.COL_BORDER))
 	if page == Page.SPAWN:
 		_rebuild_spawn_list()
+	elif page == Page.ANIMALS:
+		_rebuild_animal_list()
 	elif page == Page.ITEMS:
 		_ensure_item_filters()
 		_rebuild_item_list()
@@ -603,9 +700,9 @@ func _refresh_live() -> void:
 		if day == null:
 			_time_label.text = "Time of Day:  -"
 		else:
-			var scale := day.settings.time_scale if day.settings != null else 1.0
+			var time_scale_value := day.settings.time_scale if day.settings != null else 1.0
 			_time_label.text = "Time of Day:  %s  (%.3f)   scale %.1fx%s" % [
-				day.clock_text(), day.time_of_day, scale, "  PAUSED" if scale <= 0.0 else "",
+				day.clock_text(), day.time_of_day, time_scale_value, "  PAUSED" if time_scale_value <= 0.0 else "",
 			]
 	if _phase_label != null:
 		_phase_label.text = "Phase:  %s" % String(AdminManager.get_phase())
@@ -615,13 +712,10 @@ func _refresh_live() -> void:
 		]
 	if _spawn_count_label != null:
 		_spawn_count_label.text = "Active Enemies:  %d" % AdminManager.get_live_enemies().size()
+	_refresh_animal_stats()
 	if _fps_label != null:
-		var fps := Engine.get_frames_per_second()
-		_fps_label.text = "FPS:  %d     Frame:  %.1f ms     Enemies:  %d     Dropped Items:  %d" % [
-			roundi(fps), 1000.0 / maxf(fps, 0.001),
-			AdminManager.get_live_enemies().size(),
-			AdminManager.get_dropped_item_count(),
-		]
+		_fps_label.text = AdminManager.get_performance_overlay_text(true)
+		_fps_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_refresh_player_debug()
 	_refresh_liquid_perf()
 	_refresh_inspect()
@@ -636,6 +730,7 @@ func _refresh_toggles() -> void:
 	_set_toggle(_sta_button, "Infinite Stamina", AdminManager.infinite_stamina)
 	_set_toggle(_en_button, "Infinite Energy", AdminManager.infinite_energy)
 	_set_toggle(_inspect_button, "INSPECT ENEMY", AdminManager.inspect_enemy)
+	_set_toggle(_animal_ai_button, "SHOW ANIMAL AI", AdminManager.show_animal_ai)
 	for value in _speed_buttons.keys():
 		var button: Button = _speed_buttons[value]
 		var on := is_equal_approx(float(value), AdminManager.speed_multiplier)
@@ -678,12 +773,18 @@ func _refresh_player_debug() -> void:
 		hp,
 		_player_anim(player),
 	]
+	if _stat_breakdown != null:
+		if stats == null:
+			_stat_breakdown.text = "Kein Spieler."
+		else:
+			_stat_breakdown.text = stats.debug_stat_breakdown()
 
 
 func _refresh_liquid_perf() -> void:
-	if _liquid_perf_label == null:
-		return
-	_liquid_perf_label.text = AdminManager.get_liquid_debug_text()
+	if _liquid_perf_label != null:
+		_liquid_perf_label.text = AdminManager.get_liquid_debug_text()
+	if _map_perf_label != null:
+		_map_perf_label.text = AdminManager.get_map_debug_text()
 
 
 func _player_anim(player: Player) -> String:
@@ -765,6 +866,72 @@ func _enemy_row(enemy: Resource) -> Control:
 	return row
 
 
+func _rebuild_animal_list() -> void:
+	if _animal_list == null:
+		return
+	for child in _animal_list.get_children():
+		child.queue_free()
+	var query := _animal_search.text.to_lower() if _animal_search != null else ""
+	var animals := AdminManager.get_all_animals()
+	var shown := 0
+	for animal in animals:
+		var hay := ("%s %s" % [animal.display_name, String(animal.id)]).to_lower()
+		if not query.is_empty() and hay.find(query) < 0:
+			continue
+		_animal_list.add_child(_animal_row(animal))
+		shown += 1
+	if shown == 0:
+		var empty := Label.new()
+		empty.text = "No animals available."
+		empty.add_theme_color_override("font_color", AdminTheme.COL_MUTED)
+		_animal_list.add_child(empty)
+
+
+func _animal_row(animal: Resource) -> Control:
+	var row := HBoxContainer.new()
+	if animal.icon != null:
+		var icon := TextureRect.new()
+		icon.texture = animal.icon
+		icon.custom_minimum_size = Vector2(20, 20)
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		row.add_child(icon)
+	var button := Button.new()
+	button.text = "%s    [%s]" % [animal.display_name, String(animal.id)]
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	if _animal_selected == animal:
+		button.add_theme_color_override("font_color", AdminTheme.COL_GOLD)
+	button.pressed.connect(func() -> void:
+		_animal_selected = animal
+		_rebuild_animal_list()
+	)
+	row.add_child(button)
+	return row
+
+
+func _on_animal_spawn_pressed() -> void:
+	if _animal_selected == null:
+		var all := AdminManager.get_all_animals()
+		if all.is_empty():
+			return
+		_animal_selected = all[0]
+	AdminManager.spawn_animal(_animal_selected, _spawn_amount, _spawn_mode)
+
+
+func _refresh_animal_stats() -> void:
+	var stats := AdminManager.get_animal_population_stats()
+	if _animal_count_label != null:
+		_animal_count_label.text = "Active Animals:  %d     Sleeping:  %d     Total:  %d" % [
+			int(stats.get("active", 0)), int(stats.get("sleeping", 0)), int(stats.get("total", 0)),
+		]
+	if _animal_pop_label != null:
+		_animal_pop_label.text = "[color=#D8D8DF]Flying:[/color]  %d\n[color=#D8D8DF]Water:[/color]  %d\n[color=#D8D8DF]Darkness:[/color]  %d\n[color=#D8D8DF]Critters:[/color]  %d" % [
+			int(stats.get("flying", 0)), int(stats.get("water", 0)), int(stats.get("darkness", 0)), int(stats.get("critters", 0)),
+		]
+
+
 func _ensure_item_filters() -> void:
 	if _filter_host == null or _filter_host.get_child_count() > 1:
 		return
@@ -805,6 +972,7 @@ func _rebuild_item_list() -> void:
 		empty.add_theme_color_override("font_color", AdminTheme.COL_MUTED)
 		_item_list.add_child(empty)
 	_refresh_item_detail()
+	_refresh_give_all_button(shown)
 	for id in _filter_buttons.keys():
 		var button: Button = _filter_buttons[id]
 		button.add_theme_color_override("font_color", AdminTheme.COL_GOLD if int(id) == _item_filter else AdminTheme.COL_TEXT)
@@ -812,10 +980,12 @@ func _rebuild_item_list() -> void:
 
 func _item_row(item: ItemData) -> Control:
 	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
 	if item.icon != null:
 		var icon := TextureRect.new()
 		icon.texture = item.icon
 		icon.custom_minimum_size = Vector2(20, 20)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -836,13 +1006,11 @@ func _item_row(item: ItemData) -> Control:
 	id_l.add_theme_color_override("font_color", AdminTheme.COL_MUTED)
 	info.add_child(id_l)
 	row.add_child(info)
-	var give := _btn("GIVE", func() -> void:
-		_item_selected = item
-		_give_selected(false)
-		_rebuild_item_list()
-	, "Ins Inventar legen")
-	give.custom_minimum_size = Vector2(52, 20)
-	row.add_child(give)
+	row.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			_item_selected = item
+			_rebuild_item_list()
+	)
 	info.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed:
 			_item_selected = item
@@ -870,7 +1038,14 @@ func _refresh_item_detail() -> void:
 		lines.append("Damage  %d" % item.get_base_damage())
 	if "attack_cooldown" in item and item.attack_cooldown > 0.0:
 		lines.append("Cooldown  %.2f" % item.attack_cooldown)
-	if item.defense > 0:
+	if item.item_type == ItemData.ItemType.ARMOR:
+		for mod in item.collect_stat_modifiers():
+			lines.append(StatId.format_modifier_line(mod))
+		var catalog := ArmorSetCatalog.load_default()
+		var set_id := catalog.set_id_for_item(item) if catalog != null else ArmorSet.NONE
+		if set_id != ArmorSet.NONE:
+			lines.append("Set  %s" % String(set_id))
+	elif item.defense > 0:
 		lines.append("Defense  %d" % item.defense)
 	if item.get_sell_value() > 0:
 		lines.append("Value  %d" % item.get_sell_value())
@@ -884,6 +1059,29 @@ func _give_selected(max_stack: bool) -> void:
 		AdminManager.give_max_stack(_item_selected)
 	else:
 		AdminManager.give_item(_item_selected.id, _item_qty)
+
+
+func _filtered_items() -> Array[ItemData]:
+	var query := _item_search.text if _item_search != null else ""
+	var out: Array[ItemData] = []
+	for item in AdminManager.get_all_items():
+		if AdminManager.item_matches(item, query, _item_filter):
+			out.append(item)
+	return out
+
+
+func _give_all_filtered() -> void:
+	var items := _filtered_items()
+	if items.is_empty():
+		return
+	AdminManager.give_items(items, _item_qty)
+
+
+func _refresh_give_all_button(count: int) -> void:
+	if _item_give_all_btn == null:
+		return
+	_item_give_all_btn.text = "GIVE ALL ITEMS  (%d)" % count
+	_item_give_all_btn.disabled = count <= 0
 
 
 func _set_spawn_amount(value: int) -> void:
@@ -1057,6 +1255,13 @@ func _btn(text: String, action: Callable, tip: String) -> Button:
 	return button
 
 
+func _qty_btn(text: String, action: Callable) -> Button:
+	var button := _btn(text, action, "")
+	button.custom_minimum_size = Vector2(28, 18)
+	button.add_theme_font_size_override("font_size", 10)
+	return button
+
+
 func _toggle(text: String, action: Callable, tip: String) -> Button:
 	return _btn(text, action, tip)
 
@@ -1099,13 +1304,3 @@ func _vline() -> ColorRect:
 	line.color = AdminTheme.COL_BORDER
 	line.custom_minimum_size = Vector2(1, 0)
 	return line
-
-
-static func _is_resource_item(item: ItemData) -> bool:
-	if item == null:
-		return false
-	return item.item_type == ItemData.ItemType.MATERIAL \
-		or item.item_type == ItemData.ItemType.BLOCK \
-		or item.category == ItemData.ItemCategory.RESOURCE \
-		or item.category == ItemData.ItemCategory.ORE_METAL \
-		or item.category == ItemData.ItemCategory.BUILDING_MATERIAL

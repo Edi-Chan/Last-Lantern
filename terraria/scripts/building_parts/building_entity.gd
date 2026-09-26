@@ -231,7 +231,7 @@ func is_bed() -> bool:
 
 func rest_position() -> Vector2:
 	var along := 50.0 if orientation == 0 else 14.0
-	return global_position + Vector2(along, -14.0)
+	return global_position + Vector2(along + 6.0, -14.0)
 
 
 func safe_spawn_position() -> Vector2:

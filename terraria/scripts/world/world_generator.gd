@@ -84,6 +84,8 @@ const BIOME_FORTRESS := 4
 var player_spawn_position: Vector2 = Vector2.ZERO
 var spawn_tile: Vector2i = Vector2i.ZERO
 var stats: Dictionary = {}
+var _fire_ratio_cached: float = 0.88
+var _fire_ratio_ready: bool = false
 var layout: WorldLayout
 var _tiles: PackedByteArray
 var _surface: PackedInt32Array
@@ -125,7 +127,7 @@ func generate_world() -> void:
 	dirt_depth_max = generation_settings.dirt_depth_max
 	tree_min_height = generation_settings.tree_min_height
 	tree_max_height = generation_settings.tree_max_height
-	spawn_clear_radius = maxi(layout.start_width() / 2, 12)
+	spawn_clear_radius = maxi(int(layout.start_width() / 2.0), 12)
 
 	_tiles = PackedByteArray()
 	_tiles.resize(world_width * world_height)
@@ -181,7 +183,6 @@ func generate_world() -> void:
 	stats["width"] = world_width
 	stats["height"] = world_height
 	stats["generation_ms"] = (Time.get_ticks_usec() - start_usec) / 1000.0
-	print("[WorldGenerator] ", stats)
 
 
 # --------------------------------------------------------------------- Zugriff
@@ -293,20 +294,24 @@ func is_fire_region(tile_x: int, tile_y: int) -> bool:
 		return false
 	if tile_y >= world_height - bedrock_rows:
 		return false
-	var start := 0.88
+	return get_depth_ratio(tile_x, tile_y) >= _fire_region_ratio()
+
+
+func _fire_region_ratio() -> float:
+	if _fire_ratio_ready:
+		return _fire_ratio_cached
+	_fire_ratio_cached = 0.88
 	var liquid := _get_liquid_system()
 	if liquid != null and liquid.settings != null:
-		start = liquid.settings.fire_region_start_ratio
-	return get_depth_ratio(tile_x, tile_y) >= start
+		_fire_ratio_cached = liquid.settings.fire_region_start_ratio
+	_fire_ratio_ready = true
+	return _fire_ratio_cached
 
 
 func fire_region_start_y(tile_x: int) -> int:
 	var top := get_surface_y(tile_x)
 	var floor_y := world_height - bedrock_rows
-	var start := 0.88
-	var liquid := _get_liquid_system()
-	if liquid != null and liquid.settings != null:
-		start = liquid.settings.fire_region_start_ratio
+	var start := _fire_region_ratio()
 	return clampi(top + int(round(float(floor_y - top) * start)), top + 1, floor_y - 1)
 
 
@@ -572,7 +577,7 @@ func _paint_biome_span(x0: int, x1: int, rng: RandomNumberGenerator, prefer_fore
 	if remaining < 16:
 		return
 	var bands: Array[Dictionary] = []
-	var intro := clampi(generation_settings.biome_min_band_width, 24, maxi(remaining / 5, 24))
+	var intro := clampi(generation_settings.biome_min_band_width, 24, maxi(int(remaining / 5.0), 24))
 	bands.append({"id": BIOME_GRASSLAND, "w": intro})
 	remaining -= intro
 	var pool: Array[int] = [BIOME_FOREST, BIOME_SAND, BIOME_FOREST, BIOME_GRASSLAND]
@@ -593,12 +598,12 @@ func _paint_biome_span(x0: int, x1: int, rng: RandomNumberGenerator, prefer_fore
 			break
 		var prev: int = int(bands[bands.size() - 1]["id"])
 		if biome_id == BIOME_SAND and prev == BIOME_FOREST:
-			var buffer := mini(generation_settings.biome_transition_width, remaining / 3)
+			var buffer := mini(generation_settings.biome_transition_width, int(remaining / 3.0))
 			if buffer >= 6:
 				bands.append({"id": BIOME_GRASSLAND, "w": buffer})
 				remaining -= buffer
 		if biome_id == BIOME_FOREST and prev == BIOME_SAND:
-			var buffer2 := mini(generation_settings.biome_transition_width, remaining / 3)
+			var buffer2 := mini(generation_settings.biome_transition_width, int(remaining / 3.0))
 			if buffer2 >= 6:
 				bands.append({"id": BIOME_GRASSLAND, "w": buffer2})
 				remaining -= buffer2
@@ -630,8 +635,8 @@ func _paint_required_biome(biome_id: int, x0: int, x1: int) -> void:
 	if x1 - x0 < 16:
 		return
 	var mid := int(floor(float(x0 + x1) * 0.5))
-	var width := mini(generation_settings.biome_min_band_width, maxi((x1 - x0) / 3, 16))
-	for x in range(mid - width / 2, mid + width / 2):
+	var width := mini(generation_settings.biome_min_band_width, maxi(int((x1 - x0) / 3.0), 16))
+	for x in range(mid - int(width / 2.0), mid + int(width / 2.0)):
 		if layout != null and layout.is_playable_column(x):
 			_biome[x] = biome_id
 
@@ -648,7 +653,7 @@ func _blend_biome_edges(rng: RandomNumberGenerator) -> void:
 				_biome[x] = BIOME_GRASSLAND
 				continue
 			if rng.randf() < 0.45:
-				var blend := rng.randi_range(2, maxi(width / 2, 3))
+				var blend := rng.randi_range(2, maxi(int(width / 2.0), 3))
 				for dx in blend:
 					var cx := x + dx
 					if cx >= span.y:
@@ -706,6 +711,7 @@ func generate_caves() -> void:
 				carved += 1
 	_carve_spine_caves()
 	_carve_cave_chambers()
+	_carve_fire_region_basins()
 	_connect_cave_pockets()
 	stats["cave_ratio"] = float(carved) / float(maxi(eligible, 1))
 	stats["cave_tiles"] = _count_air_below_surface()
@@ -803,6 +809,29 @@ func _carve_cave_chambers() -> void:
 		var ry := rng.randi_range(2, maxi(rx - 1, 3))
 		_carve_ellipse(x, y, rx, ry)
 	stats["cave_chambers"] = count
+
+
+func _carve_fire_region_basins() -> void:
+	var rng := _rng(29)
+	var target := clampi(int(world_width / 36.0), 10, 32)
+	var count := 0
+	var attempts := target * 5
+	for _i in attempts:
+		if count >= target:
+			break
+		var x := rng.randi_range(world_edge_width + 12, world_width - world_edge_width - 13)
+		if should_skip_ambient_water(x):
+			continue
+		var min_y := fire_region_start_y(x) + 1
+		var max_y := world_height - bedrock_rows - 4
+		if min_y >= max_y:
+			continue
+		var y := rng.randi_range(min_y, max_y)
+		var rx := rng.randi_range(5, 10)
+		var ry := rng.randi_range(3, 6)
+		_carve_ellipse(x, y, rx, ry)
+		count += 1
+	stats["fire_region_chambers"] = count
 
 
 func _connect_cave_pockets() -> void:
@@ -1353,7 +1382,7 @@ func _stamp_fortress_ruins() -> void:
 		_biome[x] = BIOME_FORTRESS
 	for x in range(x0, x1):
 		for y in range(base_y - keep_h, base_y):
-			var is_wall := x == x0 or x == x1 - 1 or y == base_y - keep_h or y == base_y - int(keep_h / 2)
+			var is_wall := x == x0 or x == x1 - 1 or y == base_y - keep_h or y == base_y - int(keep_h / 2.0)
 			var tower := (x <= x0 + 3 or x >= x1 - 4) and y >= base_y - keep_h
 			if not is_wall and not tower:
 				continue
@@ -1558,8 +1587,8 @@ func _force_biome(biome_id: int) -> void:
 		x0 = layout.playable_b_x0
 		x1 = layout.playable_b_x1
 	var mid := int(floor(float(x0 + x1) * 0.5))
-	var width := mini(generation_settings.biome_min_band_width, layout.playable_width() / 3)
-	for x in range(mid - width / 2, mid + width / 2):
+	var width := mini(generation_settings.biome_min_band_width, int(layout.playable_width() / 3.0))
+	for x in range(mid - int(width / 2.0), mid + int(width / 2.0)):
 		if layout.is_playable_column(x):
 			_biome[x] = biome_id
 			_is_sand_column[x] = 1 if biome_id == BIOME_SAND else 0
@@ -1621,7 +1650,9 @@ func _generate_water() -> void:
 func _generate_lava() -> void:
 	var liquid := _get_liquid_system()
 	if liquid == null:
+		push_warning("WorldGenerator: LiquidSystem fehlt, Lava wird nicht platziert.")
 		return
+	liquid.bind_world_generator(self)
 	liquid.begin_batch_writes()
 	var lava_stats := LavaGeneration.generate(self, liquid)
 	liquid.end_batch_writes()

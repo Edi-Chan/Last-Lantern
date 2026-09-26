@@ -14,7 +14,7 @@ static func make_random_seed() -> int:
 static func look_from_dict(data: Dictionary) -> LookRecord:
 	var appearance := LookRecord.new()
 	if data != null:
-		appearance.character_name = str(data.get("character_name", ""))
+		appearance.from_dict(data)
 	appearance.normalize()
 	return appearance
 
@@ -38,7 +38,7 @@ static func create_session(appearance: LookRecord, world_size: int = WorldSize.I
 	var session := SessionRecord.new()
 	var copy := LookRecord.new()
 	if appearance != null:
-		copy.character_name = appearance.character_name
+		copy.from_dict(appearance.to_dict())
 	copy.normalize()
 	session.appearance = copy
 	session.world_seed = make_random_seed()

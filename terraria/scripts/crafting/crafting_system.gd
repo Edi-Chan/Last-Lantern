@@ -36,10 +36,40 @@ func recipes_for_context(context: int) -> Array[RecipeData]:
 	return result
 
 
-func evaluate(recipe: RecipeData, inventory: Inventory, quantity: int, nearby_stations: Array[int]) -> int:
+func is_recipe_known(recipe: RecipeData, inventory: Inventory) -> bool:
+	if recipe == null or inventory == null:
+		return false
+	var has_progress_material := false
+	var progress_ok := true
+	var wood_ok := false
+	var has_wood := false
+	for ingredient in recipe.get_ingredients():
+		var item_id := int(ingredient["item_id"])
+		if RecipeCatalog.is_wood_material(item_id):
+			has_wood = true
+			if inventory.has_discovered_material(item_id):
+				wood_ok = true
+			continue
+		has_progress_material = true
+		if not inventory.has_discovered_material(item_id):
+			progress_ok = false
+	if has_progress_material:
+		return progress_ok
+	return has_wood and wood_ok
+
+
+func is_recipe_revealed(recipe: RecipeData, inventory: Inventory) -> bool:
+	if recipe == null or inventory == null:
+		return false
+	if int(recipe.ui_category) == int(RecipeData.UiCategory.SMELTING):
+		return inventory.has_discovered(recipe.output_item_id)
+	return is_recipe_known(recipe, inventory)
+
+
+func evaluate(recipe: RecipeData, inventory: Inventory, quantity: int, nearby_stations: Array[int]) -> Result:
 	if recipe == null:
 		return Result.NO_RECIPE
-	if not recipe.unlocked:
+	if not is_recipe_known(recipe, inventory):
 		return Result.LOCKED
 	if quantity < 1:
 		return Result.INVALID_AMOUNT
@@ -60,7 +90,7 @@ func is_craftable(recipe: RecipeData, inventory: Inventory, nearby_stations: Arr
 
 
 func max_craftable(recipe: RecipeData, inventory: Inventory, nearby_stations: Array[int]) -> int:
-	if recipe == null or inventory == null or not recipe.unlocked:
+	if recipe == null or inventory == null or not is_recipe_known(recipe, inventory):
 		return 0
 	if not _stations_satisfied(recipe, nearby_stations):
 		return 0

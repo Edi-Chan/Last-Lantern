@@ -66,15 +66,15 @@ func _apply(bar: ProgressBar, value: Label, current: float, maximum: float) -> v
 
 func _wire_admin_button() -> void:
 	z_index = 90
-	var show := OS.is_debug_build() or OS.has_feature("editor")
+	var show_admin := OS.is_debug_build() or OS.has_feature("editor")
 	var admin := get_node_or_null("/root/AdminManager")
 	if admin != null and admin.has_method("is_available"):
-		show = bool(admin.call("is_available")) or OS.has_feature("editor")
+		show_admin = bool(admin.call("is_available")) or OS.has_feature("editor")
 	if _admin_row != null:
-		_admin_row.visible = show
+		_admin_row.visible = show_admin
 	if _admin_button == null:
 		return
-	_admin_button.visible = show
+	_admin_button.visible = show_admin
 	_admin_button.focus_mode = Control.FOCUS_NONE
 	_admin_button.tooltip_text = "Admin-Menü"
 	if show and not _admin_button.pressed.is_connected(_on_admin_pressed):

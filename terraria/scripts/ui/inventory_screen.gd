@@ -9,11 +9,11 @@ extends Control
 const PANEL_PATH := "CenterWrap/MainPanel/MainLayout/Body/Content"
 const INSPECT_ROOT := PANEL_PATH + "/LeftColumn/InspectPanel/InspectMargin/InspectOuter"
 const INSPECT_LAYOUT_PATH := INSPECT_ROOT + "/InspectScroll/InspectScrollPad/InspectLayout"
-const PANEL_SIZE := Vector2(832, 500)
+const PANEL_SIZE := Vector2(1100, 680)
 const CONTENT_SCALE := 1.0
-const BAG_SLOT_SIZE := 34
-const HOTBAR_SLOT_SIZE := 32
-const EQUIP_SLOT_SIZE := 24
+const BAG_SLOT_SIZE := 48
+const HOTBAR_SLOT_SIZE := 44
+const EQUIP_SLOT_SIZE := 36
 const EMPTY_VIEW_SLOT := -1
 const FILTER_ALL_ID := 100
 const FILTER_GROUP_ALL := -1
@@ -1330,7 +1330,12 @@ static func build_inspect_stats(item: ItemData, inst: ItemInstanceData, amount: 
 				parts.append("Spitzhacken-Power %d" % power)
 			else:
 				parts.append("Werkzeug-Power %d" % power)
-	if item.defense > 0:
+	if item.item_type == ItemData.ItemType.ARMOR:
+		for mod in item.collect_stat_modifiers():
+			var line := StatId.format_modifier_line(mod)
+			if not line.is_empty():
+				parts.append(line)
+	elif item.defense > 0:
 		parts.append("Rüstung %d" % item.defense)
 	if amount > 1:
 		parts.append("x%d" % amount)
@@ -1363,14 +1368,20 @@ static func build_inspect_info(item: ItemData) -> String:
 	return "\n".join(lines)
 
 
-static func build_hover_text(item: ItemData, inst: ItemInstanceData, amount: int) -> String:
+static func build_hover_text(item: ItemData, inst: ItemInstanceData, amount: int, inventory: Inventory = null) -> String:
 	if item == null:
 		return ""
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append(item.display_name)
-	var stats := build_inspect_stats(item, inst, amount)
-	if not stats.is_empty():
-		lines.append(stats)
+	if item.item_type == ItemData.ItemType.ARMOR:
+		var catalog := ArmorSetCatalog.load_default()
+		if catalog != null:
+			for line in catalog.tooltip_lines_for_item(item, inventory):
+				lines.append(line)
+	else:
+		var stats := build_inspect_stats(item, inst, amount)
+		if not stats.is_empty():
+			lines.append(stats)
 	var cat := ItemData.get_category_display_name(item.category)
 	if not cat.is_empty():
 		lines.append(cat)
@@ -1442,7 +1453,7 @@ func _show_pending_hover() -> void:
 	if _hover_icon != null:
 		_hover_icon.texture = item.icon
 	if _hover_label != null:
-		_hover_label.text = build_hover_text(item, inst, amount)
+		_hover_label.text = build_hover_text(item, inst, amount, _inventory)
 	_hover_tooltip.visible = true
 	_position_hover()
 
@@ -1821,6 +1832,11 @@ func _build_details_text(item: ItemData, inst: ItemInstanceData, amount: int) ->
 		var special := item.get_special()
 		if not special.is_empty():
 			lines.append("Spezial: %s" % special)
+	elif item.item_type == ItemData.ItemType.ARMOR:
+		var catalog := ArmorSetCatalog.load_default()
+		if catalog != null:
+			for line in catalog.tooltip_lines_for_item(item, null):
+				lines.append(line)
 	elif item.defense > 0:
 		lines.append("Rüstung: %d" % item.defense)
 	if ore != null:

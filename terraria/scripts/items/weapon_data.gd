@@ -8,6 +8,7 @@ extends Resource
 @export var tier: int = 1
 @export var base_damage: int = 0
 @export var attack_speed: float = 1.0
+## Reichweite in Tiles. Pixel = base_range * Tilegroesse (16). Nicht in Pixeln speichern.
 @export var base_range: float = 2.5
 @export var knockback: float = 110.0
 @export var base_max_durability: int = 100

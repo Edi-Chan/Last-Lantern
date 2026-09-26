@@ -1,7 +1,7 @@
 class_name PlayerStats
 extends Node
 
-## Gehoert an: Player/Stats in res://scenes/player/player.tscn
+## Gehoert an: Player/Stats in res://scenes/player/player.tscn.
 ##
 ## Einzige Quelle der Charakterwerte. Endwerte kommen aus StatSheet
 ## (Base + Ausrüstung + Buffs). HUD hängt weiter an den Signalen.
@@ -23,6 +23,7 @@ var stamina: float = 100.0
 var energy: float = 100.0
 var armor_defense: int = 0
 var sheet: StatSheet = StatSheet.new()
+var _set_status: Dictionary = {}
 var playtime_seconds: float = 0.0
 var enemies_killed: int = 0
 var blocks_mined: int = 0
@@ -77,6 +78,8 @@ func _sync_caps_from_sheet(fill: bool) -> void:
 func rebuild_from_inventory(inventory: Inventory) -> void:
 	sheet.remove_by_source_kind(StatModifier.SourceKind.EQUIPMENT)
 	sheet.remove_by_source_kind(StatModifier.SourceKind.ACCESSORY)
+	sheet.remove_by_source_kind(StatModifier.SourceKind.SET_BONUS)
+	_set_status = {}
 	if inventory == null:
 		_sync_caps_from_sheet(false)
 		return
@@ -92,6 +95,59 @@ func rebuild_from_inventory(inventory: Inventory) -> void:
 			copy.duration = -1.0
 			copy.remaining = -1.0
 			sheet.add_modifier(copy)
+	_apply_set_bonus(inventory)
+	_sync_caps_from_sheet(false)
+
+
+func _apply_set_bonus(inventory: Inventory) -> void:
+	var catalog := ArmorSetCatalog.load_default()
+	if catalog == null:
+		return
+	_set_status = catalog.evaluate(inventory)
+	if not bool(_set_status.get("complete", false)):
+		return
+	var data: ArmorSetData = _set_status.get("data") as ArmorSetData
+	if data == null:
+		return
+	var set_id: StringName = _set_status.get("set_id", ArmorSet.NONE)
+	for mod in data.modifiers:
+		if mod == null:
+			continue
+		var copy := mod.duplicate_runtime()
+		copy.source = StringName("set:%s" % String(set_id))
+		copy.source_kind = StatModifier.SourceKind.SET_BONUS
+		copy.duration = -1.0
+		copy.remaining = -1.0
+		sheet.add_modifier(copy)
+
+
+func get_set_status() -> Dictionary:
+	return _set_status
+
+
+func debug_stat_breakdown() -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	var focus := [
+		StatId.MAX_HEALTH, StatId.MAX_STAMINA, StatId.MAX_ENERGY,
+		StatId.MOVEMENT_SPEED, StatId.SPRINT_SPEED, StatId.ARMOR,
+		StatId.DAMAGE_MULTIPLIER, StatId.ATTACK_SPEED, StatId.CRIT_CHANCE,
+		StatId.MINING_SPEED, StatId.FIRE_RESISTANCE, StatId.COLD_RESISTANCE,
+		StatId.DARKNESS_RESISTANCE,
+	]
+	for stat_id in focus:
+		var row: Dictionary = sheet.breakdown(stat_id)
+		lines.append(
+			"%s\nBase: %.2f  Equip: %+.2f  Set: %+.2f  Buff: %+.2f  Final: %.2f"
+			% [
+				StatId.display_name(stat_id),
+				float(row["base"]),
+				float(row["equipment"]),
+				float(row["set"]),
+				float(row["buff"]),
+				float(row["final"]),
+			]
+		)
+	return "\n\n".join(lines)
 
 
 func add_timed_modifier(mod: StatModifier) -> void:
@@ -325,7 +381,7 @@ func to_save_dict() -> Dictionary:
 func from_save_dict(data: Dictionary) -> void:
 	if data.has("sheet") and data["sheet"] is Dictionary:
 		sheet.load_persistent(data["sheet"])
-	_sync_caps_from_sheet(false)
+	_rebuild_from_owner()
 	if data.has("health"):
 		set_health(float(data["health"]))
 	if data.has("stamina"):

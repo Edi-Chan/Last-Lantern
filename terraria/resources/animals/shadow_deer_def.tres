@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AnimalDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/animals/animal_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/animals/shadow_deer/shadow_deer.tscn" id="2"]
+[ext_resource type="Resource" path="res://resources/animals/shadow_deer_data.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/animals/shadow_deer/idle_0.png" id="4"]
+
+[resource]
+script = ExtResource("1")
+id = &"shadow_deer"
+display_name = "Schattenhirsch"
+scene = ExtResource("2")
+data = ExtResource("3")
+icon = ExtResource("4")

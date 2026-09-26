@@ -13,8 +13,10 @@ func _ready() -> void:
 	_ensure_stack_layers()
 	_ensure_menus()
 	_ensure_enemy_health_overlay()
+	_ensure_game_cursor()
 	_ensure_combat_text_overlay()
 	_ensure_pickup_text_overlay()
+	_ensure_discovery_toast()
 	if not SettingsManager.ui_scale_changed.is_connected(_on_ui_scale_changed):
 		SettingsManager.ui_scale_changed.connect(_on_ui_scale_changed)
 	call_deferred("_apply_ui_scale")
@@ -55,6 +57,16 @@ func _ensure_enemy_health_overlay() -> void:
 	add_child(overlay)
 
 
+func _ensure_game_cursor() -> void:
+	if get_tree().get_first_node_in_group(GameCursor.GROUP) != null:
+		return
+	if get_node_or_null("GameCursor") != null:
+		return
+	var cursor := GameCursor.new()
+	cursor.name = "GameCursor"
+	add_child(cursor)
+
+
 func _ensure_combat_text_overlay() -> void:
 	if get_node_or_null("CombatTextOverlay") != null:
 		return
@@ -69,6 +81,20 @@ func _ensure_pickup_text_overlay() -> void:
 	var overlay := PickupTextSystem.new()
 	overlay.name = "PickupTextOverlay"
 	add_child(overlay)
+
+
+func _ensure_discovery_toast() -> void:
+	if get_node_or_null("DiscoveryToast") != null:
+		return
+	var script := load("res://scripts/ui/discovery_toast.gd") as Script
+	if script == null:
+		push_warning("HUD: discovery_toast.gd konnte nicht geladen werden.")
+		return
+	var toast := script.new() as Control
+	if toast == null:
+		return
+	toast.name = "DiscoveryToast"
+	add_child(toast)
 
 
 func _ensure_menus() -> void:

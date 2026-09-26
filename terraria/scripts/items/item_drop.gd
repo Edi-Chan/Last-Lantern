@@ -55,11 +55,17 @@ func _physics_process(delta: float) -> void:
 		var drag := air_friction
 		var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
 		if liquid != null and liquid.settings != null:
-			var sample := liquid.sample_submersion(global_position, -8.0, -4.0)
-			if bool(sample.get("in_water", false)):
-				gravity *= liquid.settings.water_gravity_multiplier
-				fall_cap *= liquid.settings.water_max_fall_multiplier
-				drag += liquid.settings.water_drag_vertical * 8.0
+			var lava := liquid.sample_submersion(global_position, -8.0, -4.0, LiquidTypes.Type.LAVA)
+			if bool(lava.get("in_lava", false)):
+				gravity *= liquid.settings.lava_gravity_multiplier
+				fall_cap *= liquid.settings.lava_max_fall_multiplier
+				drag += liquid.settings.lava_drag_vertical * 8.0
+			else:
+				var sample := liquid.sample_submersion(global_position, -8.0, -4.0)
+				if bool(sample.get("in_water", false)):
+					gravity *= liquid.settings.water_gravity_multiplier
+					fall_cap *= liquid.settings.water_max_fall_multiplier
+					drag += liquid.settings.water_drag_vertical * 8.0
 		velocity.y = minf(velocity.y + gravity * delta, fall_cap)
 		velocity.x = move_toward(velocity.x, 0.0, drag * delta)
 	move_and_slide()

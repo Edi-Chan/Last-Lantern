@@ -122,7 +122,7 @@ Gemeinsame Item-Werte aller 11 Spitzhacken:
 - `held_rotation_degrees = -45`
 - `placeable_block_id = -1`
 
-Alte Placeholder-Spitzhacke **Pickaxe** (ID 3) liegt **nicht** mehr im Item-Katalog. Die Datei `resources/items/pickaxe.tres` existiert noch, hat **kein `ToolData`** und kann Bloecke nicht abbauen.
+Die alte Placeholder-Spitzhacke **Pickaxe** (ID 3) ist geloescht. ID 3 ist frei.
 
 ---
 
@@ -233,7 +233,7 @@ Alle: `item_type = MATERIAL`, `max_stack = 999`, `category = ORE_METAL` (`#70809
 | 35 | Cryoniterz | Roherz. Benoetigt Spitzhacken-Power 65. | 25 | RAW_ORE |
 | 36 | Ignitiumerz | Roherz. Benoetigt Spitzhacken-Power 80. | 26 | RAW_ORE |
 | 37 | Voidiumerz | Roherz. Benoetigt Spitzhacken-Power 100. | 27 | RAW_ORE |
-| 38 | Astralitherz | Roherz. Benoetigt Spitzhacken-Power 125. | 28 | SPECIAL_ORE |
+| 38 | Astralitherz | Spezialerz. Benoetigt Spitzhacken-Power 125. | 28 | SPECIAL_ORE |
 
 Verarbeitetes Metall und Legierungen existieren noch nicht als Items.
 
@@ -296,17 +296,15 @@ Enums:
 | 19 | Birkensamen | birch | 21 |
 | 20 | Kiefernsamen | pine | 22 |
 
-### 6.3 Ruestung (Test)
+### 6.3 Ruestung (Holz)
 
 `item_type = ARMOR`, `category = ARMOR`, Stack 1. Overlay-Frames vorhanden.
 
 | ID | Name | Slot | Defense | Frames |
 | ---: | --- | --- | ---: | --- |
-| 4 | Test Helmet | HEAD | 1 | `armor_helmet_frames.tres` |
-| 5 | Test Chestplate | CHEST | 2 | `armor_chest_frames.tres` |
-| 21 | Test Leggings | LEGS | 1 | `armor_legs_frames.tres` |
-
-Gesamt, wenn alles angelegt: **4 Defense**.
+| 120 | Holzhelm | HEAD | 1 | `armor_wood_helmet_frames.tres` |
+| 121 | Holzbrustrüstung | CHEST | 2 | `armor_wood_chest_frames.tres` |
+| 122 | Holzbeinschutz | LEGS | 2 | `armor_wood_legs_frames.tres` |
 
 ### 6.4 Demo-Tools
 
@@ -349,9 +347,6 @@ Erz-Items und Spitzhacken stehen in Abschnitt 4 und 2.
 | Was | Wo | Menge |
 | --- | --- | ---: |
 | Steinspitzhacke (22) | Hotbar (erster freier Slot) | 1 |
-| Test Helmet (4) | Beutel | 1 |
-| Test Chestplate (5) | Beutel | 1 |
-| Test Leggings (21) | Beutel | 1 |
 | Tools 22–32 | Beutel, falls noch nicht vorhanden | je 1 |
 | Stone (2) | Beutel | 20 |
 
@@ -378,12 +373,12 @@ Hoehere Spitzhacken (40–49) startest du **nicht**. Die liegen nur im Katalog.
 ### Items im Katalog
 
 ```text
- 1 Dirt           2 Stone          3 Pickaxe (alt, nicht im Katalog)  4 Test Helmet
- 5 Test Chest     6 Sand           7 Granite        8 Slate
+ 1 Dirt           2 Stone          3 (frei)         4 (frei)
+ 5 (frei)         6 Sand           7 Granite        8 Slate
  9 Wood          10 Leaves        11 Kupfererz     12 Zinnerz
 13 Ferriterz     14 Aurelerz      15 Eichenholz    16 Birkenholz
 17 Kiefernholz   18 Eichensamen   19 Birkensamen   20 Kiefernsamen
-21 Test Leggings 22 Steinspitzhacke 23 Steinaxt    24 Holzhammer
+21 (frei)        22 Steinspitzhacke 23 Steinaxt    24 Holzhammer
 25 Schraubenschlüssel 26 Holzhacke 27 Holzangel    28 Sichel
 29 Kescher       30 Fackel        31 Laterne       32 Scanner
 33 Kobalterz     34 Veyriterz     35 Cryoniterz    36 Ignitiumerz
@@ -395,20 +390,9 @@ Hoehere Spitzhacken (40–49) startest du **nicht**. Die liegen nur im Katalog.
 
 ---
 
-## 9. Nicht im Katalog (Altlast)
+## 9. Entfernte Altlast
 
-Diese Dateien existieren, werden **nicht** geladen. IDs kollidieren mit den aktuellen deutschen Erzen. Nicht benutzen.
-
-| Datei | Name | ID | Problem |
-| --- | --- | ---: | --- |
-| `resources/items/copper_ore.tres` | Copper Ore | 11 | gleiche ID wie Kupfererz |
-| `resources/items/iron_ore.tres` | Iron Ore | 12 | gleiche ID wie Zinnerz |
-| `resources/items/silver_ore.tres` | Silver Ore | 13 | gleiche ID wie Ferriterz |
-| `resources/items/gold_ore.tres` | Gold Ore | 14 | gleiche ID wie Aurelerz |
-| `resources/blocks/copper_ore.tres` | Copper Ore | 9 | ersetzt durch `blocks/ores/copper_ore_block.tres` |
-| `resources/blocks/iron_ore.tres` | Iron Ore | — | nicht im Block-Katalog |
-| `resources/blocks/silver_ore.tres` | Silver Ore | — | nicht im Block-Katalog |
-| `resources/blocks/gold_ore.tres` | Gold Ore | — | nicht im Block-Katalog |
+Englische Root-Erze (`items/{copper,iron,silver,gold}_ore.tres`), Root-Bloecke (`blocks/{copper,iron,silver,gold}_ore.tres`), Placeholder `pickaxe.tres` und Test-Ruestung (`helmet.tres`, `chestplate.tres`, `leggings.tres`) sind geloescht.
 
 Eisen, Silber und Gold als Erz-Progression gibt es nicht. Stattdessen: Kupfer → Zinn → Ferrit → Aurel → Kobalt → Veyrit → Cryonit → Ignitium → Voidium → Astralith.
 

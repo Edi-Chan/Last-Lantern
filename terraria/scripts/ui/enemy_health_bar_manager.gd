@@ -2,6 +2,7 @@ class_name EnemyHealthBarManager
 extends CanvasLayer
 
 ## Verwaltet eine begrenzte Zahl sichtbarer Gegner-HP-Leisten. Kein permanenter UI-Baum je Gegner.
+## Hover zeigt Name und Leben; Tiere nutzen dieselbe Leiste.
 
 const GROUP := &"enemy_health_bar_manager"
 
@@ -15,6 +16,7 @@ var _aimed: Node = null
 var _aim_until: float = 0.0
 var _boss_hud: BossHealthHud
 var _now: float = 0.0
+var _hover_shape: CircleShape2D
 
 
 func _ready() -> void:
@@ -196,6 +198,24 @@ func _update_aim() -> void:
 		_aimed = null
 
 
+func get_aimed_target() -> Node:
+	if _aimed != null and is_instance_valid(_aimed):
+		return _aimed
+	return null
+
+
+static func is_inspectable(node: Node) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if node.is_in_group("player"):
+		return false
+	if node.has_method("is_dead") and bool(node.call("is_dead")):
+		return false
+	if node.is_in_group("enemies") or node.is_in_group("animals"):
+		return true
+	return node.has_method("get_health_current") and node.has_method("take_damage")
+
+
 func _enemy_under_mouse() -> Node:
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if player == null:
@@ -205,21 +225,34 @@ func _enemy_under_mouse() -> Node:
 		mouse = player.call("get_world_mouse_position")
 	else:
 		mouse = player.get_global_mouse_position()
-	var space := player.get_world_2d().direct_space_state
+	var world := player.get_world_2d()
+	if world == null:
+		return null
+	var space := world.direct_space_state
 	if space == null:
 		return null
-	var query := PhysicsPointQueryParameters2D.new()
-	query.position = mouse
+	if _hover_shape == null:
+		_hover_shape = CircleShape2D.new()
+		_hover_shape.radius = 8.0
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = _hover_shape
+	query.transform = Transform2D(0.0, mouse)
 	query.collision_mask = 4
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	var hits := space.intersect_point(query, 8)
+	var hits := space.intersect_shape(query, 12)
+	var best: Node = null
+	var best_d := INF
 	for hit in hits:
 		var collider: Object = hit.get("collider")
 		var damageable := CombatResolver.find_damageable(collider as Node)
-		if damageable != null and damageable.is_in_group("enemies"):
-			return damageable
-	return null
+		if not is_inspectable(damageable):
+			continue
+		var d := _anchor_of(damageable).distance_squared_to(mouse)
+		if d < best_d:
+			best = damageable
+			best_d = d
+	return best
 
 
 func _refresh_assignment() -> void:
@@ -294,8 +327,10 @@ func _bind_bar(id: int) -> void:
 		return
 	_assigned[id] = bar
 	_kill_bar_tween(bar)
-	bar.show_numbers = show_numbers()
-	bar.set_style(EnemyHealthBar.Style.ELITE if _rank(enemy) == EnemyData.Rank.ELITE else EnemyHealthBar.Style.NORMAL)
+	var aimed := enemy == _aimed
+	bar.show_numbers = aimed or show_numbers()
+	bar.set_style(_style_for(enemy))
+	bar.set_identity(_read_display_name(enemy), aimed)
 	bar.bind_health(float(entry.get("current", 0.0)), float(entry.get("maximum", 1.0)), true)
 	_fade_in_bar(bar)
 
@@ -310,6 +345,10 @@ func _layout_bars() -> void:
 		var enemy: Node = entry.get("enemy")
 		if bar == null or enemy == null or not is_instance_valid(enemy):
 			continue
+		var aimed := enemy == _aimed
+		bar.show_numbers = aimed or show_numbers()
+		bar.set_style(_style_for(enemy))
+		bar.set_identity(_read_display_name(enemy), aimed)
 		var world := _anchor_of(enemy)
 		var screen := get_viewport().get_canvas_transform() * world
 		bar.position = screen / ui - Vector2(bar.size.x * 0.5, bar.size.y + 2.0)
@@ -469,6 +508,27 @@ func _as_float(value: Variant, fallback: float) -> float:
 	if value is String and String(value).is_valid_float():
 		return String(value).to_float()
 	return fallback
+
+
+func _read_display_name(enemy: Node) -> String:
+	if enemy == null:
+		return ""
+	if enemy.has_method("get_display_name"):
+		return str(enemy.call("get_display_name"))
+	var data = enemy.get("data")
+	if data != null:
+		var n = data.get("display_name")
+		if n != null and str(n) != "":
+			return str(n)
+	return str(enemy.name)
+
+
+func _style_for(enemy: Node) -> int:
+	if enemy != null and enemy.is_in_group("animals"):
+		return EnemyHealthBar.Style.ANIMAL
+	if _rank(enemy) == EnemyData.Rank.ELITE:
+		return EnemyHealthBar.Style.ELITE
+	return EnemyHealthBar.Style.NORMAL
 
 
 func _rank(enemy: Node) -> int:

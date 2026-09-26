@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="AnimalData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/animals/animal_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"boar"
+display_name = "Wildschwein"
+locomotion = 0
+temperament = 2
+walk_speed = 36.0
+run_speed = 110.0
+jump_force = 150.0
+gravity = 1000.0
+max_fall_speed = 600.0
+ground_acceleration = 240.0
+air_control = 180.0
+max_health = 50
+attack_damage = 12.0
+attack_cooldown = 1.1
+attack_range = 22.0
+detection_range = 96.0
+flee_range = 112.0
+knockback_force = 70.0
+hurt_lock_time = 0.14
+can_attack = true
+show_health_bar = true
+charge_on_hit = true
+curl_on_threat = false
+wander_radius = 80.0
+idle_duration_min = 0.7
+idle_duration_max = 2.4
+wander_duration_min = 1.1
+wander_duration_max = 2.8
+hop_locomotion = false
+hop_interval = 0.42
+perch_then_fly = false
+attracted_to_light = false
+glow = false
+peck_idle = false
+jump_small_obstacles = false
+flee_on_darkness = true
+blocked_by_safe_zone = false
+time_rule = 0
+population = 0
+habitats = PackedStringArray("forest")
+spawn_weight = 0.55
+darkness_spawn_weight = 0.0
+night_spawn_bonus = 0.0
+surface_only = true
+allow_cave = false
+needs_water = false
+near_water = false
+canvas_size = Vector2i(40, 28)
+collider_size = Vector2(22.0, 16.0)
+hurtbox_size = Vector2(24.0, 18.0)
+sprite_offset = Vector2(0.0, -14.0)
+health_bar_offset = Vector2(0.0, -24.0)
+animation_speed = 6.0
+z_index_value = 16
+darkness_form = false

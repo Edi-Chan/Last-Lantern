@@ -1,0 +1,108 @@
+[gd_resource type="SpriteFrames" load_steps=19 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/animals/fox/idle_0.png" id="1_idle0"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/idle_1.png" id="2_idle1"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/idle_2.png" id="3_idle2"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/idle_3.png" id="4_idle3"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/walk_0.png" id="5_walk0"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/walk_1.png" id="6_walk1"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/walk_2.png" id="7_walk2"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/walk_3.png" id="8_walk3"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/run_0.png" id="9_run0"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/run_1.png" id="10_run1"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/run_2.png" id="11_run2"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/run_3.png" id="12_run3"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/hurt_0.png" id="13_hurt0"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/hurt_1.png" id="14_hurt1"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/death_0.png" id="15_death0"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/death_1.png" id="16_death1"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/death_2.png" id="17_death2"]
+[ext_resource type="Texture2D" path="res://assets/animals/fox/death_3.png" id="18_death3"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_idle0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_idle1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_idle2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_idle3")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.3
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_walk0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_walk1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_walk2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_walk3")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 6.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_run0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_run1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_run2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_run3")
+}],
+"loop": true,
+"name": &"run",
+"speed": 9.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_hurt0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_hurt1")
+}],
+"loop": false,
+"name": &"hurt",
+"speed": 12.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("15_death0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_death1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_death2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_death3")
+}],
+"loop": false,
+"name": &"death",
+"speed": 7.0
+}
+]

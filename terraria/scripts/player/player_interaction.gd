@@ -23,7 +23,11 @@ var current_target_cell := Vector2i(9999, 9999)
 @onready var _anim: AnimationPlayer = $"../AnimationPlayer"
 @onready var _hitbox: Area2D = $"../ToolPivot/ToolArm/ToolHitbox"
 
-const ATTACK_ANIMS := [&"tool_swing", &"sword_swing", &"spear_thrust", &"bow_shot", &"lantern_burst"]
+const ATTACK_ANIMS := [
+	&"tool_swing", &"sword_swing", &"spear_thrust", &"bow_shot", &"lantern_burst",
+	&"use_swing", &"use_overhead", &"use_thrust", &"use_chop", &"use_mine", &"use_stab",
+	&"bow_release",
+]
 const WOOD_ARROW_ID := 114
 const BOW_TRAJECTORY_STEPS := 300
 const BOW_TRAJECTORY_DT := 1.0 / 60.0
@@ -541,40 +545,47 @@ func _is_attack_anim_playing() -> bool:
 
 func _start_bare_hand_swing() -> void:
 	# Faustschlag ohne Inventar-Item.
+	var spec := PlayerAnimationContract.action_spec(PlayerAnimationContract.ActionType.NONE)
+	var clip := _resolve_clip(spec)
 	if _hitbox != null and _hitbox.has_method("begin_attack"):
-		_hitbox.call("begin_attack", BARE_HAND_DAMAGE, BARE_HAND_KNOCKBACK, _player, null, &"tool_swing", 0.08, 0.18, int(ItemData.WeaponKind.NONE), BARE_HAND_RANGE)
+		_hitbox.call("begin_attack", BARE_HAND_DAMAGE, BARE_HAND_KNOCKBACK, _player, null, clip, float(spec["hit_start"]), float(spec["hit_end"]), int(ItemData.WeaponKind.NONE), BARE_HAND_RANGE)
 	elif _hitbox != null and _hitbox.has_method("begin_swing"):
 		_hitbox.call("begin_swing", BARE_HAND_DAMAGE, BARE_HAND_KNOCKBACK, _player)
-	_play_attack_anim(&"tool_swing")
+	_lock_held_attack(int(ItemData.ActionType.NONE))
+	_play_attack_anim(clip)
 	if _player != null:
 		_player.play_weapon_swing(int(ItemData.WeaponKind.NONE))
-	_attack_cooldown_left = BARE_HAND_COOLDOWN / _attack_speed_scale()
+	_attack_cooldown_left = maxf(BARE_HAND_COOLDOWN, float(spec["length"])) / _attack_speed_scale()
 
 
 func _start_tool_swing(item: ItemData) -> void:
 	var inst := _inventory.get_selected_instance() if _inventory != null else null
 	var damage := inst.effective_damage(item) if inst != null else item.get_base_damage()
 	var kb := item.get_weapon_knockback() if item.has_method("get_weapon_knockback") else item.knockback
+	var action := int(item.resolve_action_type()) if item.has_method("resolve_action_type") else PlayerAnimationContract.ActionType.MINE
+	var spec := PlayerAnimationContract.action_spec(action)
+	var clip := _resolve_clip(spec)
 	if _hitbox != null and _hitbox.has_method("begin_attack"):
-		_hitbox.call("begin_attack", damage, kb, _player, null, &"tool_swing", 0.08, 0.18, int(ItemData.WeaponKind.NONE), 2.5)
+		_hitbox.call("begin_attack", damage, kb, _player, null, clip, float(spec["hit_start"]), float(spec["hit_end"]), int(ItemData.WeaponKind.NONE), 2.5)
 	elif _hitbox != null and _hitbox.has_method("begin_swing"):
 		_hitbox.call("begin_swing", damage, kb, _player)
-	_play_attack_anim(&"tool_swing")
+	_lock_held_attack(action)
+	_play_attack_anim(clip)
 	_player.play_weapon_swing(int(ItemData.WeaponKind.NONE))
 	var tool_cd := item.resolve_attack_cooldown() if item.has_method("resolve_attack_cooldown") else 0.35
-	_attack_cooldown_left = tool_cd / _attack_speed_scale()
+	_attack_cooldown_left = maxf(tool_cd, float(spec["length"])) / _attack_speed_scale()
 
 
 func _start_weapon_attack(item: ItemData) -> void:
-	match int(item.weapon_kind):
-		ItemData.WeaponKind.BOW:
+	var action := int(item.resolve_action_type()) if item.has_method("resolve_action_type") else PlayerAnimationContract.ActionType.SWING
+	match action:
+		PlayerAnimationContract.ActionType.BOW:
 			return
-		ItemData.WeaponKind.LANTERN:
+		PlayerAnimationContract.ActionType.LANTERN:
 			_start_lantern_attack(item)
-		ItemData.WeaponKind.SPEAR:
-			_start_melee_attack(item, &"spear_thrust", 0.16, 0.28)
 		_:
-			_start_melee_attack(item, &"sword_swing", 0.08, 0.18)
+			var spec := PlayerAnimationContract.action_spec(action)
+			_start_melee_attack(item, _resolve_clip(spec), float(spec["hit_start"]), float(spec["hit_end"]))
 
 
 func _start_melee_attack(item: ItemData, anim: StringName, hit_start: float, hit_end: float) -> void:
@@ -587,14 +598,22 @@ func _start_melee_attack(item: ItemData, anim: StringName, hit_start: float, hit
 	var play_anim := anim if _has_anim(anim) else &"tool_swing"
 	if _hitbox != null and _hitbox.has_method("begin_attack"):
 		_hitbox.call("begin_attack", damage, kb, _player, item.weapon_data, play_anim, hit_start, hit_end, int(item.weapon_kind), item_range)
+	_lock_held_attack(int(item.resolve_action_type()) if item.has_method("resolve_action_type") else int(ItemData.ActionType.SWING))
 	_play_attack_anim(play_anim)
 	_player.play_weapon_swing(int(item.weapon_kind))
-	_attack_cooldown_left = item.resolve_attack_cooldown() / _attack_speed_scale()
+	var spec_len := 0.0
+	var action := int(item.resolve_action_type()) if item.has_method("resolve_action_type") else 0
+	spec_len = float(PlayerAnimationContract.action_spec(action).get("length", 0.0))
+	_attack_cooldown_left = maxf(item.resolve_attack_cooldown(), spec_len) / _attack_speed_scale()
 	_use_selected_durability()
 
 
 func is_drawing_bow() -> bool:
 	return _bow_drawing
+
+
+func get_bow_charge() -> float:
+	return _bow_charge
 
 
 func _start_bow_attack(item: ItemData) -> void:
@@ -631,8 +650,7 @@ func _fire_bow_quick(item: ItemData) -> void:
 	if not _bow_can_shoot(item):
 		return
 	var weapon := item.weapon_data
-	var anim := &"bow_shot" if _has_anim(&"bow_shot") else &"tool_swing"
-	_play_attack_anim(anim)
+	_play_attack_anim(_bow_release_clip())
 	_player.play_sfx(&"BowRelease")
 	_spawn_arrow(item, weapon, 1.0, true)
 	var cd := 0.28
@@ -665,14 +683,8 @@ func _tick_bow_draw(delta: float) -> void:
 	_release_bow()
 
 
-func _apply_bow_draw_visual(charge: float) -> void:
-	_aim_held_at_mouse()
-	if _player == null:
-		return
-	var arm := _player.get_node_or_null("ToolPivot/ToolArm") as Node2D
-	if arm == null:
-		return
-	arm.position = Vector2(roundf(-7.0 * charge), 0.0)
+func _apply_bow_draw_visual(_charge: float) -> void:
+	pass
 
 
 func _release_bow() -> void:
@@ -682,8 +694,7 @@ func _release_bow() -> void:
 	_clear_bow_draw_state()
 	if item == null:
 		return
-	var anim := &"bow_shot" if _has_anim(&"bow_shot") else &"tool_swing"
-	_play_attack_anim(anim)
+	_play_attack_anim(_bow_release_clip())
 	_player.play_sfx(&"BowRelease")
 	_spawn_arrow(item, weapon, charge, false)
 	_attack_cooldown_left = item.resolve_attack_cooldown() / _attack_speed_scale()
@@ -691,11 +702,6 @@ func _release_bow() -> void:
 
 func _cancel_bow_draw() -> void:
 	_clear_bow_draw_state()
-	if _player == null:
-		return
-	var arm := _player.get_node_or_null("ToolPivot/ToolArm") as Node2D
-	if arm != null:
-		arm.position = Vector2.ZERO
 
 
 func _clear_bow_draw_state() -> void:
@@ -720,12 +726,19 @@ func _is_bow_aim_held() -> bool:
 	return Input.is_action_pressed("interact_secondary")
 
 
+func _lock_held_attack(action: int) -> void:
+	if _player == null:
+		return
+	if _player.has_method("lock_attack_aim"):
+		_player.lock_attack_aim(action)
+	var held := _player.get_node_or_null("ToolPivot")
+	if held != null and held.has_method("begin_attack"):
+		held.call("begin_attack", action, _player.attack_direction)
+
+
 func _compute_bow_shot(item: ItemData, weapon: Resource, charge: float, quick: bool = false) -> Dictionary:
-	var origin := _player.global_position + Vector2(10.0 * _player.facing_sign, -24.0)
-	var mouse := _get_world_mouse()
-	var dir := (mouse - origin).normalized()
-	if dir == Vector2.ZERO:
-		dir = Vector2(_player.facing_sign, 0.0)
+	var origin := _player.get_aim_origin() if _player.has_method("get_aim_origin") else _player.global_position + Vector2(10.0 * _player.facing_sign, -24.0)
+	var mouse := _player.get_world_mouse_position() if _player.has_method("get_world_mouse_position") else origin + Vector2(_player.facing_sign, 0.0)
 	var t := clampf(charge, 0.0, 1.0)
 	var speed := float(weapon.get("projectile_speed")) if weapon != null else 297.0
 	var gravity := 280.0
@@ -737,9 +750,10 @@ func _compute_bow_shot(item: ItemData, weapon: Resource, charge: float, quick: b
 	if not quick:
 		speed *= lerpf(0.7, 1.0, t)
 		max_distance *= lerpf(0.7, 1.0, t)
+	var velocity := Projectile.velocity_to_hit(origin, mouse, speed, gravity)
 	return {
 		"origin": origin,
-		"velocity": dir * speed,
+		"velocity": velocity,
 		"gravity": gravity,
 		"max_distance": max_distance,
 		"charge": t,
@@ -760,7 +774,7 @@ func _ensure_bow_trajectory() -> Line2D:
 	line.end_cap_mode = Line2D.LINE_CAP_ROUND
 	line.z_index = 80
 	line.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	line.top_level = false
+	line.top_level = true
 	var grad := Gradient.new()
 	grad.offsets = PackedFloat32Array([0.0, 1.0])
 	grad.colors = PackedColorArray([
@@ -792,16 +806,8 @@ func _update_bow_trajectory() -> void:
 	)
 	points = _clip_trajectory_to_world(points)
 	var line := _ensure_bow_trajectory()
-	line.position = Vector2.ZERO
-	var host := line.get_parent()
-	if host is Node2D:
-		var local_points := PackedVector2Array()
-		var node := host as Node2D
-		for point in points:
-			local_points.append(node.to_local(point))
-		line.points = local_points
-	else:
-		line.points = points
+	line.global_position = Vector2.ZERO
+	line.points = points
 	line.visible = points.size() >= 2
 
 
@@ -826,18 +832,7 @@ func _hide_bow_trajectory() -> void:
 
 
 func _aim_held_at_mouse() -> void:
-	if _player == null:
-		return
-	var arm := _player.get_node_or_null("ToolPivot/ToolArm") as Node2D
-	if arm == null:
-		return
-	var mouse := _get_world_mouse()
-	var origin := _player.global_position + Vector2(0, -24)
-	var angle := (mouse - origin).angle()
-	if _player.facing_sign < 0.0:
-		arm.rotation = PI - angle
-	else:
-		arm.rotation = angle
+	return
 
 
 func _spawn_arrow(item: ItemData, weapon: Resource, charge: float = 1.0, quick: bool = false) -> void:
@@ -889,6 +884,7 @@ func _start_lantern_attack(item: ItemData) -> void:
 	var anim := &"lantern_burst" if _has_anim(&"lantern_burst") else &"tool_swing"
 	if _hitbox != null and _hitbox.has_method("begin_attack"):
 		_hitbox.call("begin_attack", damage, kb, _player, item.weapon_data, anim, 0.18, 0.32, int(ItemData.WeaponKind.LANTERN), item_range)
+	_lock_held_attack(int(ItemData.ActionType.LANTERN))
 	_play_attack_anim(anim)
 	_flash_lantern_light()
 	_player.play_weapon_swing(int(ItemData.WeaponKind.LANTERN))
@@ -930,14 +926,37 @@ func _make_combat_light_texture() -> Texture2D:
 func _play_attack_anim(anim: StringName) -> void:
 	if _anim == null:
 		return
+	_anim.speed_scale = _attack_speed_scale()
 	if _anim.has_animation(anim):
 		_anim.play(anim)
+	elif _anim.has_animation(&"use_swing"):
+		_anim.play(&"use_swing")
 	elif _anim.has_animation(&"tool_swing"):
 		_anim.play(&"tool_swing")
 
 
+func _resolve_clip(spec: Dictionary) -> StringName:
+	var clip := StringName(str(spec.get("clip", &"use_swing")))
+	if _has_anim(clip):
+		return clip
+	var fallback := StringName(str(spec.get("fallback_clip", &"tool_swing")))
+	if _has_anim(fallback):
+		return fallback
+	if _has_anim(&"tool_swing"):
+		return &"tool_swing"
+	return clip
+
+
 func _has_anim(anim: StringName) -> bool:
 	return _anim != null and _anim.has_animation(anim)
+
+
+func _bow_release_clip() -> StringName:
+	if _has_anim(&"bow_release"):
+		return &"bow_release"
+	if _has_anim(&"bow_shot"):
+		return &"bow_shot"
+	return &"tool_swing"
 
 
 func _use_selected_durability() -> void:
@@ -951,6 +970,11 @@ func cancel_attack() -> void:
 		_hitbox.call("cancel_attack")
 	if _is_attack_anim_playing() and _anim != null:
 		_anim.stop()
+	var held := _player.get_node_or_null("ToolPivot") if _player != null else null
+	if held != null and held.has_method("clear_aim"):
+		held.call("clear_aim")
+	if _player != null and _player.has_method("clear_attack_aim"):
+		_player.clear_attack_aim()
 
 
 func _get_place_state(tile: Vector2i, in_range: bool) -> Dictionary:

@@ -2,17 +2,29 @@
 
 [ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/items/equipment/veyrite_chestplate.png" id="2_icon"]
-[ext_resource type="SpriteFrames" path="res://resources/player/armor_chest_frames.tres" id="3_frames"]
+[ext_resource type="SpriteFrames" path="res://resources/player/armor_veyrite_chest_frames.tres" id="3_frames"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 1
+value = 0.2
+modifier_type = 0
+source_kind = 1
 
 [resource]
 script = ExtResource("1_script")
 id = 149
 display_name = "Veyritbrustpanzer"
-description = "Metallruestung aus Veyritbarren. Verteidigung 8."
+description = "Mystische Survival-Rüstung. Regeneriert Leben."
+rarity = 2
 icon = ExtResource("2_icon")
 max_stack = 1
 item_type = 3
 category = 2
 equipment_slot = 2
 defense = 8
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0")])
+armor_set_id = &"VEYRITE"
 armor_sprite_frames = ExtResource("3_frames")
+armor_modulate = Color(1, 1, 1, 1)

@@ -8,7 +8,7 @@
 script = ExtResource("1_script")
 id = 38
 display_name = "Astralitherz"
-description = "Roherz. Benoetigt Spitzhacken-Power 125."
+description = "Spezialerz. Benoetigt Spitzhacken-Power 125."
 icon = ExtResource("2_icon")
 max_stack = 999
 item_type = 5

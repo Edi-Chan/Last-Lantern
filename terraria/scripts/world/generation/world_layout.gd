@@ -35,11 +35,11 @@ var sea_level: int = 144
 var start_surface_y: int = 144
 
 
-static func build(settings: WorldGenerationSettings, size_id: int, world_seed: int) -> WorldLayout:
+static func build(settings: WorldGenerationSettings, world_size_id: int, world_seed: int) -> WorldLayout:
 	var layout := WorldLayout.new()
 	var cfg := settings if settings != null else WorldGenerationSettings.new()
-	var profile: Dictionary = cfg.size_profile(size_id)
-	layout.size_id = WorldSize.clamp_id(size_id)
+	var profile: Dictionary = cfg.size_profile(world_size_id)
+	layout.size_id = WorldSize.clamp_id(world_size_id)
 	layout.width = maxi(int(profile.get("width", 1600)), 320)
 	layout.height = maxi(int(profile.get("height", 480)), 120)
 	layout.base_surface_y = int(profile.get("base_surface_y", 144))
@@ -67,9 +67,9 @@ func _assign_regions(cfg: WorldGenerationSettings, world_seed: int, ocean_w: int
 	var inner1 := width - edge_width
 	var inner := maxi(inner1 - inner0, 160)
 	var side_min := maxi(cfg.min_playable_width, 80)
-	start_w = mini(start_w, maxi(inner / 6, 40))
+	start_w = mini(start_w, maxi(int(inner / 6.0), 40))
 	var center := int(float(width) * 0.5)
-	start_x0 = center - start_w / 2
+	start_x0 = center - int(start_w / 2.0)
 	start_x1 = start_x0 + start_w
 	if start_x0 < inner0 + side_min + 24:
 		start_x0 = inner0 + side_min + 24

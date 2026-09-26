@@ -33,6 +33,7 @@ func test_inventory_and_hud_wiring() -> void:
 	var hud := _read("res://scripts/ui/hud.gd")
 	assert_true(hud.contains("PickupTextSystem"))
 	assert_true(hud.contains("_ensure_pickup_text_overlay"))
+	assert_true(hud.contains("DiscoveryToast"))
 	var drop := _read("res://scripts/items/item_drop.gd")
 	assert_true(drop.contains("inventory.add_item"))
 	var item_src := _read("res://scripts/ui/pickup_text_item.gd")

@@ -53,6 +53,9 @@ var _world_gen: Node
 
 var _baseline: Dictionary = {}
 var _has_baseline: bool = false
+var _water_count: int = 0
+var _lava_count: int = 0
+var last_ticks_this_frame: int = 0
 
 
 func _ready() -> void:
@@ -71,13 +74,24 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not _sim_enabled or settings == null or _amounts.is_empty():
+		last_ticks_this_frame = 0
 		return
 	_update_adaptive_budget(delta)
 	_sim_accum += delta
 	var tick_dt := 1.0 / maxf(settings.simulation_rate, 1.0)
-	while _sim_accum >= tick_dt:
+	var max_ticks := 2
+	if settings != null:
+		var tick_value: Variant = settings.get("max_simulation_ticks_per_frame")
+		if tick_value != null:
+			max_ticks = maxi(int(tick_value), 1)
+	var ticks := 0
+	while _sim_accum >= tick_dt and ticks < max_ticks:
 		_sim_accum -= tick_dt
 		_simulation_tick()
+		ticks += 1
+	if ticks >= max_ticks and _sim_accum > tick_dt * 3.0:
+		_sim_accum = tick_dt
+	last_ticks_this_frame = ticks
 
 
 func initialize(width: int, height: int) -> void:
@@ -88,6 +102,8 @@ func initialize(width: int, height: int) -> void:
 	_amounts.resize(total)
 	_types = PackedByteArray()
 	_types.resize(total)
+	_water_count = 0
+	_lava_count = 0
 	_reset_runtime_state()
 
 
@@ -129,11 +145,25 @@ func get_liquid_cell_count() -> int:
 
 
 func get_water_cell_count() -> int:
-	return _count_type(LiquidTypes.Type.WATER)
+	return _water_count
 
 
 func get_lava_cell_count() -> int:
-	return _count_type(LiquidTypes.Type.LAVA)
+	return _lava_count
+
+
+func has_active_in_rect(origin: Vector2i, size: Vector2i) -> bool:
+	if _active.is_empty() or size.x <= 0 or size.y <= 0:
+		return false
+	var x1 := origin.x
+	var y1 := origin.y
+	var x2 := origin.x + size.x
+	var y2 := origin.y + size.y
+	for key in _active.keys():
+		var cell: Vector2i = key
+		if cell.x >= x1 and cell.y >= y1 and cell.x < x2 and cell.y < y2:
+			return true
+	return false
 
 
 func get_liquid_cells() -> Array[Vector2i]:
@@ -267,14 +297,12 @@ func sample_submersion(body_pos: Vector2, head_offset_y: float, _body_offset_y: 
 		or head_depth > settings.feet_depth_threshold
 	var waist_in := body_depth >= settings.waist_depth_threshold
 	var swimming := body_depth >= settings.swim_depth_threshold or waist_in
-	var in_key := "in_water" if liquid_type == LiquidTypes.Type.WATER else "in_lava"
 	return {
 		"feet_depth": feet_depth,
 		"body_depth": body_depth,
 		"head_depth": head_depth,
 		"in_water": immersed if liquid_type == LiquidTypes.Type.WATER else false,
 		"in_lava": immersed if liquid_type == LiquidTypes.Type.LAVA else false,
-		in_key: immersed,
 		"waist_in_water": waist_in if liquid_type == LiquidTypes.Type.WATER else false,
 		"swimming": swimming,
 		"head_submerged": head_depth >= settings.head_submerge_threshold,
@@ -517,7 +545,15 @@ func _simulation_tick() -> void:
 	_ensure_queue_has_work()
 	var batch: Array[Vector2i] = []
 	var processed := 0
+	var budget_ms := 3.5
+	if settings != null:
+		var budget_value: Variant = settings.get("simulation_budget_ms")
+		if budget_value != null:
+			budget_ms = float(budget_value)
+	var budget_usec := int(maxf(budget_ms, 0.5) * 1000.0)
 	while processed < _current_budget and _queue_read < _queue.size():
+		if Time.get_ticks_usec() - start_usec > budget_usec:
+			break
 		var cell: Vector2i = _queue[_queue_read]
 		_queue_read += 1
 		_queued.erase(cell)
@@ -730,6 +766,7 @@ func _write_amount(cell: Vector2i, amount: int, liquid_type: int) -> void:
 		_amounts[idx] = 0
 		_types[idx] = LiquidTypes.Type.NONE
 		_liquid_cells.erase(cell)
+		_adjust_type_count(old_type, -1)
 		_deactivate(cell)
 	else:
 		if old_amount == clamped and old_type == liquid_type:
@@ -737,6 +774,11 @@ func _write_amount(cell: Vector2i, amount: int, liquid_type: int) -> void:
 		_amounts[idx] = clamped
 		_types[idx] = liquid_type
 		_liquid_cells[cell] = true
+		if old_amount <= 0:
+			_adjust_type_count(liquid_type, 1)
+		elif old_type != liquid_type:
+			_adjust_type_count(old_type, -1)
+			_adjust_type_count(liquid_type, 1)
 	_dirty_render[cell] = true
 
 
@@ -796,7 +838,7 @@ func _ensure_queue_has_work() -> void:
 func _compact_queue() -> void:
 	if _queue_read < 64:
 		return
-	if _queue_read <= _queue.size() / 2:
+	if _queue_read <= int(_queue.size() / 2.0):
 		return
 	_queue = _queue.slice(_queue_read)
 	_queue_read = 0
@@ -822,11 +864,16 @@ func _reset_simulation_state() -> void:
 
 func _rebuild_water_cells() -> void:
 	_liquid_cells.clear()
+	_water_count = 0
+	_lava_count = 0
 	for y in world_height:
 		for x in world_width:
 			var cell := Vector2i(x, y)
-			if _read_amount(cell) > 0:
-				_liquid_cells[cell] = true
+			var amount := _read_amount(cell)
+			if amount <= 0:
+				continue
+			_liquid_cells[cell] = true
+			_adjust_type_count(int(_types[_index(cell)]), 1)
 
 
 func _clear_all_liquid() -> void:
@@ -885,6 +932,7 @@ func _record_debug_stats(
 		"update_budget": _current_budget,
 		"simulation_ms": (Time.get_ticks_usec() - start_usec) / 1000.0,
 		"simulation_hz": settings.simulation_rate,
+		"ticks_this_frame": last_ticks_this_frame,
 		"dirty_cells_last_tick": dirty_count,
 		"dirty_chunks_last_tick": dirty_chunks,
 		"mass_tracking": _debug_mass_tracking,
@@ -962,7 +1010,6 @@ func _react_water_lava(a: Vector2i, b: Vector2i) -> bool:
 	if _reacted_this_tick.has(a) or _reacted_this_tick.has(b):
 		return false
 	var a_type := get_type(a)
-	var b_type := get_type(b)
 	var lava_cell := a if a_type == LiquidTypes.Type.LAVA else b
 	var water_cell := a if a_type == LiquidTypes.Type.WATER else b
 	if get_type(lava_cell) != LiquidTypes.Type.LAVA or get_type(water_cell) != LiquidTypes.Type.WATER:
@@ -993,9 +1040,11 @@ func _place_reaction_solid(cell: Vector2i) -> void:
 		if block != null:
 			_block_catalog.set_block_cell(_tilemap, cell, block)
 	_forced_solids[cell] = true
-	var vis := get_tree().get_first_node_in_group("visibility_overlay")
-	if vis != null and vis.has_method("invalidate_cell"):
-		vis.call("invalidate_cell", cell)
+	var scene_tree := get_tree()
+	if scene_tree != null:
+		var vis := scene_tree.get_first_node_in_group("visibility_overlay")
+		if vis != null and vis.has_method("invalidate_cell"):
+			vis.call("invalidate_cell", cell)
 
 
 func _is_world_bottom(cell: Vector2i) -> bool:
@@ -1005,7 +1054,7 @@ func _is_world_bottom(cell: Vector2i) -> bool:
 		var bedrock_rows := int(_world_gen.get("bedrock_rows")) if "bedrock_rows" in _world_gen else 5
 		if cell.y >= world_height - bedrock_rows:
 			return true
-		if _world_gen.has_method("get_block_id") and int(_world_gen.call("get_block_id", cell.x, cell.y)) == WorldGenerator.BEDROCK:
+		if _world_gen.has_method("get_block_id") and int(_world_gen.call("get_block_id", cell.x, cell.y)) == 13:
 			return true
 	if _block_catalog != null and _tilemap != null:
 		var block := _block_catalog.get_cell_block(_tilemap, cell)
@@ -1036,6 +1085,15 @@ func _settle_threshold(liquid_type: int) -> int:
 	if liquid_type == LiquidTypes.Type.LAVA:
 		return settings.lava_settle_threshold if settings != null else 4
 	return settings.settle_threshold if settings != null else 2
+
+
+func _adjust_type_count(liquid_type: int, delta: int) -> void:
+	if delta == 0:
+		return
+	if liquid_type == LiquidTypes.Type.WATER:
+		_water_count = maxi(_water_count + delta, 0)
+	elif liquid_type == LiquidTypes.Type.LAVA:
+		_lava_count = maxi(_lava_count + delta, 0)
 
 
 func _count_type(liquid_type: int) -> int:

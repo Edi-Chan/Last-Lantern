@@ -2,17 +2,29 @@
 
 [ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/items/equipment/tin_leggings.png" id="2_icon"]
-[ext_resource type="SpriteFrames" path="res://resources/player/armor_legs_frames.tres" id="3_frames"]
+[ext_resource type="SpriteFrames" path="res://resources/player/armor_tin_legs_frames.tres" id="3_frames"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 5
+value = 0.04
+modifier_type = 1
+source_kind = 1
 
 [resource]
 script = ExtResource("1_script")
 id = 138
 display_name = "Zinnbeinschutz"
-description = "Metallruestung aus Zinnbarren. Verteidigung 3."
+description = "Leichte Mobilitätsrüstung. Deutlich schneller unterwegs."
+rarity = 1
 icon = ExtResource("2_icon")
 max_stack = 1
 item_type = 3
 category = 2
 equipment_slot = 3
-defense = 3
+defense = 2
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0")])
+armor_set_id = &"TIN"
 armor_sprite_frames = ExtResource("3_frames")
+armor_modulate = Color(1, 1, 1, 1)

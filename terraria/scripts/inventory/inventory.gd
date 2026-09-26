@@ -7,6 +7,7 @@ extends Node
 signal inventory_changed
 signal selected_slot_changed(index: int)
 signal equipment_changed
+signal material_discovered(item_id: int, item: ItemData)
 
 const SLOT_COUNT := 70
 const HOTBAR_COUNT := 10
@@ -16,9 +17,6 @@ const WOOD_AXE_ID := 118
 const WOOD_SWORD_ID := 119
 ## Echtes New-Game-Hotbar: Slots 1-3. Demo-Loadout bleibt separat fuer den Editor.
 const NEW_GAME_HOTBAR_ITEM_IDS := [WOOD_PICKAXE_ID, WOOD_AXE_ID, WOOD_SWORD_ID]
-const TEST_HELMET_ID := 4
-const TEST_CHEST_ID := 5
-const TEST_LEGS_ID := 21
 const START_STONE_ID := 2
 const DEV_WOOD_ID := 9
 const DEV_WOOD_AMOUNT := 200
@@ -72,8 +70,10 @@ const EQUIPMENT_TYPES := {
 var slots: Array[Dictionary] = []
 var selected_hotbar_index: int = 0
 var equipment: Dictionary = {}
+var discovered_item_ids: Dictionary = {}
 var _dev_building_granted: bool = false
 var _dev_weapon_granted: bool = false
+var _mute_material_discovery: bool = false
 
 func _ready() -> void:
 	slots.resize(SLOT_COUNT)
@@ -87,8 +87,8 @@ func _ready() -> void:
 		"accessory_2": _empty_slot(),
 	}
 	add_to_group("player_inventory")
+	_mute_material_discovery = true
 	if _should_give_start_loadout():
-		_give_demo_armor_once()
 		_give_demo_tools_once()
 		_give_demo_stone_once()
 		_give_lantern_upgrade_materials_once()
@@ -97,6 +97,7 @@ func _ready() -> void:
 		_give_dev_shop_blueprints_once()
 		_give_dev_building_test_loadout_once()
 		_give_dev_weapon_test_loadout_once()
+	_mute_material_discovery = false
 
 
 func _should_give_start_loadout() -> bool:
@@ -111,6 +112,7 @@ func _should_give_start_loadout() -> bool:
 
 func give_new_game_start_items() -> void:
 	_ensure_slot_storage()
+	_mute_material_discovery = true
 	for i in NEW_GAME_HOTBAR_ITEM_IDS.size():
 		var item_id := int(NEW_GAME_HOTBAR_ITEM_IDS[i])
 		if get_total_amount(item_id) > 0:
@@ -120,6 +122,7 @@ func give_new_game_start_items() -> void:
 		else:
 			_add_item_to_bag(item_id, 1)
 	_apply_new_game_hotbar_loadout()
+	_mute_material_discovery = false
 	inventory_changed.emit()
 
 
@@ -272,6 +275,7 @@ func add_item(item_id: int, amount: int = 1) -> bool:
 		remaining -= added
 		gained += added
 		if remaining <= 0:
+			_discover_item(item_id)
 			_notify_items_received(item_id, gained, item)
 			return true
 	for slot in slots:
@@ -284,9 +288,11 @@ func add_item(item_id: int, amount: int = 1) -> bool:
 		remaining -= added
 		gained += added
 		if remaining <= 0:
+			_discover_item(item_id)
 			_notify_items_received(item_id, gained, item)
 			return true
 	if gained > 0:
+		_discover_item(item_id)
 		_notify_items_received(item_id, gained, item)
 	return false
 
@@ -673,13 +679,6 @@ func _get_item(item_id: int) -> ItemData:
 	return item_catalog.get_item(item_id)
 
 
-func _give_demo_armor_once() -> void:
-	for item_id in [TEST_HELMET_ID, TEST_CHEST_ID, TEST_LEGS_ID]:
-		if get_total_amount(item_id) > 0:
-			continue
-		_add_item_to_bag(item_id, 1)
-
-
 func _give_demo_tools_once() -> void:
 	_apply_default_hotbar_loadout()
 	for item_id in START_TOOL_IDS:
@@ -732,6 +731,7 @@ func _put_item_in_empty_slot(index: int, item_id: int) -> void:
 	slot["item_id"] = item_id
 	slot["amount"] = 1
 	_init_instance(slot, item)
+	_discover_item(item_id)
 
 
 func _give_demo_stone_once() -> void:
@@ -849,6 +849,7 @@ func _add_item_to_bag(item_id: int, amount: int = 1) -> bool:
 		slot["amount"] = int(slot["amount"]) + added
 		remaining -= added
 		if remaining <= 0:
+			_discover_item(item_id)
 			inventory_changed.emit()
 			return true
 	for i in range(HOTBAR_COUNT, SLOT_COUNT):
@@ -861,6 +862,7 @@ func _add_item_to_bag(item_id: int, amount: int = 1) -> bool:
 		_init_instance(slot, item)
 		remaining -= added
 		if remaining <= 0:
+			_discover_item(item_id)
 			inventory_changed.emit()
 			return true
 	return false
@@ -877,6 +879,7 @@ func to_save_dict() -> Dictionary:
 		"selected_hotbar_index": selected_hotbar_index,
 		"slots": saved_slots,
 		"equipment": saved_equip,
+		"discovered_item_ids": discovered_item_ids.keys(),
 		"dev_building_loadout_given": _dev_building_granted,
 		"dev_weapon_loadout_given": _dev_weapon_granted,
 	}
@@ -885,6 +888,7 @@ func to_save_dict() -> Dictionary:
 func from_save_dict(data: Dictionary) -> void:
 	if data.is_empty():
 		return
+	_mute_material_discovery = true
 	selected_hotbar_index = int(data.get("selected_hotbar_index", 0))
 	var saved_slots: Array = data.get("slots", [])
 	for i in slots.size():
@@ -902,12 +906,69 @@ func from_save_dict(data: Dictionary) -> void:
 		_mark_dev_building_granted()
 	if bool(data.get("dev_weapon_loadout_given", false)) or get_total_amount(DEV_WEAPON_SENTINEL_ID) > 0:
 		_mark_dev_weapon_granted()
+	discovered_item_ids.clear()
+	var saved_discovered: Variant = data.get("discovered_item_ids", [])
+	if saved_discovered is Array:
+		for item_id in saved_discovered:
+			_discover_item(int(item_id))
+	_scan_owned_discoveries()
+	_mute_material_discovery = false
 	inventory_changed.emit()
 	equipment_changed.emit()
 	selected_slot_changed.emit(selected_hotbar_index)
 
 
+func has_discovered(item_id: int) -> bool:
+	return discovered_item_ids.has(item_id)
+
+
+func has_discovered_material(item_id: int) -> bool:
+	for alt_id in RecipeCatalog.substitute_ids(item_id):
+		if discovered_item_ids.has(int(alt_id)):
+			return true
+	return false
+
+
+func _discover_item(item_id: int) -> void:
+	if item_id < 0 or discovered_item_ids.has(item_id):
+		return
+	discovered_item_ids[item_id] = true
+	if _mute_material_discovery:
+		return
+	var item := _get_item(item_id)
+	if not is_discovery_material(item):
+		return
+	material_discovered.emit(item_id, item)
+
+
+static func is_discovery_material(item: ItemData) -> bool:
+	if item == null:
+		return false
+	if item.is_tool() or item.is_weapon() or item.category == ItemData.ItemCategory.ARMOR or item.category == ItemData.ItemCategory.TOOL:
+		return false
+	if item.building_part_type != BlockData.BuildingPartType.NONE:
+		return false
+	if item.get_ore_metal_category() != OreData.OreMetalCategory.NONE:
+		return true
+	match item.category:
+		ItemData.ItemCategory.BUILDING_MATERIAL, ItemData.ItemCategory.RESOURCE, ItemData.ItemCategory.ORE_METAL, ItemData.ItemCategory.MONSTER_MATERIAL:
+			return true
+		_:
+			return item.item_type == ItemData.ItemType.MATERIAL
+
+
+func _scan_owned_discoveries() -> void:
+	for slot in slots:
+		if int(slot.get("amount", 0)) > 0:
+			_discover_item(int(slot.get("item_id", -1)))
+	for key in equipment.keys():
+		var slot: Dictionary = equipment[key]
+		if int(slot.get("amount", 0)) > 0:
+			_discover_item(int(slot.get("item_id", -1)))
+
+
 func _notify_items_received(item_id: int, amount: int, item: ItemData) -> void:
+	_discover_item(item_id)
 	_note_items_found(amount)
 	inventory_changed.emit()
 	PickupTextSystem.present(self, item_id, amount, item)

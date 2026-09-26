@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="ArmorSetData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/armor_set_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 21
+value = 0.2
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2_mod")
+stat = 9
+value = 0.04
+modifier_type = 1
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2_mod")
+stat = 10
+value = 0.03
+modifier_type = 1
+source_kind = 8
+
+[resource]
+script = ExtResource("1_script")
+set_id = &"IGNITIUM"
+display_name = "Ignitium"
+required_piece_count = 3
+piece_item_ids = Array[int]([154, 155, 156])
+set_bonus_name = "Infernokern"
+set_bonus_description = "Feuer- und Tiefenrüstung. Keine permanente Lava-Immunität."
+modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2")])

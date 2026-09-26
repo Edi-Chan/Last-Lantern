@@ -140,6 +140,16 @@ offset_bottom = 8.0
 mouse_filter = 2
 color = Color(1, 0.78, 0.28, 0.95)
 
+[node name="BedMarker" type="ColorRect" parent="WindowPanel/MapClip/MapContent"]
+visible = false
+z_index = 2
+custom_minimum_size = Vector2(7, 7)
+layout_mode = 0
+offset_right = 7.0
+offset_bottom = 7.0
+mouse_filter = 2
+color = Color(0.45, 0.62, 0.92, 0.95)
+
 [node name="BottomInfo" type="PanelContainer" parent="WindowPanel"]
 layout_mode = 1
 anchors_preset = 12
@@ -166,6 +176,12 @@ text = "X: 0   Y: 0"
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "Zoom 1.0x"
+
+[node name="HintLabel" type="Label" parent="WindowPanel/BottomInfo/BottomRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.64, 0.7, 0.85)
+theme_override_font_sizes/font_size = 8
+text = "Mausrad Zoom   Ziehen Bewegen   C Spieler"
 
 [node name="ResizeHandle" type="ColorRect" parent="WindowPanel"]
 custom_minimum_size = Vector2(14, 14)

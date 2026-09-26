@@ -55,8 +55,6 @@ static func make_theme() -> Theme:
 	btn_hover.shadow_color = Color(0.45, 0.28, 0.05, 0.35)
 	var btn_pressed := box(COL_PANEL_PRESSED, COL_BORDER_GOLD, Vector4(12, 8, 12, 6), 1, Color(0.35, 0.22, 0.04, 0.2))
 	var btn_disabled := box(COL_DISABLED_BG, COL_DISABLED_BORDER, Vector4(12, 7, 12, 7), 1, Color(0, 0, 0, 0.2))
-	var btn_continue := box(Color("1E222C"), COL_GOLD, Vector4(12, 7, 12, 7), 3, Color(0.5, 0.32, 0.06, 0.3))
-	var btn_continue_hover := box(Color("252A36"), COL_GOLD_BRIGHT, Vector4(12, 7, 12, 7), 4, Color(0.6, 0.38, 0.08, 0.4))
 
 	theme.set_stylebox("normal", "Button", btn_normal)
 	theme.set_stylebox("hover", "Button", btn_hover)

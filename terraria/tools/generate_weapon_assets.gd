@@ -121,26 +121,40 @@ func _draw_sword(pal: Dictionary, tier: int) -> Image:
 
 
 func _draw_pickaxe(pal: Dictionary) -> Image:
+	## Gleiche Silhouette wie die Steinspitzhacke: T-Kopf, schraeger Holzgriff.
 	var img := _blank()
-	var wood: Color = pal["grip"]
-	var wrap: Color = pal["wrap"]
+	var outline: Color = pal["edge"]
 	var head: Color = pal["blade"]
 	var hi: Color = pal["hi"]
-	var edge: Color = pal["edge"]
-	for i in range(4, 13):
-		_px(img, i, i, wood)
-		_px(img, i + 1, i, wrap if i % 2 == 0 else wood)
-	_px(img, 3, 12, wrap)
+	var sh: Color = pal["sh"]
+	var grip: Color = pal["grip"]
+	var wrap: Color = pal["wrap"]
+	for p in [
+		Vector2i(9, 3), Vector2i(10, 3),
+		Vector2i(6, 4), Vector2i(7, 4), Vector2i(8, 4), Vector2i(11, 4), Vector2i(12, 4), Vector2i(13, 4),
+		Vector2i(5, 5), Vector2i(14, 5),
+		Vector2i(6, 6), Vector2i(7, 6), Vector2i(10, 6), Vector2i(11, 6), Vector2i(12, 6), Vector2i(13, 6),
+		Vector2i(8, 7), Vector2i(9, 7),
+		Vector2i(7, 8), Vector2i(8, 8),
+		Vector2i(6, 9), Vector2i(8, 9),
+		Vector2i(5, 10), Vector2i(7, 10),
+		Vector2i(5, 11), Vector2i(6, 11),
+		Vector2i(4, 12), Vector2i(6, 12),
+		Vector2i(3, 13), Vector2i(5, 13),
+		Vector2i(3, 14), Vector2i(4, 14),
+		Vector2i(3, 15),
+	]:
+		_px(img, p.x, p.y, outline)
+	for x in range(6, 14):
+		_px(img, x, 5, head)
+	_px(img, 9, 4, hi)
+	_px(img, 10, 4, hi)
+	_px(img, 8, 6, sh)
+	_px(img, 9, 6, sh)
+	_px(img, 7, 9, grip)
+	_px(img, 6, 10, wrap)
+	_px(img, 5, 12, grip)
 	_px(img, 4, 13, wrap)
-	for x in range(8, 14):
-		_px(img, x, 3, head)
-		_px(img, x, 4, head)
-	_px(img, 7, 4, head)
-	_px(img, 13, 5, head)
-	_px(img, 9, 3, hi)
-	_px(img, 10, 3, hi)
-	_px(img, 13, 4, edge)
-	_px(img, 12, 5, edge)
 	return img
 
 

@@ -34,6 +34,7 @@ const ATTACK_DAMAGE_FRAMES := [2, 3]
 @export var start_in_darkness: bool = false
 ## Debug-Spawns bleiben in ihrer Form, bis ein echtes Finsternis-Event kommt.
 @export var lock_form: bool = false
+@export var debug_spawned: bool = false
 @export var lava_immune: bool = false
 @export var fire_resistant: bool = false
 
@@ -56,6 +57,15 @@ var _on_screen: bool = true
 var _lava_hurt_timer: float = 0.0
 var frozen: bool = false
 var _flash_tween: Tween
+var _sleeping: bool = false
+var _full_sim: bool = true
+var _fx_light_ok: bool = false
+var _fx_particles_ok: bool = false
+var _stride_parity: int = 0
+var _liquid: LiquidSystem
+var _admin: Node
+var _ref_tick: int = 0
+var _ignore_player_ai: bool = false
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hurtbox: Hurtbox = $Hurtbox
@@ -105,14 +115,16 @@ func _initialize_form() -> void:
 func _setup_areas() -> void:
 	if _detection != null:
 		_detection.collision_layer = 0
-		_detection.collision_mask = 2
-		_detection.monitoring = true
+		_detection.collision_mask = 0
+		_detection.monitoring = false
 		_detection.monitorable = false
+		_detection.process_mode = Node.PROCESS_MODE_DISABLED
 	if _attack_range != null:
 		_attack_range.collision_layer = 0
-		_attack_range.collision_mask = 2
-		_attack_range.monitoring = true
+		_attack_range.collision_mask = 0
+		_attack_range.monitoring = false
 		_attack_range.monitorable = false
+		_attack_range.process_mode = Node.PROCESS_MODE_DISABLED
 	if _hurtbox != null:
 		_hurtbox.collision_layer = 4
 		_hurtbox.collision_mask = 0
@@ -121,7 +133,6 @@ func _setup_areas() -> void:
 	if _hitbox != null:
 		_hitbox.collision_layer = 0
 		_hitbox.collision_mask = 2
-	_sync_range_shapes()
 	_update_sensors()
 	if _screen != null:
 		if not _screen.screen_entered.is_connected(_on_screen_entered):
@@ -150,6 +161,14 @@ func _physics_process(delta: float) -> void:
 			_apply_gravity(delta)
 			move_and_slide()
 		return
+	if _sleeping:
+		return
+	_stride_parity += 1
+	var skip_detail := not _full_sim and (_stride_parity & 1) == 1 and _state != State.ATTACK and _state != State.HURT
+	if skip_detail:
+		_apply_gravity(delta)
+		move_and_slide()
+		return
 	if frozen:
 		velocity.x = 0.0
 		_apply_gravity(delta)
@@ -159,7 +178,8 @@ func _physics_process(delta: float) -> void:
 	_attack_cd = maxf(_attack_cd - delta, 0.0)
 	_hurt_left = maxf(_hurt_left - delta, 0.0)
 	_apply_gravity(delta)
-	_tick_lava(delta)
+	if _full_sim:
+		_tick_lava(delta)
 	match _state:
 		State.IDLE:
 			_tick_idle(delta)
@@ -173,12 +193,14 @@ func _physics_process(delta: float) -> void:
 			_tick_hurt(delta)
 		State.TRANSFORM:
 			velocity.x = move_toward(velocity.x, 0.0, 800.0 * delta)
-	_update_sensors()
+	if _full_sim:
+		_update_sensors()
 	move_and_slide()
 	_update_facing_visual()
 	_update_animation()
-	_tick_audio(delta)
-	_sync_fx_budget()
+	if _full_sim:
+		_tick_audio(delta)
+	_apply_fx_budget()
 
 
 func is_dead() -> bool:
@@ -193,8 +215,55 @@ func is_on_screen() -> bool:
 	return _on_screen
 
 
+func apply_crowd_budget(full_sim: bool, allow_light: bool, allow_particles: bool, sleep: bool) -> void:
+	_full_sim = full_sim
+	_fx_light_ok = allow_light
+	_fx_particles_ok = allow_particles
+	if _wall_check != null:
+		_wall_check.enabled = full_sim
+	if _edge_check != null:
+		_edge_check.enabled = full_sim
+	if _ground_check != null:
+		_ground_check.enabled = full_sim
+	if sleep and _state != State.DEAD and _state != State.ATTACK and _state != State.HURT and _state != State.TRANSFORM:
+		_sleep_ai()
+	else:
+		_wake_ai()
+	_apply_fx_budget()
+
+
+func _sleep_ai() -> void:
+	if _sleeping or _state == State.DEAD:
+		return
+	_sleeping = true
+	velocity = Vector2.ZERO
+	set_physics_process(false)
+	if _sprite != null:
+		_sprite.speed_scale = 0.0
+	_apply_fx_budget()
+
+
+func _wake_ai() -> void:
+	if not _sleeping:
+		return
+	_sleeping = false
+	set_physics_process(true)
+	if _sprite != null:
+		_sprite.speed_scale = 1.0
+
+
 func is_attacking_player() -> bool:
 	return _state == State.ATTACK
+
+
+func is_busy() -> bool:
+	return _state == State.CHASE or _state == State.ATTACK or _state == State.HURT or _state == State.TRANSFORM
+
+
+func get_display_name() -> String:
+	if data != null and not String(data.display_name).is_empty():
+		return data.display_name
+	return "Zombie"
 
 
 func get_health_current() -> float:
@@ -284,7 +353,7 @@ func current_speed() -> float:
 	if data == null:
 		return 42.0
 	var speed := data.scaled_darkness_speed(_fog_cycle()) if darkness_active else data.move_speed
-	var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+	var liquid := _liquid_system()
 	if liquid != null and liquid.settings != null:
 		var lava := liquid.sample_submersion(global_position, -28.0, -14.0, LiquidTypes.Type.LAVA)
 		if bool(lava.get("in_lava", false)):
@@ -450,10 +519,7 @@ func _apply_form(dark: bool, animate: bool, refill: bool) -> void:
 	else:
 		current_health = clampi(int(round(ratio * float(max_health))), 1 if current_health > 0 else 0, max_health)
 	health_changed.emit(float(current_health), float(max_health))
-	_sync_range_shapes()
 	_set_fx_emitting(dark)
-	if _eye_light != null:
-		_eye_light.enabled = dark
 	form_changed.emit(dark)
 	if animate and _state != State.DEAD:
 		_set_strike(false)
@@ -531,8 +597,7 @@ func _set_strike(active: bool) -> void:
 func _can_see_player() -> bool:
 	if not _player_alive():
 		return false
-	var admin := get_node_or_null("/root/AdminManager")
-	if admin != null and bool(admin.call("should_ignore_player_for_ai")):
+	if _ignore_player_ai:
 		return false
 	return _distance_to_player() <= current_detection()
 
@@ -585,7 +650,6 @@ func _update_facing_visual() -> void:
 	if _sprite != null:
 		_sprite.flip_h = _facing < 0.0
 	_update_hitbox_side()
-	_update_sensors()
 
 
 func _update_hitbox_side() -> void:
@@ -610,26 +674,34 @@ func _update_sensors() -> void:
 		_ground_check.target_position = Vector2(0.0, 10.0)
 
 
-func _sync_range_shapes() -> void:
-	_set_circle(_detection, current_detection())
-	_set_circle(_attack_range, current_attack_range())
-
-
-func _apply_gravity(delta: float) -> void:
-	if area == null:
+func _tick_lava(delta: float) -> void:
+	if lava_immune or fire_resistant or _state == State.DEAD:
 		return
-	var node := area.get_node_or_null("CollisionShape2D") as CollisionShape2D
-	if node == null:
+	var liquid := _liquid_system()
+	if liquid == null or liquid.settings == null:
 		return
-	var circle := CircleShape2D.new()
-	circle.radius = radius
-	node.shape = circle
+	var sample := liquid.sample_submersion(global_position, -28.0, -14.0, LiquidTypes.Type.LAVA)
+	if not bool(sample.get("in_lava", false)):
+		return
+	_lava_hurt_timer -= delta
+	if _lava_hurt_timer > 0.0:
+		return
+	_lava_hurt_timer = liquid.settings.enemy_lava_damage_interval
+	var event := DamageEvent.new()
+	event.incoming_amount = int(round(liquid.settings.enemy_lava_damage))
+	event.amount = event.incoming_amount
+	event.damage_type = DamageTypes.Type.FIRE
+	event.element = DamageTypes.Type.FIRE
+	event.source_node = self
+	event.target_node = self
+	event.is_dot = true
+	apply_damage_event(event)
 
 
 func _apply_gravity(delta: float) -> void:
 	var g := data.gravity if data != null else 1000.0
 	var cap := data.max_fall_speed if data != null else 600.0
-	var liquid := get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+	var liquid := _liquid_system()
 	if liquid != null:
 		var lava := liquid.sample_submersion(global_position, -28.0, -14.0, LiquidTypes.Type.LAVA)
 		if bool(lava.get("in_lava", false)):
@@ -732,7 +804,7 @@ func _configure_particles(
 		return
 	node.amount = amount
 	node.lifetime = lifetime
-	node.preprocess = 0.2
+	node.preprocess = 0.0
 	node.explosiveness = 0.05
 	node.randomness = 0.35
 	node.local_coords = false
@@ -755,50 +827,40 @@ func _configure_particles(
 
 
 func _set_fx_emitting(active: bool) -> void:
-	var on := active and _on_screen
-	if _body_smoke != null:
-		_body_smoke.emitting = on
-	if _trail_smoke != null:
-		_trail_smoke.emitting = on
-	if _ambient != null:
-		_ambient.emitting = on
+	if not active:
+		_fx_light_ok = false
+		_fx_particles_ok = false
+	_apply_fx_budget()
+
+
+func _apply_fx_budget() -> void:
+	var vis := _on_screen and not _sleeping and _state != State.DEAD
+	var particles := vis and darkness_active and _fx_particles_ok
+	var light := vis and darkness_active and _fx_light_ok
+	_set_particle_node(_body_smoke, particles)
+	_set_particle_node(_trail_smoke, particles and absf(velocity.x) > 10.0)
+	_set_particle_node(_ambient, particles)
 	if _eye_light != null:
-		_eye_light.enabled = on
+		_eye_light.enabled = light
+		_eye_light.visible = light
 
 
-func _sync_fx_budget() -> void:
-	if not darkness_active:
+func _set_particle_node(node: GPUParticles2D, on: bool) -> void:
+	if node == null:
 		return
-	var many := get_tree().get_nodes_in_group("zombies").size() > 8
-	var vis := _on_screen
-	if _body_smoke != null:
-		_body_smoke.emitting = vis
-		_body_smoke.amount = 8 if many else 14
-		_body_smoke.speed_scale = 0.7 if not vis else 1.0
-	if _trail_smoke != null:
-		_trail_smoke.emitting = vis and absf(velocity.x) > 10.0
-		_trail_smoke.amount = 6 if many else 10
-	if _ambient != null:
-		_ambient.emitting = vis
-		_ambient.amount = 4 if many else 8
-	if _eye_light != null:
-		_eye_light.enabled = vis
+	node.emitting = on
+	node.visible = on
+	node.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
 
 
 func _on_screen_entered() -> void:
 	_on_screen = true
+	_apply_fx_budget()
 
 
 func _on_screen_exited() -> void:
 	_on_screen = false
-	if _body_smoke != null:
-		_body_smoke.emitting = false
-	if _trail_smoke != null:
-		_trail_smoke.emitting = false
-	if _ambient != null:
-		_ambient.emitting = false
-	if _eye_light != null:
-		_eye_light.enabled = false
+	_apply_fx_budget()
 
 
 func _tick_audio(delta: float) -> void:
@@ -867,7 +929,17 @@ func _fog_cycle() -> int:
 	return maxi(_fog.fog_cycle, 1)
 
 
+func _liquid_system() -> LiquidSystem:
+	if _liquid == null or not is_instance_valid(_liquid):
+		_liquid = get_tree().get_first_node_in_group(LiquidSystem.GROUP) as LiquidSystem
+	return _liquid
+
+
 func _refresh_refs() -> void:
+	_ref_tick -= 1
+	if _ref_tick > 0 and _player != null and is_instance_valid(_player) and _fog != null and is_instance_valid(_fog):
+		return
+	_ref_tick = 20
 	if _player == null or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Player
 	if _fog == null or not is_instance_valid(_fog):
@@ -877,3 +949,7 @@ func _refresh_refs() -> void:
 				_fog.fog_started.connect(_on_fog_started)
 			if not _fog.fog_ended.is_connected(_on_fog_ended):
 				_fog.fog_ended.connect(_on_fog_ended)
+	if _admin == null:
+		_admin = get_node_or_null("/root/AdminManager")
+	_ignore_player_ai = _admin != null and bool(_admin.call("should_ignore_player_for_ai"))
+	_liquid_system()

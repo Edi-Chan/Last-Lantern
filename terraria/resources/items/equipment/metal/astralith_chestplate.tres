@@ -2,17 +2,36 @@
 
 [ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/items/equipment/astralith_chestplate.png" id="2_icon"]
-[ext_resource type="SpriteFrames" path="res://resources/player/armor_chest_frames.tres" id="3_frames"]
+[ext_resource type="SpriteFrames" path="res://resources/player/armor_astralith_chest_frames.tres" id="3_frames"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 0
+value = 15.0
+modifier_type = 0
+source_kind = 1
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2_mod")
+stat = 9
+value = 0.05
+modifier_type = 1
+source_kind = 1
 
 [resource]
 script = ExtResource("1_script")
 id = 161
 display_name = "Astralithbrustpanzer"
-description = "Metallruestung aus Astralithbarren. Verteidigung 14."
+description = "Endgame-Hybridrüstung. Leben und Schaden."
+rarity = 4
 icon = ExtResource("2_icon")
 max_stack = 1
 item_type = 3
 category = 2
 equipment_slot = 2
 defense = 14
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0"), SubResource("mod_1")])
+armor_set_id = &"ASTRALITH"
 armor_sprite_frames = ExtResource("3_frames")
+armor_modulate = Color(1, 1, 1, 1)

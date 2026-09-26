@@ -128,14 +128,17 @@ func test_combat_resolver_combined_bow_damage() -> void:
 	assert_eq(CombatResolver.quick_ranged_damage(bow.weapon_data, arrow), 6)
 	assert_eq(CombatResolver.charged_ranged_damage(bow.weapon_data, arrow, 0.0), 10)
 	assert_eq(CombatResolver.charged_ranged_damage(bow.weapon_data, arrow, 1.0), 19)
-	assert_eq(float(bow.weapon_data.get("projectile_speed")), 297.0)
-	assert_eq(float(bow.weapon_data.get("base_range")), 108.0)
-	assert_eq(float(bow.weapon_data.get("projectile_gravity")), 280.0)
+	assert_eq(float(bow.weapon_data.get("projectile_speed")), 440.0)
+	assert_eq(float(bow.weapon_data.get("base_range")), 24.0)
+	assert_eq(bow.weapon_data.get_flight_distance(16.0), 384.0)
+	assert_eq(float(bow.weapon_data.get("projectile_gravity")), 340.0)
 	assert_true(bow.is_ranged_weapon())
 	var cobalt := _items().get_item(112)
 	var astralith := _items().get_item(113)
-	assert_eq(float(cobalt.weapon_data.get("base_range")), 132.0)
-	assert_eq(float(astralith.weapon_data.get("base_range")), 156.0)
+	assert_eq(float(cobalt.weapon_data.get("base_range")), 30.0)
+	assert_eq(float(astralith.weapon_data.get("base_range")), 38.0)
+	assert_eq(cobalt.weapon_data.get_flight_distance(16.0), 480.0)
+	assert_eq(astralith.weapon_data.get_flight_distance(16.0), 608.0)
 	assert_true(float(cobalt.weapon_data.get("projectile_speed")) > float(bow.weapon_data.get("projectile_speed")))
 	assert_true(float(astralith.weapon_data.get("projectile_speed")) > float(cobalt.weapon_data.get("projectile_speed")))
 	assert_true(float(cobalt.weapon_data.get("projectile_gravity")) < float(bow.weapon_data.get("projectile_gravity")))
@@ -149,6 +152,8 @@ func test_bow_draw_and_arrow_physics() -> void:
 	assert_true(proj.contains("gravity_strength"))
 	assert_true(proj.contains("max_distance"))
 	assert_true(proj.contains("func predict_arc"))
+	assert_true(proj.contains("func _cast_motion"))
+	assert_true(proj.contains("func _stick"))
 	var interact := FileAccess.get_file_as_string("res://scripts/player/player_interaction.gd")
 	assert_true(interact.contains("func is_drawing_bow"))
 	assert_true(interact.contains("_tick_bow_draw"))
@@ -168,6 +173,13 @@ func test_bow_draw_and_arrow_physics() -> void:
 	var arc := Projectile.predict_arc(Vector2.ZERO, Vector2(300.0, -40.0), 820.0, 864.0)
 	assert_true(arc.size() >= 2)
 	assert_true(arc[arc.size() - 1].y > arc[0].y)
+	var target := Vector2(240.0, 16.0)
+	var aim := Projectile.velocity_to_hit(Vector2.ZERO, target, 400.0, 320.0)
+	var hit_arc := Projectile.predict_arc(Vector2.ZERO, aim, 320.0, 0.0, 1.0 / 60.0, 90)
+	var nearest := 1.0e9
+	for point in hit_arc:
+		nearest = minf(nearest, point.distance_to(target))
+	assert_true(nearest < 8.0)
 
 
 func test_auto_tool_ignores_weapons() -> void:
@@ -195,6 +207,69 @@ func test_hitbox_one_hit_per_attack() -> void:
 	assert_true(player_scene.contains("&\"bow_shot\""))
 	assert_true(player_scene.contains("&\"lantern_burst\""))
 	assert_true(player_scene.contains("CombatLight"))
+
+
+func test_weapon_aim_math_and_controller() -> void:
+	var up := Vector2(0, -1)
+	var down := Vector2(0, 1)
+	var left := Vector2.LEFT
+	var right := Vector2.RIGHT
+	assert_false(PlayerAim.needs_vertical_flip(right))
+	assert_false(PlayerAim.needs_vertical_flip(up))
+	assert_false(PlayerAim.needs_vertical_flip(down))
+	assert_true(PlayerAim.needs_vertical_flip(left))
+	assert_true(PlayerAim.needs_vertical_flip(Vector2(-1, -1)))
+	assert_eq(PlayerAim.facing_sign_from_delta_x(20.0, 1.0), 1.0)
+	assert_eq(PlayerAim.facing_sign_from_delta_x(-20.0, 1.0), -1.0)
+	assert_eq(PlayerAim.facing_sign_from_delta_x(2.0, -1.0), -1.0)
+	assert_true(PlayerAim.uses_live_aim(int(ItemData.ActionType.THRUST)))
+	assert_true(PlayerAim.uses_thrust(int(ItemData.ActionType.STAB)))
+	assert_true(PlayerAim.uses_swing(int(ItemData.ActionType.SWING)))
+	assert_false(PlayerAim.uses_live_aim(int(ItemData.ActionType.SWING)))
+	var aim_math = _load_fresh("res://scripts/player/player_aim.gd").new()
+	var mid: float = aim_math.swing_angle(0.4, 0.0, 2.4, 1.0)
+	assert_true(mid > -1.6 and mid < 1.3)
+	for p in [0.0, 0.25, 0.5, 0.75, 1.0]:
+		assert_true(Vector2.from_angle(aim_math.swing_angle(p, 0.0, 2.4, 1.0)).x > 0.0)
+		assert_true(Vector2.from_angle(aim_math.swing_angle(p, PI, 2.4, -1.0)).x < 0.0)
+	assert_true(aim_math.rest_angle(1.0) < 0.0)
+	assert_true(aim_math.rest_angle(-1.0) > PI)
+	var thrust := PlayerAim.thrust_distance(0.6, 18.0, 8.0)
+	assert_true(thrust > 10.0)
+	var windup := PlayerAim.thrust_distance(0.1, 18.0, 8.0)
+	assert_true(windup < 0.0)
+	for deg in [0, 45, 90, 135, 180, 225, 270, 315]:
+		var dir := Vector2.from_angle(deg_to_rad(float(deg)))
+		var axis := Vector2.from_angle(dir.angle())
+		assert_true(axis.dot(dir.normalized()) > 0.95)
+	var aim_src := FileAccess.get_file_as_string("res://scripts/player/player_aim.gd")
+	assert_true(aim_src.contains("needs_vertical_flip"))
+	var held_src := FileAccess.get_file_as_string("res://scripts/player/held_item.gd")
+	assert_true(held_src.contains("func begin_attack"))
+	assert_true(held_src.contains("PlayerAim.needs_vertical_flip"))
+	assert_false(held_src.contains("scale.x = facing"))
+	var player_src := FileAccess.get_file_as_string("res://scripts/player/player.gd")
+	assert_true(player_src.contains("_tool_pivot.scale = Vector2.ONE"))
+	assert_true(player_src.contains("func lock_attack_aim"))
+	assert_true(player_src.contains("func visual_aim_direction"))
+	var interact := FileAccess.get_file_as_string("res://scripts/player/player_interaction.gd")
+	assert_true(interact.contains("_lock_held_attack"))
+	assert_true(FileAccess.file_exists("res://scripts/player/player_aim.gd"))
+
+
+func test_wood_pickaxe_matches_stone_silhouette() -> void:
+	var path := "res://assets/items/tools/mining/pickaxes/wood_pickaxe.png"
+	assert_true(FileAccess.file_exists(path))
+	var img := Image.new()
+	assert_eq(int(img.load(path)), int(OK))
+	assert_eq(img.get_width(), 16)
+	assert_eq(img.get_height(), 16)
+	assert_eq(img.get_pixel(13, 3).a, 0.0)
+	assert_true(img.get_pixel(13, 5).a > 0.5)
+	assert_true(img.get_pixel(6, 5).a > 0.5)
+	assert_true(img.get_pixel(4, 13).a > 0.5)
+	var gen_src := FileAccess.get_file_as_string("res://tools/generate_weapon_assets.gd")
+	assert_true(gen_src.contains("Gleiche Silhouette wie die Steinspitzhacke"))
 
 
 func test_spear_trades_dps_for_range() -> void:

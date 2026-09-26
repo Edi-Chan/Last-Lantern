@@ -20,6 +20,8 @@ var _light_texture: Texture2D
 var _update_left: float = 0.0
 var _pulse_time: float = 0.0
 var _bubble_left: float = 1.2
+var lights_enabled: bool = true
+var particles_enabled: bool = true
 
 
 func _ready() -> void:
@@ -61,26 +63,32 @@ func _process(delta: float) -> void:
 	_pulse_lights()
 	if _bubble_left <= 0.0:
 		_bubble_left = randf_range(1.4, 3.2)
-		_maybe_spawn_surface_bubble()
+		if particles_enabled:
+			_maybe_spawn_surface_bubble()
 
 
 func _refresh_cluster_lights() -> void:
 	_ensure_light_pool()
+	if not lights_enabled:
+		for light in _lights:
+			light.visible = false
+			light.enabled = false
+		return
 	var settings := _settings()
 	var chunk := maxi(settings.lava_light_chunk_size, 4)
 	var view := _view_rect_cells()
 	var clusters: Dictionary = {}
-	var cells := _system.get_lava_cells()
-	for cell in cells:
-		if cell.x < view.position.x or cell.y < view.position.y:
-			continue
-		if cell.x >= view.end.x or cell.y >= view.end.y:
-			continue
-		if not _system.is_surface_cell(cell) and not _system.is_falling_cell(cell):
-			continue
-		var key := Vector2i(cell.x / chunk, cell.y / chunk)
-		if not clusters.has(key):
-			clusters[key] = cell
+	var y := view.position.y
+	while y < view.position.y + view.size.y:
+		var x := view.position.x
+		while x < view.position.x + view.size.x:
+			var cell := Vector2i(x, y)
+			if _system.has_lava(cell) and (_system.is_surface_cell(cell) or _system.is_falling_cell(cell)):
+				var key := Vector2i(int(cell.x / float(chunk)), int(cell.y / float(chunk)))
+				if not clusters.has(key):
+					clusters[key] = cell
+			x += 1
+		y += 1
 	var index := 0
 	for key in clusters.keys():
 		if index >= _lights.size():
@@ -117,9 +125,9 @@ func _maybe_spawn_surface_bubble() -> void:
 	var candidates: Array[Vector2i] = []
 	for dx in range(-10, 11):
 		for dy in range(-7, 8):
-			var cell := origin + Vector2i(dx, dy)
-			if _system.has_lava(cell) and _system.is_surface_cell(cell):
-				candidates.append(cell)
+			var probe := origin + Vector2i(dx, dy)
+			if _system.has_lava(probe) and _system.is_surface_cell(probe):
+				candidates.append(probe)
 	if candidates.is_empty():
 		return
 	var cell: Vector2i = candidates[randi() % candidates.size()]
@@ -128,7 +136,7 @@ func _maybe_spawn_surface_bubble() -> void:
 
 
 func _emit_sparks(world_pos: Vector2, intensity: float) -> void:
-	if _particles == null:
+	if not particles_enabled or _particles == null:
 		return
 	_particles.global_position = world_pos
 	_particles.amount = clampi(int(4.0 * intensity), 2, _settings().lava_particle_budget)

@@ -43,6 +43,11 @@
 [ext_resource type="Script" path="res://scripts/liquid/liquid_renderer.gd" id="39_liquid_renderer"]
 [ext_resource type="Resource" path="res://resources/world/world_generation_settings.tres" id="40_worldgen_settings"]
 [ext_resource type="PackedScene" path="res://scenes/world/lava.tscn" id="41_lava"]
+[ext_resource type="Script" path="res://scripts/animals/animal_spawner.gd" id="42_aspawn"]
+[ext_resource type="Resource" path="res://resources/animals/animal_settings.tres" id="43_aset"]
+[ext_resource type="Resource" path="res://resources/animals/animal_catalog.tres" id="44_acat"]
+[ext_resource type="Script" path="res://scripts/spawn/spawn_manager.gd" id="45_spawn"]
+[ext_resource type="Resource" path="res://resources/systems/spawn_settings.tres" id="46_sset"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleMaterial_splash"]
 direction = Vector3(0, -1, 0)
@@ -256,12 +261,23 @@ script = ExtResource("27_parts")
 block_catalog = ExtResource("2_catalog")
 item_catalog = ExtResource("11_items")
 
+[node name="SpawnManager" type="Node2D" parent="." groups=["spawn_manager"]]
+script = ExtResource("45_spawn")
+settings = ExtResource("46_sset")
+
 [node name="Enemies" type="Node2D" parent="." unique_id=368881272]
 
 [node name="EnemySpawner" type="Node2D" parent="Enemies" groups=["enemy_spawner"]]
 script = ExtResource("29_spawner")
 zombie_scene = ExtResource("28_zombie")
 data = ExtResource("30_zdata")
+
+[node name="Animals" type="Node2D" parent="."]
+
+[node name="AnimalSpawner" type="Node2D" parent="Animals" groups=["animal_spawner"]]
+script = ExtResource("42_aspawn")
+settings = ExtResource("43_aset")
+catalog = ExtResource("44_acat")
 
 [node name="BlockHighlight" type="Node2D" parent="." unique_id=799758890 groups=["block_highlight"]]
 visible = false

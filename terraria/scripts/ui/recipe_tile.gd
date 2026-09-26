@@ -55,12 +55,13 @@ func _ready() -> void:
 	add_child(_station_mark)
 	_lock = Label.new()
 	_lock.name = "Lock"
-	_lock.text = "🔒"
+	_lock.text = "?"
 	_lock.visible = false
 	_lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_lock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_lock.add_theme_font_size_override("font_size", 11)
+	_lock.add_theme_font_size_override("font_size", 18)
+	_lock.add_theme_color_override("font_color", Color(0.72, 0.76, 0.8, 1))
 	_lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_lock)
 	gui_input.connect(_on_gui_input)
@@ -80,9 +81,11 @@ func apply(p_recipe: RecipeData, p_item: ItemData, p_selected: bool, missing_mat
 	item = p_item
 	selected = p_selected
 	if _icon != null:
-		_icon.texture = p_item.icon if p_item != null else null
+		_icon.texture = p_item.icon if p_item != null and not locked else null
+		_icon.visible = not locked
+		_icon.modulate = Color(0.35, 0.38, 0.42, 1) if locked else Color.WHITE
 	if locked:
-		modulate = Color(0.28, 0.3, 0.34, 1)
+		modulate = Color(0.38, 0.4, 0.44, 1)
 	elif missing_station:
 		modulate = Color(0.42, 0.44, 0.48, 1)
 	elif missing_materials:

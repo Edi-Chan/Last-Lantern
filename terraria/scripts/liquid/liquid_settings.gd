@@ -15,6 +15,8 @@ extends Resource
 @export var settle_threshold: int = 2
 @export var equalize_min_diff: int = 1
 @export var sleep_after_stable_ticks: int = 3
+@export var max_simulation_ticks_per_frame: int = 2
+@export var simulation_budget_ms: float = 3.5
 
 @export_group("Player")
 @export var shallow_water_speed_multiplier: float = 0.90
@@ -75,23 +77,23 @@ extends Resource
 
 @export_group("World Generation")
 @export_range(0.0, 1.0, 0.01) var surface_water_frequency: float = 0.08
-@export_range(0.0, 1.0, 0.01) var cave_water_frequency: float = 0.07
+@export_range(0.0, 1.0, 0.01) var cave_water_frequency: float = 0.22
 @export_range(0.0, 1.0, 0.01) var ravine_water_frequency: float = 0.12
 @export var minimum_pool_size: int = 4
 @export var maximum_pool_size: int = 48
 @export var spawn_water_exclusion_radius: int = 90
 @export var max_surface_ponds: int = 18
-@export var max_cave_pools: int = 24
-@export_range(0.0, 1.0, 0.01) var deep_lava_chance: float = 0.05
-@export_range(0.0, 1.0, 0.01) var danger_lava_chance: float = 0.22
+@export var max_cave_pools: int = 48
+@export_range(0.0, 1.0, 0.01) var deep_lava_chance: float = 0.16
+@export_range(0.0, 1.0, 0.01) var danger_lava_chance: float = 0.38
 @export_range(0.0, 1.0, 0.01) var fire_region_start_ratio: float = 0.88
-@export_range(0.0, 1.0, 0.01) var fire_region_lava_density: float = 0.55
-@export var lava_pool_min_size: int = 4
+@export_range(0.0, 1.0, 0.01) var fire_region_lava_density: float = 0.72
+@export var lava_pool_min_size: int = 3
 @export var lava_pool_max_size: int = 36
-@export var max_deep_lava_pools: int = 8
-@export var max_danger_lava_pools: int = 18
-@export var lava_fill_ratio: float = 0.45
-@export var fire_lava_fill_ratio: float = 0.62
+@export var max_deep_lava_pools: int = 18
+@export var max_danger_lava_pools: int = 32
+@export var lava_fill_ratio: float = 0.48
+@export var fire_lava_fill_ratio: float = 0.68
 @export var min_air_above_lava: int = 3
 
 @export_group("Visual")

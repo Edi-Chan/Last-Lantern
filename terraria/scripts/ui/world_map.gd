@@ -6,9 +6,11 @@ extends Control
 const TILE := 16
 const MAX_ZOOM_FACTOR := 12.0
 const ZOOM_STEP := 1.18
-const MIN_WINDOW_SIZE := Vector2(320, 180)
-const DEFAULT_WINDOW_SIZE := Vector2(480, 248)
+const ZOOM_SMOOTH := 14.0
+const MIN_WINDOW_SIZE := Vector2(360, 220)
+const DEFAULT_WINDOW_SIZE := Vector2(780, 440)
 const TITLE_KEEP := 96.0
+const OPEN_TILES := Vector2(220, 140)
 
 @onready var _window: Control = $WindowPanel
 @onready var _title_bar: Control = $WindowPanel/TitleBar/TitleRow
@@ -22,12 +24,16 @@ const TITLE_KEEP := 96.0
 @onready var _world_texture: TextureRect = $WindowPanel/MapClip/MapContent/WorldTexture
 @onready var _player_marker: TextureRect = $WindowPanel/MapClip/MapContent/PlayerMarker
 @onready var _lantern_marker: ColorRect = $WindowPanel/MapClip/MapContent/LanternMarker
+@onready var _bed_marker: ColorRect = $WindowPanel/MapClip/MapContent/BedMarker
+@onready var _hint_label: Label = $WindowPanel/BottomInfo/BottomRow/HintLabel
 @onready var _resize_handle: Control = $WindowPanel/ResizeHandle
 
 var _data: WorldMapData
 var _player: Player
 var _tilemap: TileMapLayer
 var _zoom: float = 1.0
+var _zoom_display: float = 1.0
+var _zoom_focus: Vector2 = Vector2.ZERO
 var _fit_zoom: float = 1.0
 var _map_panning: bool = false
 var _pan_last: Vector2 = Vector2.ZERO
@@ -75,6 +81,10 @@ func _connect_data() -> void:
 		return
 	if not _data.rebuilt.is_connected(_bind_texture):
 		_data.rebuilt.connect(_bind_texture)
+	if not _data.tiles_updated.is_connected(_bind_texture):
+		_data.tiles_updated.connect(_bind_texture)
+	if not _data.markers_changed.is_connected(_update_marker_and_labels):
+		_data.markers_changed.connect(_update_marker_and_labels)
 	if _data.is_ready():
 		_bind_texture()
 
@@ -104,6 +114,7 @@ func _process(delta: float) -> void:
 			_zoom_repeat_left -= delta
 	else:
 		_zoom_repeat_left = 0.0
+	_smooth_zoom(delta)
 	_update_marker_and_labels()
 
 
@@ -202,8 +213,10 @@ func open() -> void:
 		_data.rebuild_full()
 	_bind_texture()
 	if not _did_initial_fit:
-		call_deferred("_fit_entire_world")
+		call_deferred("_open_default_view")
 		_did_initial_fit = true
+	else:
+		call_deferred("_update_marker_and_labels")
 
 
 func close(restore_input: bool = true) -> void:
@@ -241,18 +254,27 @@ func center_on_player() -> void:
 	if _player == null or _map_clip == null or _map_content == null:
 		return
 	var tile := _player_tile()
-	var local := Vector2(tile) * _zoom + _map_content.position
+	var local := Vector2(tile) * _zoom_display + _map_content.position
 	var delta := _clip_center_local() - local
 	_map_content.position += delta
 	_clamp_pan()
 
 
 func _bind_texture() -> void:
+	if not visible:
+		return
+	var world_on = AdminManager.get("perf_world_map")
+	if typeof(world_on) != TYPE_NIL and not bool(world_on):
+		if _world_texture != null:
+			_world_texture.texture = null
+		return
 	if _data == null or _data.texture == null:
 		return
+	_data.flush_if_dirty()
 	var world_size := _data.world_size()
 	if _world_texture != null:
 		_world_texture.texture = _data.texture
+		_world_texture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		_world_texture.custom_minimum_size = world_size
 		_world_texture.size = world_size
 	if _map_content != null:
@@ -269,13 +291,15 @@ func _fit_entire_world() -> void:
 	var world_size := _data.world_size()
 	_fit_zoom = minf(clip.x / world_size.x, clip.y / world_size.y)
 	_zoom = _fit_zoom
-	_map_content.scale = Vector2(_zoom, _zoom)
-	_map_content.position = (clip - world_size * _zoom) * 0.5
+	_zoom_display = _fit_zoom
+	_map_content.scale = Vector2(_zoom_display, _zoom_display)
+	_map_content.position = (clip - world_size * _zoom_display) * 0.5
 	_update_marker_and_labels()
 
 
 func _on_clip_resized() -> void:
 	if visible:
+		_refresh_fit_zoom()
 		_clamp_pan()
 		_update_marker_and_labels()
 
@@ -382,25 +406,54 @@ func _max_window_size() -> Vector2:
 	return get_viewport_rect().size * 0.92
 
 
+func _open_default_view() -> void:
+	if _data == null or _data.image == null or _map_clip == null or _map_content == null:
+		return
+	var clip := _map_clip.size
+	if clip.x < 8.0 or clip.y < 8.0:
+		return
+	var world_size := _data.world_size()
+	_fit_zoom = minf(clip.x / world_size.x, clip.y / world_size.y)
+	var detail := minf(clip.x / OPEN_TILES.x, clip.y / OPEN_TILES.y)
+	_zoom = clampf(detail, _fit_zoom, _fit_zoom * MAX_ZOOM_FACTOR)
+	_zoom_display = _zoom
+	_map_content.scale = Vector2(_zoom_display, _zoom_display)
+	center_on_player()
+	_update_marker_and_labels()
+
+
+func _smooth_zoom(delta: float) -> void:
+	if _map_content == null or is_equal_approx(_zoom_display, _zoom):
+		_zoom_display = _zoom
+		return
+	var old := _zoom_display
+	var t := 1.0 - exp(-delta * ZOOM_SMOOTH)
+	_zoom_display = lerpf(_zoom_display, _zoom, t)
+	if absf(_zoom - _zoom_display) < 0.0008:
+		_zoom_display = _zoom
+	var world_point := (_zoom_focus - _map_content.position) / maxf(old, 0.0001)
+	_map_content.scale = Vector2(_zoom_display, _zoom_display)
+	_map_content.position = _zoom_focus - world_point * _zoom_display
+	_clamp_pan()
+
+
 func _zoom_at(clip_local: Vector2, direction: int) -> void:
 	if _map_content == null:
 		return
+	if _fit_zoom <= 0.0:
+		_refresh_fit_zoom()
 	var factor := ZOOM_STEP if direction > 0 else 1.0 / ZOOM_STEP
-	var next := clampf(_zoom * factor, _fit_zoom, _fit_zoom * MAX_ZOOM_FACTOR)
+	var next := clampf(_zoom * factor, _fit_zoom, maxf(_fit_zoom, 0.0001) * MAX_ZOOM_FACTOR)
 	if is_equal_approx(next, _zoom):
 		return
-	var world_point := (clip_local - _map_content.position) / _zoom
+	_zoom_focus = clip_local
 	_zoom = next
-	_map_content.scale = Vector2(_zoom, _zoom)
-	_map_content.position = clip_local - world_point * _zoom
-	_clamp_pan()
-	_update_marker_and_labels()
 
 
 func _clamp_pan() -> void:
 	if _data == null or _data.image == null or _map_clip == null or _map_content == null:
 		return
-	var scaled := _data.world_size() * _zoom
+	var scaled := _data.world_size() * _zoom_display
 	var clip := _map_clip.size
 	var pos := _map_content.position
 	if scaled.x <= clip.x:
@@ -414,31 +467,52 @@ func _clamp_pan() -> void:
 	_map_content.position = pos
 
 
+func _refresh_fit_zoom() -> void:
+	if _data == null or _map_clip == null:
+		return
+	var world_size := _data.world_size()
+	var clip := _map_clip.size
+	if world_size.x < 1.0 or world_size.y < 1.0 or clip.x < 8.0 or clip.y < 8.0:
+		return
+	_fit_zoom = minf(clip.x / world_size.x, clip.y / world_size.y)
+
+
 func _update_marker_and_labels() -> void:
 	if _player_marker == null or _player == null:
 		return
 	var tile := _player_tile()
-	var inverse := 1.0 / maxf(_zoom, 0.001)
-	_player_marker.scale = Vector2(inverse, inverse)
-	var marker_size := _player_marker.size
-	if marker_size.x < 1.0:
-		marker_size = Vector2(16, 16)
-	_player_marker.position = Vector2(tile) - marker_size * 0.5 * inverse
-	if _lantern_marker != null:
-		var lantern := get_tree().get_first_node_in_group("lantern") as Node2D
-		if lantern == null:
-			_lantern_marker.visible = false
-		else:
-			_lantern_marker.visible = true
-			_lantern_marker.size = Vector2(8, 8)
-			_lantern_marker.scale = Vector2(inverse, inverse)
-			var lantern_tile := _player_tile_of(lantern.global_position)
-			_lantern_marker.position = Vector2(lantern_tile) - _lantern_marker.size * 0.5 * inverse
+	var inverse := 1.0 / maxf(_zoom_display, 0.001)
+	_place_world_marker(_player_marker, Vector2(tile), Vector2(16, 16), inverse, true)
+	_place_named_marker(_lantern_marker, WorldMapData.LANTERN_MARKER_ID, Vector2(8, 8), inverse)
+	_place_named_marker(_bed_marker, WorldMapData.BED_MARKER_ID, Vector2(7, 7), inverse)
 	if _coords_label != null:
 		_coords_label.text = "X: %d   Y: %d" % [tile.x, tile.y]
 	if _zoom_label != null:
-		var relative := _zoom / maxf(_fit_zoom, 0.0001)
+		var relative := _zoom_display / maxf(_fit_zoom, 0.0001)
 		_zoom_label.text = "Zoom %.1fx" % relative
+	if _hint_label != null:
+		_hint_label.text = "Mausrad Zoom   Ziehen Bewegen   C Spieler"
+
+
+func _place_named_marker(node: Control, marker_id: StringName, marker_size: Vector2, inverse: float) -> void:
+	if node == null or _data == null:
+		return
+	var marker := _data.get_marker(marker_id)
+	if marker == null or not marker.is_shown(_data):
+		node.visible = false
+		return
+	_place_world_marker(node, Vector2(marker.tile(_data)), marker_size, inverse, true)
+
+
+func _place_world_marker(node: Control, tile: Vector2, marker_size: Vector2, inverse: float, shown: bool) -> void:
+	if node == null:
+		return
+	node.visible = shown
+	if not shown:
+		return
+	node.size = marker_size
+	node.scale = Vector2(inverse, inverse)
+	node.position = tile + Vector2(0.5, 0.5) - marker_size * 0.5 * inverse
 
 
 func _player_tile() -> Vector2i:

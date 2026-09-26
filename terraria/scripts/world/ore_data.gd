@@ -4,12 +4,13 @@ extends Resource
 
 ## Authoritative Erz-Progression. BlockData und WorldGenerator lesen nur hiervon.
 
+## 0 NONE, 1 RAW_ORE, 2 REFINED_METAL, 3 ALLOY, 4 SPECIAL_ORE (Astralith).
 enum OreMetalCategory {
-	NONE,
-	RAW_ORE,
-	REFINED_METAL,
-	ALLOY,
-	SPECIAL_ORE,
+	NONE = 0,
+	RAW_ORE = 1,
+	REFINED_METAL = 2,
+	ALLOY = 3,
+	SPECIAL_ORE = 4,
 }
 
 ## Originaltabelle ist auf diese Referenztiefe skaliert.

@@ -43,14 +43,14 @@ border_color = Color(0.32, 0.34, 0.38, 1)
 [node name="MiniMap" type="PanelContainer" unique_id=1851199370]
 visible = false
 z_index = 40
-custom_minimum_size = Vector2(200, 120)
+custom_minimum_size = Vector2(280, 168)
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -212.0
-offset_top = 12.0
-offset_right = -12.0
-offset_bottom = 132.0
+offset_left = -304.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 192.0
 grow_horizontal = 0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -71,14 +71,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.86, 0.88, 0.9, 0.92)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 12
 text = "X:0 Y:0"
 
 [node name="SizeDownButton" type="Button" parent="Layout/TopBar" unique_id=1099686452]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 tooltip_text = "Kleinere Minimap"
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 12
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 text = "<"
 
@@ -86,7 +86,7 @@ text = "<"
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 tooltip_text = "Groessere Minimap"
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 12
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 text = ">"
 
@@ -118,19 +118,21 @@ anchors_preset = 0
 mouse_filter = 2
 
 [node name="WorldTexture" type="TextureRect" parent="Layout/MapClip/MapContent" unique_id=510525099]
+texture_filter = 0
 layout_mode = 0
 mouse_filter = 2
 stretch_mode = 2
 
-[node name="PlayerMarker" type="TextureRect" parent="Layout/MapClip" unique_id=2090937084]
+[node name="PlayerMarker" type="TextureRect" parent="Layout/MapClip/MapContent" unique_id=2090937084]
 z_index = 2
+texture_filter = 0
 custom_minimum_size = Vector2(8, 8)
 layout_mode = 0
 mouse_filter = 2
 texture = ExtResource("2_marker")
 stretch_mode = 5
 
-[node name="LanternMarker" type="ColorRect" parent="Layout/MapClip"]
+[node name="LanternMarker" type="ColorRect" parent="Layout/MapClip/MapContent"]
 z_index = 2
 custom_minimum_size = Vector2(6, 6)
 layout_mode = 0
@@ -138,6 +140,16 @@ offset_right = 6.0
 offset_bottom = 6.0
 mouse_filter = 2
 color = Color(1, 0.78, 0.28, 0.95)
+
+[node name="BedMarker" type="ColorRect" parent="Layout/MapClip/MapContent"]
+visible = false
+z_index = 2
+custom_minimum_size = Vector2(5, 5)
+layout_mode = 0
+offset_right = 5.0
+offset_bottom = 5.0
+mouse_filter = 2
+color = Color(0.45, 0.62, 0.92, 0.95)
 
 [node name="InfoPanel" type="PanelContainer" parent="Layout" unique_id=983810435]
 layout_mode = 2
@@ -147,5 +159,5 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_info")
 [node name="BiomeLabel" type="Label" parent="Layout/InfoPanel" unique_id=1064137102]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.76, 0.8, 0.85)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 12
 text = "Grassland  Surface"

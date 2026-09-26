@@ -10,5 +10,6 @@ atlas_coords = Vector2i(4, 0)
 hardness = 2.0
 drop_item_id = 7
 solid = true
+map_color = Color(0.42, 0.28, 0.30, 1)
 required_tool = 1
 required_tool_power = 5

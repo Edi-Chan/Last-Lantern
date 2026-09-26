@@ -26,7 +26,7 @@ static func evaluate(world: WorldGenerator) -> Dictionary:
 		failures.append("ocean_missing")
 	else:
 		var ocean_deeper := false
-		var sample := layout.ocean_x0 + layout.ocean_width() / 2
+		var sample := layout.ocean_x0 + int(layout.ocean_width() / 2.0)
 		if world.get_surface_y(sample) > layout.start_surface_y + 8:
 			ocean_deeper = true
 		if not ocean_deeper:
@@ -63,10 +63,42 @@ static func evaluate(world: WorldGenerator) -> Dictionary:
 	if world.get_node_or_null("WorldBounds") == null:
 		failures.append("bounds_missing")
 
+	var warnings := _liquid_warnings(world)
 	return {
 		"ok": failures.is_empty(),
 		"failures": failures,
+		"warnings": warnings,
 	}
+
+
+static func _liquid_warnings(world: WorldGenerator) -> PackedStringArray:
+	var warnings := PackedStringArray()
+	var liquid := world.get_node_or_null("Terrain/LiquidSystem") as LiquidSystem
+	if liquid == null:
+		return warnings
+	var lava_on_surface := 0
+	var lava_in_fire := 0
+	var lava_in_deep := 0
+	var bedrock_hits := 0
+	for cell in liquid.get_lava_cells():
+		var layer := world.get_depth_layer(cell.x, cell.y)
+		if layer <= DepthLayer.Id.SHALLOW_CAVES:
+			lava_on_surface += 1
+		elif layer == DepthLayer.Id.DEEP_CAVES:
+			lava_in_deep += 1
+		if world.is_fire_region(cell.x, cell.y):
+			lava_in_fire += 1
+		if cell.y >= world.world_height - world.bedrock_rows:
+			bedrock_hits += 1
+	if lava_on_surface > 0:
+		warnings.append("lava_above_deep_caves:%d" % lava_on_surface)
+	if bedrock_hits > 0:
+		warnings.append("lava_on_world_bottom:%d" % bedrock_hits)
+	if lava_in_fire == 0 and world.world_height >= 300:
+		warnings.append("fire_region_no_lava")
+	if lava_in_deep > lava_in_fire and lava_in_fire > 0:
+		warnings.append("deep_lava_outnumbers_fire")
+	return warnings
 
 
 static func _has_objects_out_of_bounds(world: WorldGenerator) -> bool:

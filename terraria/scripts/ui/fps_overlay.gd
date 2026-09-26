@@ -13,16 +13,17 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	var show_fps := SettingsManager.is_show_fps()
-	visible = show_fps
-	if not show_fps:
+	var show_perf := AdminManager.perf_overlay
+	visible = show_fps or show_perf
+	if not visible:
 		return
 	_refresh_left -= delta
 	if _refresh_left > 0.0:
 		return
-	_refresh()
+	_refresh(show_perf)
 
 
-func _refresh() -> void:
+func _refresh(show_perf: bool = false) -> void:
 	_refresh_left = 0.25
 	var fps := Engine.get_frames_per_second()
 	var frame_ms := 1000.0 / maxf(fps, 0.001)
@@ -32,4 +33,7 @@ func _refresh() -> void:
 		modulate = Color(1.0, 0.85, 0.4)
 	else:
 		modulate = Color(1.0, 0.4, 0.4)
+	if show_perf:
+		text = AdminManager.get_performance_overlay_text(true)
+		return
 	text = "%d FPS  %.1f ms" % [roundi(fps), frame_ms]

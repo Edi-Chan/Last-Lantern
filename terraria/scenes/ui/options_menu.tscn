@@ -36,7 +36,7 @@ grow_vertical = 2
 mouse_filter = 0
 
 [node name="Panel" type="PanelContainer" parent="CenterWrap"]
-custom_minimum_size = Vector2(420, 292)
+custom_minimum_size = Vector2(640, 520)
 layout_mode = 2
 theme_override_styles/panel = ExtResource("2_panel")
 

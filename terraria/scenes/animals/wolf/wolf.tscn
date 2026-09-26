@@ -1,0 +1,118 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/animals/wolf.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://resources/animals/wolf_frames.tres" id="2_frames"]
+[ext_resource type="Resource" path="res://resources/animals/wolf_data.tres" id="3_data"]
+[ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="4_hurt"]
+[ext_resource type="Script" path="res://scripts/combat/enemy_hitbox.gd" id="5_hit"]
+[ext_resource type="AudioStream" path="res://audio/sfx/animals/growl.wav" id="6_idle"]
+[ext_resource type="AudioStream" path="res://audio/sfx/animals/hurt.wav" id="7_hurt"]
+[ext_resource type="AudioStream" path="res://audio/sfx/animals/death.wav" id="8_death"]
+[ext_resource type="AudioStream" path="res://audio/sfx/animals/growl.wav" id="9_alert"]
+[ext_resource type="AudioStream" path="res://audio/sfx/animals/growl.wav" id="10_attack"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(20.0, 16.0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
+size = Vector2(22.0, 18.0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
+size = Vector2(16, 14)
+
+[node name="Wolf" type="CharacterBody2D"]
+z_index = 16
+collision_layer = 4
+collision_mask = 33
+floor_snap_length = 8.0
+floor_max_angle = 0.872665
+floor_constant_speed = true
+script = ExtResource("1_script")
+data = ExtResource("3_data")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+texture_filter = 0
+position = Vector2(0.0, -14.0)
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"
+
+[node name="HealthBarAnchor" type="Marker2D" parent="."]
+position = Vector2(0.0, -24.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -8.0)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("4_hurt")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+position = Vector2(0, -9.0)
+shape = SubResource("RectangleShape2D_hurt")
+
+[node name="AttackHitbox" type="Area2D" parent="."]
+position = Vector2(12, -7.2)
+collision_layer = 0
+collision_mask = 2
+monitoring = false
+monitorable = false
+script = ExtResource("5_hit")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackHitbox"]
+shape = SubResource("RectangleShape2D_hit")
+
+[node name="GroundCheck" type="RayCast2D" parent="."]
+position = Vector2(0, -2)
+target_position = Vector2(0, 10)
+collision_mask = 1
+
+[node name="WallCheck" type="RayCast2D" parent="."]
+position = Vector2(6, -8.0)
+target_position = Vector2(12, 0)
+collision_mask = 1
+
+[node name="EdgeCheck" type="RayCast2D" parent="."]
+position = Vector2(10, -2)
+target_position = Vector2(0, 14)
+collision_mask = 1
+
+[node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="."]
+position = Vector2(0, -14.0)
+rect = Rect2(-20.0, -14.0, 40, 28)
+
+[node name="Audio" type="Node" parent="."]
+
+[node name="Idle" type="AudioStreamPlayer2D" parent="Audio"]
+stream = ExtResource("6_idle")
+volume_db = -12.0
+max_distance = 380.0
+bus = &"SFX"
+
+[node name="Hurt" type="AudioStreamPlayer2D" parent="Audio"]
+stream = ExtResource("7_hurt")
+volume_db = -12.0
+max_distance = 380.0
+bus = &"SFX"
+
+[node name="Death" type="AudioStreamPlayer2D" parent="Audio"]
+stream = ExtResource("8_death")
+volume_db = -12.0
+max_distance = 380.0
+bus = &"SFX"
+
+[node name="Alert" type="AudioStreamPlayer2D" parent="Audio"]
+stream = ExtResource("9_alert")
+volume_db = -12.0
+max_distance = 380.0
+bus = &"SFX"
+
+[node name="Attack" type="AudioStreamPlayer2D" parent="Audio"]
+stream = ExtResource("10_attack")
+volume_db = -12.0
+max_distance = 380.0
+bus = &"SFX"
+

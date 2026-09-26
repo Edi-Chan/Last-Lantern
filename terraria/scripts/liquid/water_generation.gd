@@ -48,19 +48,23 @@ static func generate_danger_water(world: WorldGenerator, liquid: LiquidSystem) -
 		return 0
 	var rng := _make_rng(world, 8806)
 	var count := 0
-	var attempts := 36
-	for _i in attempts:
-		if count >= 12:
+	var step := 8
+	var start_x := 10 + rng.randi_range(0, step - 1)
+	for x in range(start_x, world.world_width - 11, step):
+		if count >= 14:
 			break
-		var x := rng.randi_range(10, world.world_width - 11)
 		if _is_excluded_column(world, x):
 			continue
-		var y := rng.randi_range(world.world_height - 40, world.world_height - 10)
-		if world.get_depth_layer(x, y) != DepthLayer.Id.DANGER:
+		if rng.randf() > 0.28:
 			continue
-		if world.is_fire_region(x, y):
+		var floors := LiquidBasin.floors_in_column(world, x, DepthLayer.Id.DANGER, DepthLayer.Id.DANGER, true)
+		if floors.is_empty():
 			continue
-		if _try_cave_pool(world, liquid, Vector2i(x, y), rng, liquid.settings):
+		var origin: Vector2i = floors[rng.randi() % floors.size()]
+		if LiquidBasin.fill(
+			world, liquid, origin, LiquidTypes.Type.WATER,
+			0.40, liquid.settings.minimum_pool_size, 2, 6, 4
+		) > 0:
 			count += 1
 	return count
 
@@ -68,14 +72,14 @@ static func generate_danger_water(world: WorldGenerator, liquid: LiquidSystem) -
 static func _is_excluded_column(world: WorldGenerator, x: int) -> bool:
 	if world.has_method("should_skip_ambient_water"):
 		return bool(world.should_skip_ambient_water(x))
-	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else world.world_width / 2
+	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else int(world.world_width / 2.0)
 	return abs(x - spawn_x) < 24
 
 
 static func _generate_surface_ponds(world: WorldGenerator, liquid: LiquidSystem, settings: LiquidSettings, rng: RandomNumberGenerator) -> int:
 	var count := 0
 	var attempts := settings.max_surface_ponds * 4
-	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else world.world_width / 2
+	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else int(world.world_width / 2.0)
 	for _i in attempts:
 		if count >= settings.max_surface_ponds:
 			break
@@ -93,8 +97,8 @@ static func _generate_surface_ponds(world: WorldGenerator, liquid: LiquidSystem,
 
 static func _try_surface_pond(world: WorldGenerator, liquid: LiquidSystem, start_x: int, rng: RandomNumberGenerator, settings: LiquidSettings) -> bool:
 	var surface_y := world.get_surface_y(start_x)
-	var width := rng.randi_range(3, mini(12, settings.maximum_pool_size / 2))
-	var left := start_x - width / 2
+	var width := rng.randi_range(3, mini(12, int(settings.maximum_pool_size / 2.0)))
+	var left := start_x - int(width / 2.0)
 	var min_y := surface_y + 1
 	var max_depth := rng.randi_range(1, 3)
 	var lowest := min_y
@@ -124,51 +128,45 @@ static func _try_surface_pond(world: WorldGenerator, liquid: LiquidSystem, start
 
 static func _generate_cave_pools(world: WorldGenerator, liquid: LiquidSystem, settings: LiquidSettings, rng: RandomNumberGenerator) -> int:
 	var count := 0
-	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else world.world_width / 2
-	var attempts := settings.max_cave_pools * 6
-	for _i in attempts:
+	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else int(world.world_width / 2.0)
+	var step := 4 if world.world_width < 1200 else (5 if world.world_width < 2000 else 6)
+	var start_x := 10 + rng.randi_range(0, step - 1)
+	for x in range(start_x, world.world_width - 11, step):
 		if count >= settings.max_cave_pools:
 			break
-		if rng.randf() > settings.cave_water_frequency:
-			continue
-		var x := rng.randi_range(10, world.world_width - 11)
 		if _is_excluded_column(world, x):
 			continue
-		var y := rng.randi_range(int(world.base_surface_y) + 20, world.world_height - 12)
-		if Vector2(x, y).distance_to(Vector2(spawn_x, world.get_surface_y(spawn_x) + 8)) < float(settings.spawn_water_exclusion_radius):
+		if abs(x - spawn_x) < settings.spawn_water_exclusion_radius:
 			continue
-		if _try_cave_pool(world, liquid, Vector2i(x, y), rng, settings):
+		if rng.randf() > settings.cave_water_frequency:
+			continue
+		var origin := _pick_cave_water_floor(world, x, rng)
+		if origin.x < 0:
+			continue
+		if LiquidBasin.fill(
+			world, liquid, origin, LiquidTypes.Type.WATER,
+			0.42, settings.minimum_pool_size, 2, 6, 4
+		) > 0:
 			count += 1
 	return count
 
 
-static func _try_cave_pool(world: WorldGenerator, liquid: LiquidSystem, origin: Vector2i, rng: RandomNumberGenerator, settings: LiquidSettings) -> bool:
-	if world.get_block_id(origin.x, origin.y) != WorldGenerator.AIR:
-		return false
-	var width := rng.randi_range(3, mini(10, settings.maximum_pool_size / 3))
-	var height := rng.randi_range(2, mini(6, settings.maximum_pool_size / 4))
-	var floor_y := origin.y
-	for dx in range(-width, width + 1):
-		var x := origin.x + dx
-		var floor_cell := Vector2i(x, floor_y + 1)
-		if world.get_block_id(floor_cell.x, floor_cell.y) == WorldGenerator.AIR:
-			return false
-	var filled := 0
-	for dy in range(height):
-		for dx in range(-width, width + 1):
-			var cell := Vector2i(origin.x + dx, floor_y - dy)
-			if not _can_place_water(world, liquid, cell):
-				continue
-			if not _is_enclosed_basin(world, cell, width + 2, height + 2):
-				continue
-			liquid.set_cell(cell, LiquidTypes.Type.WATER, LiquidTypes.FULL, false)
-			filled += 1
-	return filled >= settings.minimum_pool_size
+static func _pick_cave_water_floor(world: WorldGenerator, x: int, rng: RandomNumberGenerator) -> Vector2i:
+	var shallow := LiquidBasin.floors_in_column(world, x, DepthLayer.Id.UNDERGROUND, DepthLayer.Id.SHALLOW_CAVES, true)
+	var deep := LiquidBasin.floors_in_column(world, x, DepthLayer.Id.DEEP_CAVES, DepthLayer.Id.DEEP_CAVES, true)
+	var candidates: Array[Vector2i] = []
+	candidates.append_array(shallow)
+	for cave_floor in deep:
+		if rng.randf() <= 0.38:
+			candidates.append(cave_floor)
+	if candidates.is_empty():
+		return Vector2i(-1, -1)
+	return candidates[rng.randi() % candidates.size()]
 
 
 static func _generate_ravine_pools(world: WorldGenerator, liquid: LiquidSystem, settings: LiquidSettings, rng: RandomNumberGenerator) -> int:
 	var count := 0
-	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else world.world_width / 2
+	var spawn_x := world.spawn_tile.x if world.spawn_tile != Vector2i.ZERO else int(world.world_width / 2.0)
 	for x in range(20, world.world_width - 20, 7):
 		if _is_excluded_column(world, x):
 			continue
@@ -216,19 +214,6 @@ static func _has_side_support(world: WorldGenerator, cell: Vector2i, width: int)
 	var left_solid := world.get_block_id(cell.x - 1, cell.y) != WorldGenerator.AIR
 	var right_solid := world.get_block_id(cell.x + 1, cell.y) != WorldGenerator.AIR
 	return left_solid or right_solid or width <= 4
-
-
-static func _is_enclosed_basin(world: WorldGenerator, cell: Vector2i, radius_x: int, radius_y: int) -> bool:
-	var solid_neighbors := 0
-	for dx in range(-radius_x, radius_x + 1):
-		for dy in range(-radius_y, radius_y + 1):
-			if dx == 0 and dy == 0:
-				continue
-			if abs(dx) != radius_x and abs(dy) != radius_y:
-				continue
-			if world.get_block_id(cell.x + dx, cell.y + dy) != WorldGenerator.AIR:
-				solid_neighbors += 1
-	return solid_neighbors >= 3
 
 
 static func _count_water(liquid: LiquidSystem) -> int:

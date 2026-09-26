@@ -61,7 +61,7 @@ func test_recipes_use_existing_items_only() -> void:
 
 func test_no_recipe_for_raw_and_test_items() -> void:
 	var catalog := _catalog()
-	for item_id in [1, 4, 5, 6, 11, 18, 21, 25, 28, 29, 30, 31, 32, 50, 61, 91]:
+	for item_id in [1, 6, 11, 18, 25, 28, 29, 30, 31, 32, 50, 61, 91]:
 		assert_eq(catalog.get_recipe_for_output(item_id), null, "item %d should have no recipe" % item_id)
 
 
@@ -329,6 +329,71 @@ func _bar_asset_key(item_id: int) -> String:
 		131: return "voidium"
 		132: return "astralith"
 		_: return ""
+
+
+func test_recipes_unlock_from_discovered_materials() -> void:
+	var system := _system()
+	var inv := _inv()
+	var stone_pick := _catalog().get_recipe_for_output(22)
+	var copper_pick := _catalog().get_recipe_for_output(40)
+	var copper_bar := _catalog().get_recipe_for_output(123)
+	assert_eq(system.evaluate(stone_pick, inv, 1, []), CraftingSystem.Result.LOCKED)
+	assert_false(system.is_recipe_revealed(stone_pick, inv))
+	assert_false(system.is_recipe_revealed(copper_pick, inv))
+	assert_false(system.is_recipe_revealed(copper_bar, inv))
+	inv.add_item(2, 10)
+	assert_true(system.is_recipe_known(stone_pick, inv))
+	assert_true(system.is_recipe_revealed(stone_pick, inv))
+	assert_false(system.is_recipe_known(copper_pick, inv))
+	inv.add_item(11, 6)
+	assert_true(system.is_recipe_known(copper_bar, inv))
+	assert_false(system.is_recipe_revealed(copper_bar, inv))
+	assert_eq(system.try_craft(copper_bar, inv, 2, [RecipeData.Station.FURNACE]), CraftingSystem.Result.OK)
+	assert_true(inv.has_discovered(123))
+	assert_true(system.is_recipe_revealed(copper_bar, inv))
+	assert_true(system.is_recipe_known(copper_pick, inv))
+	assert_true(system.is_recipe_revealed(copper_pick, inv))
+	var saved := inv.to_save_dict()
+	var restored := _inv()
+	restored.from_save_dict(saved)
+	assert_true(restored.has_discovered(2))
+	assert_true(restored.has_discovered(123))
+	assert_true(system.is_recipe_revealed(copper_bar, restored))
+	var tile_src := FileAccess.get_file_as_string("res://scripts/ui/recipe_tile.gd")
+	assert_true(tile_src.contains("_lock.text = \"?\""))
+	var page := FileAccess.get_file_as_string("res://scripts/ui/crafting_page.gd")
+	assert_true(page.contains("is_recipe_revealed"))
+
+
+func test_material_discovery_toast() -> void:
+	var items := _items()
+	assert_true(Inventory.is_discovery_material(items.get_item(2)))
+	assert_true(Inventory.is_discovery_material(items.get_item(123)))
+	assert_false(Inventory.is_discovery_material(items.get_item(22)))
+	var inv := _inv()
+	var seen: Array = []
+	inv.material_discovered.connect(func(item_id: int, _item: ItemData) -> void:
+		seen.append(item_id)
+	)
+	inv.add_item(2, 4)
+	inv.add_item(2, 4)
+	inv.add_item(22, 1)
+	assert_eq(seen, [2])
+	var saved := inv.to_save_dict()
+	var restored := _inv()
+	var restored_seen: Array = []
+	restored.material_discovered.connect(func(item_id: int, _item: ItemData) -> void:
+		restored_seen.append(item_id)
+	)
+	restored.from_save_dict(saved)
+	assert_eq(restored_seen, [])
+	var hud := FileAccess.get_file_as_string("res://scripts/ui/hud.gd")
+	assert_true(hud.contains("DiscoveryToast"))
+	var toast := FileAccess.get_file_as_string("res://scripts/ui/discovery_toast.gd")
+	assert_true(toast.contains("NEUES MATERIAL ENTDECKT"))
+	assert_true(toast.contains("HOLD_SEC := 3.0"))
+	assert_true(toast.contains("STAGGER_SEC"))
+	assert_true(toast.contains("MAX_LINES"))
 
 
 func test_context_reset_on_close() -> void:

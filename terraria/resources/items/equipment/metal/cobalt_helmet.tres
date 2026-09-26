@@ -2,17 +2,29 @@
 
 [ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/items/equipment/cobalt_helmet.png" id="2_icon"]
-[ext_resource type="SpriteFrames" path="res://resources/player/armor_helmet_frames.tres" id="3_frames"]
+[ext_resource type="SpriteFrames" path="res://resources/player/armor_cobalt_helmet_frames.tres" id="3_frames"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 16
+value = 0.05
+modifier_type = 1
+source_kind = 1
 
 [resource]
 script = ExtResource("1_script")
 id = 145
 display_name = "Kobalthelm"
-description = "Metallruestung aus Kobaltbarren. Verteidigung 4."
+description = "Explorationsrüstung. Schnellerer Abbau."
+rarity = 2
 icon = ExtResource("2_icon")
 max_stack = 1
 item_type = 3
 category = 2
 equipment_slot = 1
 defense = 4
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0")])
+armor_set_id = &"COBALT"
 armor_sprite_frames = ExtResource("3_frames")
+armor_modulate = Color(1, 1, 1, 1)

@@ -172,11 +172,7 @@ func test_trees_require_axe() -> void:
 func test_placeholder_pickaxe_removed_from_catalog() -> void:
 	var catalog_text := FileAccess.get_file_as_string("res://resources/items/item_catalog.tres")
 	assert_false(catalog_text.contains("res://resources/items/pickaxe.tres"))
-	var placeholder := _item("res://resources/items/pickaxe.tres")
-	assert_ne(placeholder, null)
-	assert_eq(placeholder.tool_data, null)
-	var stone := _block("res://resources/blocks/stone.tres")
-	_check(stone, placeholder, BlockData.BreakCheck.WRONG_TOOL)
+	assert_false(FileAccess.file_exists("res://resources/items/pickaxe.tres"))
 
 
 func test_ore_power_values_unchanged() -> void:

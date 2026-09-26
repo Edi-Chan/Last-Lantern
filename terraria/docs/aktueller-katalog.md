@@ -83,8 +83,6 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 | ---: | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | Dirt | BLOCK | BUILDING_MATERIAL | 999 | 2 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/dirt.tres` |
 | 2 | Stone | BLOCK | BUILDING_MATERIAL | 999 | 3 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/stone.tres` |
-| 4 | Test Helmet | ARMOR | ARMOR | 1 | -1 | NONE | 0 | 1 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/helmet.tres` |
-| 5 | Test Chestplate | ARMOR | ARMOR | 1 | -1 | NONE | 0 | 2 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/chestplate.tres` |
 | 6 | Sand | BLOCK | BUILDING_MATERIAL | 999 | 4 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/sand.tres` |
 | 7 | Granite | BLOCK | BUILDING_MATERIAL | 999 | 5 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/granite.tres` |
 | 8 | Slate | BLOCK | BUILDING_MATERIAL | 999 | 6 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/slate.tres` |
@@ -100,7 +98,6 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 | 18 | Eichensamen | SEED | RESOURCE | 999 | -1 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/oak_seed.tres` |
 | 19 | Birkensamen | SEED | RESOURCE | 999 | -1 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/birch_seed.tres` |
 | 20 | Kiefernsamen | SEED | RESOURCE | 999 | -1 | NONE | 0 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/pine_seed.tres` |
-| 21 | Test Leggings | ARMOR | ARMOR | 1 | -1 | NONE | 0 | 1 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/leggings.tres` |
 | 22 | Steinspitzhacke | TOOL | TOOL | 1 | -1 | PICKAXE | 8 | 0 | 100 | 10 | 1.0 | 2.5 | 1 | 0 | COMMON | `resources/items/tools/mining/pickaxes/stone_pickaxe.tres` |
 | 23 | Steinaxt | TOOL | TOOL | 1 | -1 | AXE | 10 | 0 | 100 | 12 | 0.9 | 2.5 | 0 | 0 | COMMON | `resources/items/tools/woodcutting/stone_axe.tres` |
 | 24 | Holzhammer | TOOL | TOOL | 1 | -1 | HAMMER | 5 | 0 | 120 | 8 | 1.0 | 2.5 | 0 | 0 | COMMON | `resources/items/tools/building_repair/wood_hammer.tres` |
@@ -149,9 +146,9 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 | 108 | Kupferspeer | WEAPON | WEAPON | 1 | -1 | NONE | 14 | 0 | 120 | 0 | 0.95 | 3.5 | 0 | 0 | UNCOMMON | `resources/items/weapons/spears/copper_spear.tres` |
 | 109 | Kobaltspeer | WEAPON | WEAPON | 1 | -1 | NONE | 28 | 0 | 200 | 0 | 1.05 | 3.8 | 0 | 0 | RARE | `resources/items/weapons/spears/cobalt_spear.tres` |
 | 110 | Voidiumspeer | WEAPON | WEAPON | 1 | -1 | NONE | 56 | 0 | 300 | 0 | 1.15 | 4.1 | 0 | 0 | EPIC | `resources/items/weapons/spears/voidium_spear.tres` |
-| 111 | Holzbogen | WEAPON | WEAPON | 1 | -1 | NONE | 8 | 0 | 80 | 0 | 0.7 | 108.0 | 0 | 0 | COMMON | `resources/items/weapons/bows/wood_bow.tres` |
-| 112 | Kobaltbogen | WEAPON | WEAPON | 1 | -1 | NONE | 22 | 0 | 180 | 0 | 0.8 | 132.0 | 0 | 0 | RARE | `resources/items/weapons/bows/cobalt_bow.tres` |
-| 113 | Astralithbogen | WEAPON | WEAPON | 1 | -1 | NONE | 48 | 0 | 280 | 0 | 0.9 | 156.0 | 0 | 0 | LEGENDARY | `resources/items/weapons/bows/astralith_bow.tres` |
+| 111 | Holzbogen | WEAPON | WEAPON | 1 | -1 | NONE | 8 | 0 | 80 | 0 | 0.7 | 24.0 | 0 | 0 | COMMON | `resources/items/weapons/bows/wood_bow.tres` |
+| 112 | Kobaltbogen | WEAPON | WEAPON | 1 | -1 | NONE | 22 | 0 | 180 | 0 | 0.8 | 30.0 | 0 | 0 | RARE | `resources/items/weapons/bows/cobalt_bow.tres` |
+| 113 | Astralithbogen | WEAPON | WEAPON | 1 | -1 | NONE | 48 | 0 | 280 | 0 | 0.9 | 38.0 | 0 | 0 | LEGENDARY | `resources/items/weapons/bows/astralith_bow.tres` |
 | 114 | Holzpfeil | MATERIAL | AMMUNITION | 999 | -1 | NONE | 4 | 0 | 0 | 0 | 1.0 | 0 | 0 | 0 | COMMON | `resources/items/ammunition/wood_arrow.tres` |
 | 115 | Alte Kampflaterne | WEAPON | WEAPON | 1 | -1 | NONE | 15 | 0 | 120 | 0 | 0.85 | 2.2 | 0 | 0 | UNCOMMON | `resources/items/weapons/lanterns/old_combat_lantern.tres` |
 
@@ -185,9 +182,9 @@ Abbauzeit = max(hardness / speed, 0.05 s)
 
 | ID | Name | Slot | Defense | Stack |
 | ---: | --- | --- | ---: | ---: |
-| 4 | Test Helmet | HEAD | 1 | 1 |
-| 5 | Test Chestplate | CHEST | 2 | 1 |
-| 21 | Test Leggings | LEGS | 1 | 1 |
+| 120 | Holzhelm | HEAD | 1 | 1 |
+| 121 | Holzbrustrüstung | CHEST | 2 | 1 |
+| 122 | Holzbeinschutz | LEGS | 2 | 1 |
 
 ## Waffen (Detail)
 
@@ -209,9 +206,9 @@ Bögen: Linksklick schießt sofort mit voller Reichweite und halbem Schaden. Rec
 | 108 | Kupferspeer | SPEAR | 2 | 14 | 0.95 | 3.5 | 155 | 120 | Amboss | `resources/items/weapons/spears/copper_spear.tres` |
 | 109 | Kobaltspeer | SPEAR | 6 | 28 | 1.05 | 3.8 | 185 | 200 | Amboss | `resources/items/weapons/spears/cobalt_spear.tres` |
 | 110 | Voidiumspeer | SPEAR | 10 | 56 | 1.15 | 4.1 | 215 | 300 | Amboss | `resources/items/weapons/spears/voidium_spear.tres` |
-| 111 | Holzbogen | BOW | 1 | 8+4 Pfeil | 0.7 | 108.0 | 35 | 80 | Werkbank | `resources/items/weapons/bows/wood_bow.tres` |
-| 112 | Kobaltbogen | BOW | 6 | 22+4 Pfeil | 0.8 | 132.0 | 50 | 180 | Amboss | `resources/items/weapons/bows/cobalt_bow.tres` |
-| 113 | Astralithbogen | BOW | 11 | 48+4 Pfeil | 0.9 | 156.0 | 70 | 280 | Amboss | `resources/items/weapons/bows/astralith_bow.tres` |
+| 111 | Holzbogen | BOW | 1 | 8+4 Pfeil | 0.7 | 24.0 | 35 | 80 | Werkbank | `resources/items/weapons/bows/wood_bow.tres` |
+| 112 | Kobaltbogen | BOW | 6 | 22+4 Pfeil | 0.8 | 30.0 | 50 | 180 | Amboss | `resources/items/weapons/bows/cobalt_bow.tres` |
+| 113 | Astralithbogen | BOW | 11 | 48+4 Pfeil | 0.9 | 38.0 | 70 | 280 | Amboss | `resources/items/weapons/bows/astralith_bow.tres` |
 | 114 | Holzpfeil | AMMUNITION | — | 4 | — | — | — | — | Werkbank (8 Stück) | `resources/items/ammunition/wood_arrow.tres` |
 | 115 | Alte Kampflaterne | LANTERN | 1 | 15 (×1.5 Finsternis) | Cooldown 1.2 s | 2.2 | 70 | 120 | Werkbank | `resources/items/weapons/lanterns/old_combat_lantern.tres` |
 
@@ -249,7 +246,7 @@ Bögen: Linksklick schießt sofort mit voller Reichweite und halbem Schaden. Rec
 
 ## Nicht im Katalog (inaktiv)
 
-Alte Einzeldateien wie `pickaxe.tres`, `gold_ore.tres`, `iron_ore.tres`, `silver_ore.tres` können noch im Ordner liegen, stehen aber **nicht** in den Katalogen.
+Alte Placeholder-Dateien (`pickaxe.tres`, englische Root-Erze, Test-Rüstung) sind entfernt. IDs 3, 4, 5 und 21 sind frei.
 
 ## Gebäude-Baukasten (Stand 17.09.2026)
 

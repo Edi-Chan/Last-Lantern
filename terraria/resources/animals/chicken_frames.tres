@@ -1,0 +1,148 @@
+[gd_resource type="SpriteFrames" load_steps=26 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/idle_0.png" id="1_idle0"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/idle_1.png" id="2_idle1"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/idle_2.png" id="3_idle2"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/idle_3.png" id="4_idle3"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/walk_0.png" id="5_walk0"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/walk_1.png" id="6_walk1"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/walk_2.png" id="7_walk2"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/walk_3.png" id="8_walk3"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/run_0.png" id="9_run0"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/run_1.png" id="10_run1"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/run_2.png" id="11_run2"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/run_3.png" id="12_run3"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/eat_0.png" id="13_eat0"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/eat_1.png" id="14_eat1"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/eat_2.png" id="15_eat2"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/jump_0.png" id="16_jump0"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/jump_1.png" id="17_jump1"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/jump_2.png" id="18_jump2"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/jump_3.png" id="19_jump3"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/hurt_0.png" id="20_hurt0"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/hurt_1.png" id="21_hurt1"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/death_0.png" id="22_death0"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/death_1.png" id="23_death1"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/death_2.png" id="24_death2"]
+[ext_resource type="Texture2D" path="res://assets/animals/chicken/death_3.png" id="25_death3"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_idle0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_idle1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_idle2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_idle3")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.3
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_walk0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_walk1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_walk2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_walk3")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 6.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_run0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_run1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_run2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_run3")
+}],
+"loop": true,
+"name": &"run",
+"speed": 9.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_eat0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_eat1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_eat2")
+}],
+"loop": true,
+"name": &"eat",
+"speed": 6.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("16_jump0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_jump1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_jump2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_jump3")
+}],
+"loop": true,
+"name": &"jump",
+"speed": 8.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("20_hurt0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_hurt1")
+}],
+"loop": false,
+"name": &"hurt",
+"speed": 12.0
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("22_death0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_death1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_death2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_death3")
+}],
+"loop": false,
+"name": &"death",
+"speed": 7.0
+}
+]

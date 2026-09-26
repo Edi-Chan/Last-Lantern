@@ -94,6 +94,7 @@ func test_debug_and_spawner_hooks() -> void:
 	assert_false(FileAccess.file_exists("res://scripts/ui/fog_debug_controls.gd"))
 	var world := _read("res://scenes/world/world.tscn")
 	assert_true(world.contains("EnemySpawner"))
+	assert_true(world.contains("SpawnManager"))
 	assert_true(world.contains("zombie.tscn"))
 
 

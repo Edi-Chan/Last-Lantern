@@ -72,4 +72,4 @@ static func _force_loop(wav: AudioStreamWAV) -> void:
 	var frame_bytes := 2
 	if wav.stereo:
 		frame_bytes = 4
-	wav.loop_end = maxi(wav.data.size() / frame_bytes, 1)
+	wav.loop_end = maxi(int(wav.data.size() / float(frame_bytes)), 1)

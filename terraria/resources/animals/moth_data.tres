@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="AnimalData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/animals/animal_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"moth"
+display_name = "Nachtfalter"
+locomotion = 1
+temperament = 0
+walk_speed = 22.0
+run_speed = 40.0
+jump_force = 150.0
+gravity = 0.0
+max_fall_speed = 600.0
+ground_acceleration = 240.0
+air_control = 180.0
+max_health = 2
+attack_damage = 0.0
+attack_cooldown = 1.1
+attack_range = 22.0
+detection_range = 96.0
+flee_range = 36.0
+knockback_force = 70.0
+hurt_lock_time = 0.14
+can_attack = false
+show_health_bar = false
+charge_on_hit = false
+curl_on_threat = false
+wander_radius = 80.0
+idle_duration_min = 0.7
+idle_duration_max = 2.4
+wander_duration_min = 1.1
+wander_duration_max = 2.8
+hop_locomotion = false
+hop_interval = 0.42
+perch_then_fly = false
+attracted_to_light = true
+glow = false
+peck_idle = false
+jump_small_obstacles = false
+flee_on_darkness = false
+blocked_by_safe_zone = false
+time_rule = 4
+population = 3
+habitats = PackedStringArray("grassland", "forest")
+spawn_weight = 0.25
+darkness_spawn_weight = 1.1
+night_spawn_bonus = 0.8
+surface_only = true
+allow_cave = false
+needs_water = false
+near_water = false
+canvas_size = Vector2i(20, 16)
+collider_size = Vector2(8.0, 6.0)
+hurtbox_size = Vector2(12.0, 12.0)
+sprite_offset = Vector2(0.0, -10.0)
+health_bar_offset = Vector2(0.0, -18.0)
+animation_speed = 6.0
+z_index_value = 16
+darkness_form = false

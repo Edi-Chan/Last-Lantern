@@ -7,7 +7,7 @@ const MUTED := Color(0.7, 0.76, 0.82, 1)
 const TITLE := Color(0.92, 0.94, 0.96, 1)
 const VALUE := Color(1, 0.95, 0.82, 1)
 const BONUS := Color(0.52, 0.88, 0.58, 1)
-const EQUIP_KINDS: Array = [StatModifier.SourceKind.EQUIPMENT, StatModifier.SourceKind.ACCESSORY]
+const EQUIP_KINDS: Array = [StatModifier.SourceKind.EQUIPMENT, StatModifier.SourceKind.ACCESSORY, StatModifier.SourceKind.SET_BONUS]
 const STAT_FONT := 10
 const HEADING_FONT := 11
 const ROW_HEIGHT := 15
@@ -24,6 +24,7 @@ var _name_label: Label
 var _preview: TextureRect
 var _held_preview: TextureRect
 var _equip_host: VBoxContainer
+var _set_box: VBoxContainer
 var _attr_box: VBoxContainer
 var _gather_box: VBoxContainer
 var _effects_box: VBoxContainer
@@ -52,6 +53,8 @@ func bind(inventory: Inventory, player: Player, slot_scene: PackedScene) -> void
 			_player.stats.health_changed.connect(_on_vitals)
 		if not _player.stats.stamina_changed.is_connected(_on_vitals):
 			_player.stats.stamina_changed.connect(_on_vitals)
+		if not _player.stats.energy_changed.is_connected(_on_vitals):
+			_player.stats.energy_changed.connect(_on_vitals)
 	if _inventory != null and not _inventory.equipment_changed.is_connected(refresh):
 		_inventory.equipment_changed.connect(refresh)
 	refresh()
@@ -83,6 +86,7 @@ func refresh() -> void:
 	_set_row("health_regen", "Leben-Regen.", _format_rate_bonus(sheet.get_final(StatId.HEALTH_REGEN), _equip_bonus(sheet, StatId.HEALTH_REGEN)))
 	_set_row("stamina", "Ausdauer", _format_pair_bonus(stats.stamina, sheet.get_final(StatId.MAX_STAMINA), _equip_bonus(sheet, StatId.MAX_STAMINA)))
 	_set_row("stamina_regen", "Ausdauer-Regen.", _format_rate_bonus(stats.stamina_regen_rate(), _equip_bonus(sheet, StatId.STAMINA_REGEN)))
+	_set_row("energy", "Energie", _format_pair_bonus(stats.energy, sheet.get_final(StatId.MAX_ENERGY), _equip_bonus(sheet, StatId.MAX_ENERGY)))
 	_set_row("move", "Bewegungstempo", _format_pct_bonus(stats.movement_multiplier(), _equip_bonus(sheet, StatId.MOVEMENT_SPEED)))
 	_set_row("sprint", "Sprinttempo", _format_pct_bonus(stats.sprint_multiplier(), _equip_bonus(sheet, StatId.SPRINT_SPEED)))
 	_set_row("jump", "Sprungkraft", _format_pct_bonus(stats.jump_multiplier(), _equip_bonus(sheet, StatId.JUMP_POWER)))
@@ -112,6 +116,7 @@ func refresh() -> void:
 	_set_row("res_bleed", "Bluten", _format_pct_bonus(stats.get_final(StatId.BLEEDING_RESISTANCE), _equip_bonus(sheet, StatId.BLEEDING_RESISTANCE)))
 	_set_row("res_dark", "Finsternis", _format_pct_bonus(stats.get_final(StatId.DARKNESS_RESISTANCE), _equip_bonus(sheet, StatId.DARKNESS_RESISTANCE)))
 	_refresh_effects(stats)
+	_refresh_set_bonus(stats)
 	_refresh_progress(stats)
 	if _player.has_method("compose_preview_texture") and _preview != null:
 		var tex: Texture2D = _player.compose_preview_texture()
@@ -155,19 +160,19 @@ func _build_left(inner: StyleBox) -> Control:
 	frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	frame.custom_minimum_size = PREVIEW_SIZE + Vector2(16, 12)
 	frame.add_theme_stylebox_override("panel", inner)
-	var wrap := CenterContainer.new()
-	wrap.set_anchors_preset(Control.PRESET_FULL_RECT)
-	wrap.offset_left = 4
-	wrap.offset_top = 4
-	wrap.offset_right = -4
-	wrap.offset_bottom = -4
-	frame.add_child(wrap)
+	var preview_wrap := CenterContainer.new()
+	preview_wrap.set_anchors_preset(Control.PRESET_FULL_RECT)
+	preview_wrap.offset_left = 4
+	preview_wrap.offset_top = 4
+	preview_wrap.offset_right = -4
+	preview_wrap.offset_bottom = -4
+	frame.add_child(preview_wrap)
 	_preview = TextureRect.new()
 	_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_preview.custom_minimum_size = PREVIEW_SIZE
 	_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrap.add_child(_preview)
+	preview_wrap.add_child(_preview)
 	_held_preview = TextureRect.new()
 	_held_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_held_preview.custom_minimum_size = Vector2(14, 14)
@@ -186,6 +191,11 @@ func _build_left(inner: StyleBox) -> Control:
 	_equip_host.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_equip_host.add_theme_constant_override("separation", 3)
 	box.add_child(_equip_host)
+	box.add_child(_label("Setbonus", MUTED, STAT_FONT))
+	_set_box = VBoxContainer.new()
+	_set_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_set_box.add_theme_constant_override("separation", 1)
+	box.add_child(_set_box)
 	return card
 
 
@@ -209,6 +219,7 @@ func _build_mid(inner: StyleBox) -> Control:
 		["health_regen", "Leben-Regen."],
 		["stamina", "Ausdauer"],
 		["stamina_regen", "Ausdauer-Regen."],
+		["energy", "Energie"],
 		["move", "Bewegungstempo"],
 		["sprint", "Sprinttempo"],
 		["jump", "Sprungkraft"],
@@ -254,15 +265,9 @@ func _build_right(inner: StyleBox) -> Control:
 	effects.add_child(_margin(_effects_box, CARD_PAD))
 	_effects_box.add_child(_heading("Status-Effekte"))
 	col.add_child(effects)
-	var lower := HBoxContainer.new()
-	lower.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lower.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	lower.add_theme_constant_override("separation", COL_SEP)
-	col.add_child(lower)
 	var resist := _card(inner, 0)
 	resist.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	resist.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	resist.size_flags_stretch_ratio = 1.0
 	_resist_box = VBoxContainer.new()
 	_resist_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_resist_box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -270,12 +275,11 @@ func _build_right(inner: StyleBox) -> Control:
 	resist.add_child(_margin(_resist_box, CARD_PAD))
 	_resist_box.add_child(_heading("Widerstände"))
 	for key in ["res_fire", "res_cold", "res_poison", "res_bleed", "res_dark"]:
-		_add_stat_to(_resist_box, key, "")
-	lower.add_child(resist)
+		_add_stat_to(_resist_box, key, "", 48)
+	col.add_child(resist)
 	var progress := _card(inner, 0)
 	progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	progress.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	progress.size_flags_stretch_ratio = 1.0
 	_progress_box = VBoxContainer.new()
 	_progress_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_progress_box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -283,8 +287,8 @@ func _build_right(inner: StyleBox) -> Control:
 	progress.add_child(_margin(_progress_box, CARD_PAD))
 	_progress_box.add_child(_heading("Fortschritt"))
 	for key in ["playtime", "day", "kills", "mined", "found"]:
-		_add_stat_to(_progress_box, key, "")
-	lower.add_child(progress)
+		_add_stat_to(_progress_box, key, "", 56)
+	col.add_child(progress)
 	return col
 
 
@@ -334,6 +338,28 @@ func _fill_equipment_slots() -> void:
 		_equip_slots.append(slot)
 
 
+func _refresh_set_bonus(stats: PlayerStats) -> void:
+	if _set_box == null:
+		return
+	for child in _set_box.get_children():
+		child.queue_free()
+	var status := stats.get_set_status()
+	var data: ArmorSetData = status.get("data") as ArmorSetData
+	if data == null:
+		_set_box.add_child(_label("Kein Set getragen", MUTED, STAT_FONT))
+		return
+	var equipped := int(status.get("equipped", 0))
+	var required := int(status.get("required", 3))
+	if bool(status.get("complete", false)):
+		_set_box.add_child(_label("%s – %s" % [data.display_name, data.set_bonus_name], TITLE, STAT_FONT))
+		for line in data.bonus_lines():
+			_set_box.add_child(_label(line, BONUS, STAT_FONT))
+		return
+	_set_box.add_child(_label("%sset" % data.display_name, TITLE, STAT_FONT))
+	_set_box.add_child(_label("%d / %d" % [equipped, required], VALUE, STAT_FONT))
+	_set_box.add_child(_label("Kein Bonus aktiv", MUTED, STAT_FONT))
+
+
 func _refresh_effects(stats: PlayerStats) -> void:
 	if _effects_box == null:
 		return
@@ -345,9 +371,9 @@ func _refresh_effects(stats: PlayerStats) -> void:
 		_effects_box.add_child(_label("Keine aktiven Effekte", MUTED, STAT_FONT))
 		return
 	for mod in effects:
-		var sign := "+" if mod.value >= 0.0 else ""
+		var sign_text := "+" if mod.value >= 0.0 else ""
 		var amount := _pct(mod.value) if mod.modifier_type == StatModifier.Type.PERCENT else str(mod.value)
-		var line := "%s %s%s  (%.0fs)" % [StatId.display_name(int(mod.stat)), sign, amount, maxf(mod.remaining, 0.0)]
+		var line := "%s %s%s  (%.0fs)" % [StatId.display_name(int(mod.stat)), sign_text, amount, maxf(mod.remaining, 0.0)]
 		_effects_box.add_child(_label(line, TITLE, STAT_FONT))
 
 
@@ -367,21 +393,27 @@ func _refresh_progress(stats: PlayerStats) -> void:
 	_set_row("found", "Items", str(stats.items_found))
 
 
-func _add_stat_to(host: VBoxContainer, key: String, caption: String) -> void:
+func _add_stat_to(host: VBoxContainer, key: String, caption: String, value_min_width: int = 72) -> void:
 	var row := HBoxContainer.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.custom_minimum_size = Vector2(0, ROW_HEIGHT)
+	row.add_theme_constant_override("separation", 4)
 	var left := _label(caption, MUTED, STAT_FONT)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.clip_text = true
 	var right := _label("-", VALUE, STAT_FONT)
 	right.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	right.custom_minimum_size = Vector2(92, 0)
-	right.clip_text = true
+	right.size_flags_horizontal = Control.SIZE_SHRINK_END
+	right.custom_minimum_size = Vector2(value_min_width, 0)
+	var bonus := _label("", BONUS, STAT_FONT)
+	bonus.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	bonus.size_flags_horizontal = Control.SIZE_SHRINK_END
+	bonus.visible = false
 	row.add_child(left)
 	row.add_child(right)
+	row.add_child(bonus)
 	host.add_child(row)
-	_stat_labels[key] = [left, right]
+	_stat_labels[key] = [left, right, bonus]
 
 
 func _set_row(key: String, caption: String, value: String) -> void:
@@ -390,7 +422,16 @@ func _set_row(key: String, caption: String, value: String) -> void:
 	var pair: Array = _stat_labels[key]
 	if caption != "":
 		(pair[0] as Label).text = caption
-	(pair[1] as Label).text = value
+	var main := value
+	var bonus_text := ""
+	var split_at := value.rfind(" (")
+	if split_at >= 0 and value.ends_with(")"):
+		main = value.substr(0, split_at)
+		bonus_text = value.substr(split_at)
+	(pair[1] as Label).text = main
+	var bonus := pair[2] as Label
+	bonus.text = bonus_text
+	bonus.visible = not bonus_text.is_empty()
 
 
 func _card(inner: StyleBox, width: int) -> PanelContainer:
@@ -422,12 +463,12 @@ func _heading(text: String) -> Label:
 	return label
 
 
-func _label(text: String, color: Color, size: int) -> Label:
+func _label(text: String, color: Color, font_size: int) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.clip_text = false
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	return label
 

@@ -1,0 +1,84 @@
+[gd_resource type="Resource" script_class="ArmorSetData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/armor_set_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/stats/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="mod_0"]
+script = ExtResource("2_mod")
+stat = 0
+value = 10.0
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_1"]
+script = ExtResource("2_mod")
+stat = 2
+value = 10.0
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_2"]
+script = ExtResource("2_mod")
+stat = 4
+value = 10.0
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_3"]
+script = ExtResource("2_mod")
+stat = 9
+value = 0.05
+modifier_type = 1
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_4"]
+script = ExtResource("2_mod")
+stat = 10
+value = 0.05
+modifier_type = 1
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_5"]
+script = ExtResource("2_mod")
+stat = 11
+value = 0.02
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_6"]
+script = ExtResource("2_mod")
+stat = 5
+value = 0.03
+modifier_type = 1
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_7"]
+script = ExtResource("2_mod")
+stat = 21
+value = 0.1
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_8"]
+script = ExtResource("2_mod")
+stat = 22
+value = 0.1
+modifier_type = 0
+source_kind = 8
+
+[sub_resource type="Resource" id="mod_9"]
+script = ExtResource("2_mod")
+stat = 25
+value = 0.1
+modifier_type = 0
+source_kind = 8
+
+[resource]
+script = ExtResource("1_script")
+set_id = &"ASTRALITH"
+display_name = "Astralith"
+required_piece_count = 3
+piece_item_ids = Array[int]([160, 161, 162])
+set_bonus_name = "Astraler Einklang"
+set_bonus_description = "Endgame-Hybrid. Stark und vielseitig, aber nicht in jeder Nische der Beste."
+modifiers = Array[ExtResource("2_mod")]([SubResource("mod_0"), SubResource("mod_1"), SubResource("mod_2"), SubResource("mod_3"), SubResource("mod_4"), SubResource("mod_5"), SubResource("mod_6"), SubResource("mod_7"), SubResource("mod_8"), SubResource("mod_9")])

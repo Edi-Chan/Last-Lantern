@@ -9,12 +9,12 @@
 script = ExtResource("2_weapon")
 base_damage = 8
 attack_speed = 0.7
-base_range = 108.0
+base_range = 24.0
 knockback = 35.0
 base_max_durability = 80
 ammo_item_id = 114
-projectile_speed = 297.0
-projectile_gravity = 280.0
+projectile_speed = 440.0
+projectile_gravity = 340.0
 projectile_damage_bonus = 4
 
 [resource]

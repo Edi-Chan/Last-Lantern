@@ -49,18 +49,18 @@ func test_filter_categories_match_item_category() -> void:
 
 
 func test_search_is_case_insensitive() -> void:
-	var helmet := _item("res://resources/items/helmet.tres")
-	var pickaxe := _item("res://resources/items/pickaxe.tres")
-	assert_true(InventoryScreen.item_matches_search(helmet, "hel"))
-	assert_true(InventoryScreen.item_matches_search(helmet, "HEL"))
-	assert_true(InventoryScreen.item_matches_search(helmet, "Test Helmet"))
-	assert_false(InventoryScreen.item_matches_search(helmet, "axe"))
-	assert_true(InventoryScreen.item_matches_search(pickaxe, "pick"))
+	var helmet := _item("res://resources/items/equipment/wood_helmet.tres")
+	var pickaxe := _item("res://resources/items/tools/mining/pickaxes/wood_pickaxe.tres")
+	assert_true(InventoryScreen.item_matches_search(helmet, "helm"))
+	assert_true(InventoryScreen.item_matches_search(helmet, "HELM"))
+	assert_true(InventoryScreen.item_matches_search(helmet, "Holzhelm"))
+	assert_false(InventoryScreen.item_matches_search(helmet, "hacke"))
+	assert_true(InventoryScreen.item_matches_search(pickaxe, "hacke"))
 	assert_true(InventoryScreen.item_matches_search(helmet, ""))
 
 
 func test_filter_uses_existing_item_category() -> void:
-	var helmet := _item("res://resources/items/helmet.tres")
+	var helmet := _item("res://resources/items/equipment/wood_helmet.tres")
 	assert_ne(helmet, null)
 	assert_eq(int(helmet.category), int(ItemData.ItemCategory.ARMOR))
 	assert_true(InventoryScreen.item_matches_filter(helmet, int(ItemData.ItemCategory.ARMOR)))
@@ -69,17 +69,17 @@ func test_filter_uses_existing_item_category() -> void:
 
 
 func test_search_and_filter_combine() -> void:
-	var helmet := _item("res://resources/items/helmet.tres")
-	var chest := _item("res://resources/items/chestplate.tres")
-	assert_true(InventoryScreen.item_matches_search(chest, "chest") and InventoryScreen.item_matches_filter(chest, int(ItemData.ItemCategory.ARMOR)))
-	assert_false(InventoryScreen.item_matches_search(helmet, "chest") and InventoryScreen.item_matches_filter(helmet, int(ItemData.ItemCategory.ARMOR)))
+	var helmet := _item("res://resources/items/equipment/wood_helmet.tres")
+	var chest := _item("res://resources/items/equipment/wood_chestplate.tres")
+	assert_true(InventoryScreen.item_matches_search(chest, "brust") and InventoryScreen.item_matches_filter(chest, int(ItemData.ItemCategory.ARMOR)))
+	assert_false(InventoryScreen.item_matches_search(helmet, "brust") and InventoryScreen.item_matches_filter(helmet, int(ItemData.ItemCategory.ARMOR)))
 
 
 func test_sort_az_za_amount_damage_keep_source_indices() -> void:
-	var helmet := _item("res://resources/items/helmet.tres")
-	var chest := _item("res://resources/items/chestplate.tres")
-	var legs := _item("res://resources/items/leggings.tres")
-	var pickaxe := _item("res://resources/items/pickaxe.tres")
+	var helmet := _item("res://resources/items/equipment/wood_helmet.tres")
+	var chest := _item("res://resources/items/equipment/wood_chestplate.tres")
+	var legs := _item("res://resources/items/equipment/wood_leggings.tres")
+	var pickaxe := _item("res://resources/items/tools/mining/pickaxes/wood_pickaxe.tres")
 	var entries: Array[Dictionary] = [
 		InventoryScreen.view_entry(10, helmet, 1),
 		InventoryScreen.view_entry(11, chest, 4),
@@ -88,11 +88,11 @@ func test_sort_az_za_amount_damage_keep_source_indices() -> void:
 	]
 	var az := entries.duplicate()
 	InventoryScreen.sort_view_entries(az, InventoryScreen.SortMode.NAME_AZ)
-	assert_eq(_names(az), PackedStringArray(["Pickaxe", "Test Chestplate", "Test Helmet", "Test Leggings"]))
-	assert_eq(_ids(az), PackedInt32Array([13, 11, 10, 12]))
+	assert_eq(_names(az), PackedStringArray(["Holzbeinschutz", "Holzbrustrüstung", "Holzhelm", "Holzspitzhacke"]))
+	assert_eq(_ids(az), PackedInt32Array([12, 11, 10, 13]))
 	var za := entries.duplicate()
 	InventoryScreen.sort_view_entries(za, InventoryScreen.SortMode.NAME_ZA)
-	assert_eq(_names(za), PackedStringArray(["Test Leggings", "Test Helmet", "Test Chestplate", "Pickaxe"]))
+	assert_eq(_names(za), PackedStringArray(["Holzspitzhacke", "Holzhelm", "Holzbrustrüstung", "Holzbeinschutz"]))
 	var amount := entries.duplicate()
 	InventoryScreen.sort_view_entries(amount, InventoryScreen.SortMode.AMOUNT_HIGH)
 	assert_eq(_ids(amount), PackedInt32Array([11, 12, 10, 13]))
@@ -101,14 +101,14 @@ func test_sort_az_za_amount_damage_keep_source_indices() -> void:
 	assert_eq(int(amount_low[0]["amount"]), 1)
 	var dmg := entries.duplicate()
 	InventoryScreen.sort_view_entries(dmg, InventoryScreen.SortMode.DAMAGE_HIGH)
-	assert_eq(int((dmg[0]["item"] as ItemData).id), 3)
+	assert_eq(int((dmg[0]["item"] as ItemData).id), 117)
 	assert_eq(int(entries[0]["source_slot_index"]), 10)
 	assert_eq(int(entries[1]["source_slot_index"]), 11)
 
 
 func test_category_sort_uses_filter_order() -> void:
-	var helmet := _item("res://resources/items/helmet.tres")
-	var pickaxe := _item("res://resources/items/pickaxe.tres")
+	var helmet := _item("res://resources/items/equipment/wood_helmet.tres")
+	var pickaxe := _item("res://resources/items/tools/mining/pickaxes/wood_pickaxe.tres")
 	var dirt := _item("res://resources/items/dirt.tres")
 	var entries: Array[Dictionary] = [
 		InventoryScreen.view_entry(10, dirt, 1),
@@ -127,15 +127,16 @@ func test_default_view_flag() -> void:
 
 
 func test_inspect_and_hover_text() -> void:
-	var pickaxe := _item("res://resources/items/pickaxe.tres")
+	var pickaxe := _item("res://resources/items/tools/mining/pickaxes/wood_pickaxe.tres")
 	assert_ne(pickaxe, null)
 	var hover := InventoryScreen.build_hover_text(pickaxe, null, 1)
-	assert_true(hover.begins_with("Pickaxe"))
+	assert_true(hover.begins_with("Holzspitzhacke"))
 	assert_true(hover.contains("Schaden 5"))
 	var stats := InventoryScreen.build_inspect_stats(pickaxe, null, 1)
-	assert_eq(stats, "Schaden 5")
-	var helmet := _item("res://resources/items/helmet.tres")
+	assert_eq(stats, "Schaden 5 · Spitzhacken-Power 6")
+	var helmet := _item("res://resources/items/equipment/wood_helmet.tres")
 	var armor_stats := InventoryScreen.build_inspect_stats(helmet, null, 1)
-	assert_eq(armor_stats, "Rüstung 1")
+	assert_true(armor_stats.contains("Rüstung: +1"))
+	assert_true(armor_stats.contains("Max. Ausdauer: +3"))
 	var empty := InventoryScreen.build_hover_text(null, null, 0)
 	assert_eq(empty, "")

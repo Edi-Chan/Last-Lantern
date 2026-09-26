@@ -7,12 +7,12 @@ extends HBoxContainer
 
 @export var item_catalog: ItemCatalog
 
-const BASE_SLOT_SIZE := 48.0
-const BASE_SEPARATION := 8.0
-const BASE_BOTTOM_MARGIN := 16.0
-const BASE_SIDE_MARGIN := 16.0
-const ICON_INSET := 4.0
-const MIN_SLOT_SIZE := 24.0
+const BASE_SLOT_SIZE := 64.0
+const BASE_SEPARATION := 10.0
+const BASE_BOTTOM_MARGIN := 24.0
+const BASE_SIDE_MARGIN := 24.0
+const ICON_INSET := 6.0
+const MIN_SLOT_SIZE := 36.0
 const SELECTED_TINT := Color(1.1, 1.06, 0.88, 1)
 const HOVER_TINT := Color(1.04, 1.05, 1.08, 1)
 const IDLE_TINT := Color(0.9, 0.93, 0.97, 1)
@@ -92,8 +92,8 @@ func _apply_layout() -> void:
 	anchor_top = 1.0
 	anchor_right = 0.5
 	anchor_bottom = 1.0
-	offset_left = -total_width / 2
-	offset_right = total_width / 2
+	offset_left = -float(int(total_width / 2.0))
+	offset_right = float(int(total_width / 2.0))
 	offset_bottom = float(-bottom)
 	offset_top = float(-(bottom + _slot_size + extra))
 	grow_horizontal = Control.GROW_DIRECTION_BOTH

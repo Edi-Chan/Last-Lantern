@@ -10,10 +10,10 @@ var _anim_time: float = 0.0
 var _anim_frame: int = 0
 var _lava_anim_frame: int = 0
 var _surface_offsets: PackedInt32Array = PackedInt32Array([0, 1, 0, -1])
+var last_drawn_cells: int = 0
 
 @onready var _splash_particles: GPUParticles2D = get_node_or_null("SplashParticles") as GPUParticles2D
 @onready var _splash_audio: AudioStreamPlayer2D = get_node_or_null("SplashAudio") as AudioStreamPlayer2D
-@onready var _flow_audio: AudioStreamPlayer2D = get_node_or_null("FlowAudio") as AudioStreamPlayer2D
 
 
 func setup(system: LiquidSystem) -> void:
@@ -75,17 +75,40 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	if _system == null or _system.settings == null:
+		last_drawn_cells = 0
 		return
 	var tile_size := _system.tile_size
 	var settings := _system.settings
 	var water_wave := int(_surface_offsets[_anim_frame])
 	var lava_wave := int(_surface_offsets[_lava_anim_frame])
+	var view := _view_rect_cells(tile_size)
+	var view_end := Vector2i(view.position.x + view.size.x, view.position.y + view.size.y)
+	var drawn := 0
 	for cell in _draw_cells.keys():
 		var c: Vector2i = cell
+		if c.x < view.position.x or c.y < view.position.y or c.x >= view_end.x or c.y >= view_end.y:
+			continue
 		var amount := _system.get_amount(c)
 		if amount <= 0:
 			continue
 		_draw_cell(c, amount, tile_size, settings, water_wave, lava_wave)
+		drawn += 1
+	last_drawn_cells = drawn
+
+
+func _view_rect_cells(tile_size: int) -> Rect2i:
+	var camera := get_viewport().get_camera_2d()
+	if camera == null or _system == null:
+		return Rect2i(0, 0, _system.world_width if _system != null else 0, _system.world_height if _system != null else 0)
+	var view := get_viewport().get_visible_rect().size / camera.zoom
+	var top_left := camera.get_screen_center_position() - view * 0.5
+	var origin := Vector2i(floori(top_left.x / float(tile_size)) - 2, floori(top_left.y / float(tile_size)) - 2)
+	var size := Vector2i(int(ceil(view.x / float(tile_size))) + 4, int(ceil(view.y / float(tile_size))) + 4)
+	origin.x = clampi(origin.x, 0, _system.world_width)
+	origin.y = clampi(origin.y, 0, _system.world_height)
+	size.x = clampi(size.x, 0, _system.world_width - origin.x)
+	size.y = clampi(size.y, 0, _system.world_height - origin.y)
+	return Rect2i(origin, size)
 
 
 func _draw_cell(cell: Vector2i, amount: int, tile_size: int, settings: LiquidSettings, water_wave: int, lava_wave: int) -> void:
@@ -124,7 +147,7 @@ func _draw_lava_cell(
 	) -> void:
 	if is_falling:
 		var width := clampi(settings.waterfall_width_px, 2, tile_size)
-		var x := origin.x + float((tile_size - width) / 2)
+		var x := origin.x + float(int((tile_size - width) / 2.0))
 		draw_rect(Rect2(x, body_rect.position.y, float(width), float(fill_h)), settings.lava_fall_color, true)
 		return
 	var pulse := 0.04 * sin(_anim_time * settings.lava_animation_speed + float(cell.x * 0.35 + cell.y * 0.2))
@@ -150,7 +173,7 @@ func _draw_lava_cell(
 func _draw_falling(origin: Vector2, fill_h: int, tile_size: int, settings: LiquidSettings) -> void:
 	var width_value: Variant = settings.get("waterfall_width_px")
 	var width := clampi(int(width_value) if width_value != null else 8, 2, tile_size)
-	var x := origin.x + float((tile_size - width) / 2)
+	var x := origin.x + float(int((tile_size - width) / 2.0))
 	var top_y := origin.y + float(tile_size - fill_h)
 	draw_rect(Rect2(x, top_y, float(width), float(fill_h)), _fall_color(settings), true)
 

@@ -100,7 +100,14 @@ func get_final_excluding_source_kinds(stat: int, excluded_kinds: Array) -> float
 
 
 func _compute_final(stat: int, excluded_kinds: Array) -> float:
-	var base := get_base(stat)
+	var parts := _collect(stat, excluded_kinds)
+	var result: float = (float(parts["base"]) + float(parts["flat"])) * (1.0 + float(parts["percent"]))
+	if StatId.is_resistance(stat):
+		return clampf(result, 0.0, 0.9)
+	return result
+
+
+func _collect(stat: int, excluded_kinds: Array) -> Dictionary:
 	var flat := 0.0
 	var percent := 0.0
 	for mod in _modifiers:
@@ -112,7 +119,54 @@ func _compute_final(stat: int, excluded_kinds: Array) -> float:
 			percent += mod.value
 		else:
 			flat += mod.value
-	return (base + flat) * (1.0 + percent)
+	return {"base": get_base(stat), "flat": flat, "percent": percent}
+
+
+func sum_flat(stat: int, kinds: Array) -> float:
+	var total := 0.0
+	for mod in _modifiers:
+		if not _matches_kind(mod, stat, kinds):
+			continue
+		if mod.modifier_type != StatModifier.Type.PERCENT:
+			total += mod.value
+	return total
+
+
+func sum_percent(stat: int, kinds: Array) -> float:
+	var total := 0.0
+	for mod in _modifiers:
+		if not _matches_kind(mod, stat, kinds):
+			continue
+		if mod.modifier_type == StatModifier.Type.PERCENT:
+			total += mod.value
+	return total
+
+
+func kind_display_delta(stat: int, kinds: Array) -> float:
+	var flat := sum_flat(stat, kinds)
+	var percent := sum_percent(stat, kinds)
+	if absf(percent) > 0.0001 and absf(flat) < 0.0001:
+		return percent
+	return flat
+
+
+func breakdown(stat: int) -> Dictionary:
+	var equip_kinds: Array = [StatModifier.SourceKind.EQUIPMENT, StatModifier.SourceKind.ACCESSORY]
+	var set_kinds: Array = [StatModifier.SourceKind.SET_BONUS]
+	var buff_kinds: Array = [StatModifier.SourceKind.CONSUMABLE, StatModifier.SourceKind.BUFF, StatModifier.SourceKind.DEBUFF]
+	return {
+		"base": get_base(stat),
+		"equipment": kind_display_delta(stat, equip_kinds),
+		"set": kind_display_delta(stat, set_kinds),
+		"buff": kind_display_delta(stat, buff_kinds),
+		"final": get_final(stat),
+	}
+
+
+func _matches_kind(mod: StatModifier, stat: int, kinds: Array) -> bool:
+	if mod == null or int(mod.stat) != stat or mod.is_expired():
+		return false
+	return kinds.has(mod.source_kind)
 
 
 func tick(delta: float) -> bool:
@@ -156,10 +210,11 @@ func to_save_dict() -> Dictionary:
 
 
 static func modifiers_from_item(item: Resource) -> Array[StatModifier]:
-	# Item.defense bleibt die einfache Ruestungsquelle.
+	# Item.defense bleibt die einfache Ruestungsquelle. Ruestung zuerst anzeigen.
 	var result: Array[StatModifier] = []
 	if item == null:
 		return result
+	var extras: Array[StatModifier] = []
 	var has_armor := false
 	var listed: Variant = item.get("stat_modifiers")
 	if listed is Array:
@@ -167,13 +222,16 @@ static func modifiers_from_item(item: Resource) -> Array[StatModifier]:
 			var mod := entry as StatModifier
 			if mod == null:
 				continue
-			result.append(mod)
 			if int(mod.stat) == StatId.ARMOR:
+				result.append(mod)
 				has_armor = true
+			else:
+				extras.append(mod)
 	var defense := int(item.get("defense"))
 	if defense > 0 and not has_armor:
 		var item_id := int(item.get("id"))
 		result.append(StatModifier.new(StatId.ARMOR, float(defense), StatModifier.Type.FLAT, StringName("defense:%d" % item_id), StatModifier.SourceKind.EQUIPMENT))
+	result.append_array(extras)
 	return result
 
 

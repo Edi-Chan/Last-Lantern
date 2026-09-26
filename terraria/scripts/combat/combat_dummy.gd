@@ -21,6 +21,10 @@ func _ready() -> void:
 	_update_label()
 
 
+func get_display_name() -> String:
+	return "Attrappe"
+
+
 func get_health_current() -> float:
 	return float(health)
 
@@ -54,7 +58,6 @@ func apply_damage_event(event: DamageEvent) -> void:
 		event.world_position = get_combat_text_origin()
 	_update_label()
 	_flash()
-	print("CombatDummy hp=%d (-%d)" % [health, event.amount])
 	CombatTextSystem.present(event)
 
 

@@ -208,6 +208,7 @@ func test_liquid_system_integration() -> void:
 	assert_true(save_src.contains('"liquid"'))
 	var player_scene := _read("res://scenes/player/player.tscn")
 	assert_true(player_scene.contains("WaterInteraction"))
+	assert_true(player_scene.contains("LavaInteraction"))
 	var liquid_src := _read("res://scripts/liquid/liquid_system.gd")
 	assert_true(liquid_src.contains("_queued"))
 	assert_true(liquid_src.contains("_flow_down_once"))
@@ -218,6 +219,8 @@ func test_liquid_system_integration() -> void:
 	assert_true(renderer_src.contains("_body_color"))
 	assert_true(liquid_src.contains("_wake_cell_and_neighbors"))
 	assert_true(liquid_src.contains("get_total_water_amount"))
+	assert_true(liquid_src.contains("get_lava_cells"))
+	assert_true(FileAccess.file_exists("res://scenes/world/lava.tscn"))
 
 
 func _read(path: String) -> String:
